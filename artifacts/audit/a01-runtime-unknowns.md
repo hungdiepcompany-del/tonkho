@@ -1,19 +1,20 @@
-﻿# A01 Runtime Unknowns
+# A01 Runtime Unknowns
 
 RUNTIME_EVIDENCE_STATUS=PARTIAL_READ_ONLY
 
-The following cannot be verified safely from local source alone in Bundle A:
+The following remain explicitly unknown because Bundle A did not run remote or production queries:
 
 1. Actual trigger schedule.
 2. Actual trigger owner.
-3. Execution failures in Apps Script runtime.
+3. Recent Apps Script execution failures.
 4. Script Properties values.
 5. Gmail label counts.
-6. Drive tree contents.
-7. Bound Spreadsheet ID.
-8. Current sheet protections/data validation.
-9. Current production web app URL/deployment.
+6. Current Drive tree contents.
+7. Bound live Spreadsheet ID.
+8. Current live sheet protections/data validation.
+9. Production web app URL/deployment status.
 10. Firebase project existence/configuration.
-11. Current workbook schema because 	on kho - DATABASE.xlsx is missing locally.
 
-No remote read-only clasp commands were run in this pass. No production function was called.
+WORKBOOK_READ=PASS
+REMOTE_MUTATION=NONE
+SENSITIVE_DATA_EXPORTED=NO

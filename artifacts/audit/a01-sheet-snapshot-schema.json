@@ -1,27 +1,254 @@
-﻿{
-    "generated_at":  "2026-07-14T12:24:31",
-    "workbook_expected":  "ton kho - DATABASE.xlsx",
-    "workbook_path":  "D:\\CODE\\SyncGmailDriveSheet\\ton kho - DATABASE.xlsx",
-    "workbook_found":  false,
-    "status":  "MISSING_LOCAL_WORKBOOK_BLOCKS_A01_GATE",
-    "source_expected_sheets":  [
-                                   "FileLog",
-                                   "Hoa-Don",
-                                   "MaHangHoa",
-                                   "Nhap-Xuat",
-                                   "PhanLoai",
-                                   "TonKho",
-                                   "VietHoaDon",
-                                   "VietTat"
-                               ],
-    "as_is_snapshot_claims_used_as_unverified_reference":  {
-                                                               "source":  "D:\\SyncGmailDriveSheet\\HE_THONG_SYNC_GMAIL_DRIVE_SHEET_AS_IS.md",
-                                                               "TonKho":  "A1:H10 per AS-IS external copy",
-                                                               "Nhap_Xuat":  "A1:P1333 per AS-IS external copy",
-                                                               "Hoa_Don":  "A1:F24 per AS-IS external copy",
-                                                               "MaHangHoa":  "A1:C10 per AS-IS external copy",
-                                                               "PhanLoai":  "A1:A3 per AS-IS external copy",
-                                                               "VietHoaDon":  "A1:S9 per AS-IS external copy"
-                                                           },
-    "sensitive_data_exported":  "NO"
+{
+  "generated_at": "2026-07-14T12:39:39",
+  "workbook_path": "D:\\CODE\\SyncGmailDriveSheet\\ton kho - DATABASE.xlsx",
+  "workbook_sha256": "EF44EC11949969E81953C27848C3BDF1886BB647547DE4A70EF05D4BF8FDB267",
+  "workbook_found": true,
+  "workbook_read": "PASS",
+  "openpyxl_mode": "read_only=True; data_only=False plus data_only=True for cached values",
+  "sheet_count": 8,
+  "sheet_names": [
+    "TonKho",
+    "Nhap-Xuat",
+    "Hoa-Don",
+    "MaHangHoa",
+    "PhanLoai",
+    "VietTat",
+    "FileLog",
+    "VietHoaDon"
+  ],
+  "named_ranges": [
+    {
+      "name": "VHD_TRUOC_THUE",
+      "destinations": [
+        "VietHoaDon!$B$7"
+      ]
+    },
+    {
+      "name": "VHD_UU_TIEN_DG",
+      "destinations": [
+        "VietHoaDon!$B$9"
+      ]
+    },
+    {
+      "name": "VHD_SL1_TO",
+      "destinations": [
+        "VietHoaDon!$C$2"
+      ]
+    },
+    {
+      "name": "VHD_DG1_BE",
+      "destinations": [
+        "VietHoaDon!$B$3"
+      ]
+    },
+    {
+      "name": "VHD_UU_TIEN_SL",
+      "destinations": [
+        "VietHoaDon!$B$8"
+      ]
+    },
+    {
+      "name": "VHD_DG1_TO",
+      "destinations": [
+        "VietHoaDon!$C$3"
+      ]
+    },
+    {
+      "name": "VHD_DG2_TO",
+      "destinations": [
+        "VietHoaDon!$C$5"
+      ]
+    },
+    {
+      "name": "VHD_SL1_BE",
+      "destinations": [
+        "VietHoaDon!$B$2"
+      ]
+    },
+    {
+      "name": "VHD_GIA_TRI_MUC_TIEU",
+      "destinations": [
+        "VietHoaDon!$B$6"
+      ]
+    },
+    {
+      "name": "VHD_DG2_BE",
+      "destinations": [
+        "VietHoaDon!$B$5"
+      ]
+    },
+    {
+      "name": "VHD_SL2_TO",
+      "destinations": [
+        "VietHoaDon!$C$4"
+      ]
+    },
+    {
+      "name": "VHD_SL2_BE",
+      "destinations": [
+        "VietHoaDon!$B$4"
+      ]
+    }
+  ],
+  "sheets": [
+    {
+      "name": "TonKho",
+      "used_range": "A1:H10",
+      "row_count": 10,
+      "column_count": 8,
+      "headers": [
+        "Mã hàng",
+        "Tên hàng",
+        "ĐVT",
+        "Số lượng",
+        "Giá trị",
+        "Đơn giá BQ",
+        "",
+        ""
+      ],
+      "formula_count": 2,
+      "formula_cells": [
+        {
+          "cell": "D10",
+          "formula": "=SUM(tblTonKho[Số lượng])"
+        },
+        {
+          "cell": "E10",
+          "formula": "=SUM(tblTonKho[Giá trị])"
+        }
+      ]
+    },
+    {
+      "name": "Nhap-Xuat",
+      "used_range": "A1:P1333",
+      "row_count": 1333,
+      "column_count": 16,
+      "headers": [
+        "STT",
+        "Ngày",
+        "Hóa đơn số",
+        "Tên khách hàng",
+        "Mã hàng",
+        "Tên hàng",
+        "Phân loại",
+        "Số lượng",
+        "Đơn giá",
+        "Thành tiền",
+        "Đơn giá BQ",
+        "Số lượng tồn",
+        "Giá trị tồn",
+        "HashIndex",
+        "InvoiceKey",
+        "HĐ"
+      ],
+      "formula_count": 0,
+      "formula_cells": []
+    },
+    {
+      "name": "Hoa-Don",
+      "used_range": "A1:F24",
+      "row_count": 24,
+      "column_count": 6,
+      "headers": [
+        "invoiceKey",
+        "XML_id",
+        "XML_status",
+        "PDF_id",
+        "PDF_status",
+        "View"
+      ],
+      "formula_count": 0,
+      "formula_cells": []
+    },
+    {
+      "name": "MaHangHoa",
+      "used_range": "A1:C10",
+      "row_count": 10,
+      "column_count": 3,
+      "headers": [
+        "Mã hàng",
+        "Tên hàng",
+        "ĐVT"
+      ],
+      "formula_count": 0,
+      "formula_cells": []
+    },
+    {
+      "name": "PhanLoai",
+      "used_range": "A1:A3",
+      "row_count": 3,
+      "column_count": 1,
+      "headers": [
+        "P.loại"
+      ],
+      "formula_count": 0,
+      "formula_cells": []
+    },
+    {
+      "name": "VietTat",
+      "used_range": "A1:B28",
+      "row_count": 28,
+      "column_count": 2,
+      "headers": [
+        "Tên đầy đủ",
+        "Tên viết tắt"
+      ],
+      "formula_count": 0,
+      "formula_cells": []
+    },
+    {
+      "name": "FileLog",
+      "used_range": "A1:D5",
+      "row_count": 5,
+      "column_count": 4,
+      "headers": [
+        "Dòng NX",
+        "Ngày",
+        "Mã hàng",
+        "Diễn giải"
+      ],
+      "formula_count": 0,
+      "formula_cells": []
+    },
+    {
+      "name": "VietHoaDon",
+      "used_range": "A1:S9",
+      "row_count": 9,
+      "column_count": 19,
+      "headers": [
+        "Trường",
+        "Giá trị / Từ",
+        "Đến",
+        "Ghi chú",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "SL1",
+        "ĐG1",
+        "SL2",
+        "ĐG2",
+        "Giá trị"
+      ],
+      "formula_count": 0,
+      "formula_cells": []
+    }
+  ],
+  "nhap_xuat_integrity_stats": {
+    "data_rows": 1332,
+    "blank_hash_count": 0,
+    "duplicate_hash_count": 10,
+    "duplicate_hash_groups": 10,
+    "duplicate_invoiceKey_count": 2,
+    "duplicate_invoiceKey_groups": 1,
+    "rows_missing_any_J_to_M": 23
+  },
+  "schema_mismatches": [],
+  "sensitive_data_exported": "NO"
 }

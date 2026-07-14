@@ -1,8 +1,8 @@
-﻿# 06 Owner Decisions
+# 06 Owner Decisions
 
 ## APPROVED DECISIONS
 
-- Google Sheets remains the main business ledger for Nhap-Xuat and TonKho in the current phase.
+- Google Sheets remains the main business ledger for `Nhap-Xuat` and `TonKho` in the current phase.
 - Google Apps Script remains the current worker/backend.
 - Firestore does not replace all Google Sheets data now.
 - Firestore stores job state, invoice metadata, audit, errors, reconciliation findings, and frontend projection.
@@ -23,15 +23,15 @@
 6. How are replacement invoices handled?
 7. How are cancelled invoices handled?
 8. Are two lines with same item/qty but different unit price separate lines?
-9. Should invoiceKey include invoice symbol?
-10. Which fields must lineIdentity include?
-11. How should over-sell be handled?
+9. Should `invoiceKey` include invoice symbol?
+10. Which fields must `lineIdentity` include?
+11. How should over-sell be handled: block, allow negative, cap with error, or other?
 12. What ordering policy should BQGQ use?
-13. May users edit historical Nhap-Xuat?
+13. May users edit historical `Nhap-Xuat`?
 14. If history changes, must all inventory be rebuilt?
 15. How long does Google Sheets remain the main business database?
-16. May Firestore store a full Nhap-Xuat projection for frontend query?
-17. Which accounts besides $expectedAccount will have future access?
+16. May Firestore store a full `Nhap-Xuat` projection for frontend query?
+17. Which accounts besides `hungdiepcompany@gmail.com` will have future access?
 18. Is a backup owner account required?
 19. May PDF-only emails be processed automatically?
 20. Is PDF OCR fallback trusted enough to write ledger?

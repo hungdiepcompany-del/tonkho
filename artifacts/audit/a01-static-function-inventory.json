@@ -1,1137 +1,1137 @@
-﻿[
-    {
-        "name":  "mainRun",
-        "path":  "_debugMain.js",
-        "line":  1
-    },
-    {
-        "name":  "triggerScanInvoiceDriveFolder",
-        "path":  "_triggerDriveScanner.js",
-        "line":  1
-    },
-    {
-        "name":  "isDriveScanBudgetDone_",
-        "path":  "_triggerDriveScanner.js",
-        "line":  42
-    },
-    {
-        "name":  "scanFilesInFolder_",
-        "path":  "_triggerDriveScanner.js",
-        "line":  46
-    },
-    {
-        "name":  "parseInvoiceXMLFile_",
-        "path":  "_triggerDriveScanner.js",
-        "line":  83
-    },
-    {
-        "name":  "parseInvoiceFromFileName_",
-        "path":  "_triggerDriveScanner.js",
-        "line":  106
-    },
-    {
-        "name":  "buildInvoiceRowsFromParsed_",
-        "path":  "_triggerDriveScanner.js",
-        "line":  129
-    },
-    {
-        "name":  "guardTrigger_",
-        "path":  "_triggerMarkInvoiceEmails.js",
-        "line":  5
-    },
-    {
-        "name":  "triggerMarkAllInvoiceEmails",
-        "path":  "_triggerMarkInvoiceEmails.js",
-        "line":  11
-    },
-    {
-        "name":  "getNormalizedFromTrigger_",
-        "path":  "_triggerMarkInvoiceEmails.js",
-        "line":  93
-    },
-    {
-        "name":  "isOutgoingInvoice_",
-        "path":  "_triggerMarkInvoiceEmails.js",
-        "line":  101
-    },
-    {
-        "name":  "isIncomingInvoice_",
-        "path":  "_triggerMarkInvoiceEmails.js",
-        "line":  113
-    },
-    {
-        "name":  "isInvoiceContent_",
-        "path":  "_triggerMarkInvoiceEmails.js",
-        "line":  151
-    },
-    {
-        "name":  "isExcludedSender_",
-        "path":  "_triggerMarkInvoiceEmails.js",
-        "line":  230
-    },
-    {
-        "name":  "extractSenderDomain_",
-        "path":  "_triggerMarkInvoiceEmails.js",
-        "line":  263
-    },
-    {
-        "name":  "getOrCreateYearFolder_",
-        "path":  "driveUtils.js",
-        "line":  1
-    },
-    {
-        "name":  "saveInvoicePdfToDrive_",
-        "path":  "driveUtils.js",
-        "line":  14
-    },
-    {
-        "name":  "fileExistsInFolder_",
-        "path":  "driveUtils.js",
-        "line":  22
-    },
-    {
-        "name":  "findFileInFolder_",
-        "path":  "driveUtils.js",
-        "line":  28
-    },
-    {
-        "name":  "normalizeCommon_",
-        "path":  "EmailDedupService.js",
-        "line":  14
-    },
-    {
-        "name":  "normalizeEmailBody_",
-        "path":  "EmailDedupService.js",
-        "line":  21
-    },
-    {
-        "name":  "normalizeXml_",
-        "path":  "EmailDedupService.js",
-        "line":  32
-    },
-    {
-        "name":  "hashText_",
-        "path":  "EmailDedupService.js",
-        "line":  44
-    },
-    {
-        "name":  "isDuplicateBodyInThread_",
-        "path":  "EmailDedupService.js",
-        "line":  52
-    },
-    {
-        "name":  "isDuplicateAttachment_",
-        "path":  "EmailDedupService.js",
-        "line":  67
-    },
-    {
-        "name":  "resetThreadCache_",
-        "path":  "EmailDedupService.js",
-        "line":  89
-    },
-    {
-        "name":  "collectThreadMessagesAndAttachments_",
-        "path":  "gmailCollection.js",
-        "line":  1
-    },
-    {
-        "name":  "detectCompanyName_",
-        "path":  "gmailDetector.js",
-        "line":  11
-    },
-    {
-        "name":  "findInText_",
-        "path":  "gmailDetector.js",
-        "line":  15
-    },
-    {
-        "name":  "isSameCompany_",
-        "path":  "gmailDetector.js",
-        "line":  56
-    },
-    {
-        "name":  "detectInvoiceNo_",
-        "path":  "gmailDetector.js",
-        "line":  81
-    },
-    {
-        "name":  "detectCompanyTaxCode_",
-        "path":  "gmailDetector.js",
-        "line":  129
-    },
-    {
-        "name":  "getOrCreateLabel_",
-        "path":  "gmailLabels.js",
-        "line":  1
-    },
-    {
-        "name":  "threadHasAllLabel_",
-        "path":  "gmailLabels.js",
-        "line":  6
-    },
-    {
-        "name":  "setExclusiveLabel_",
-        "path":  "gmailLabels.js",
-        "line":  11
-    },
-    {
-        "name":  "initInvoiceProcessLabels_",
-        "path":  "gmailLabels.js",
-        "line":  27
-    },
-    {
-        "name":  "threadHasLabels_",
-        "path":  "gmailLabels.js",
-        "line":  48
-    },
-    {
-        "name":  "deleteAndRecreateGmailLabels_",
-        "path":  "gmailLabels.js",
-        "line":  59
-    },
-    {
-        "name":  "extractAllLinksFromMessage_",
-        "path":  "gmailProcessInvoiceLINK.js",
-        "line":  1
-    },
-    {
-        "name":  "isValidInvoiceLink_",
-        "path":  "gmailProcessInvoiceLINK.js",
-        "line":  14
-    },
-    {
-        "name":  "tryDownloadPdf_",
-        "path":  "gmailProcessInvoiceLINK.js",
-        "line":  27
-    },
-    {
-        "name":  "extractPdfLinkFromHtml_",
-        "path":  "gmailProcessInvoiceLINK.js",
-        "line":  71
-    },
-    {
-        "name":  "resolveHtmlUrl_",
-        "path":  "gmailProcessInvoiceLINK.js",
-        "line":  101
-    },
-    {
-        "name":  "saveInvoiceLinkPdf_",
-        "path":  "gmailProcessInvoiceLINK.js",
-        "line":  127
-    },
-    {
-        "name":  "writeLinksToTable_",
-        "path":  "gmailProcessInvoiceLINK.js",
-        "line":  193
-    },
-    {
-        "name":  "processInvoiceAllXMLAttachments_",
-        "path":  "gmailProcessInvoiceXML.js",
-        "line":  1
-    },
-    {
-        "name":  "processInvoiceXMLAttachment_",
-        "path":  "gmailProcessInvoiceXML.js",
-        "line":  80
-    },
-    {
-        "name":  "saveInvoiceXmlToDrive_",
-        "path":  "gmailProcessInvoiceXML.js",
-        "line":  127
-    },
-    {
-        "name":  "scanInvoiceOutEmails_",
-        "path":  "gmailScanner.js",
-        "line":  4
-    },
-    {
-        "name":  "scanInvoiceInEmails_",
-        "path":  "gmailScanner.js",
-        "line":  246
-    },
-    {
-        "name":  "buildInvoiceQuery_",
-        "path":  "gmailSearch.js",
-        "line":  1
-    },
-    {
-        "name":  "searchInvoiceThreads_",
-        "path":  "gmailSearch.js",
-        "line":  9
-    },
-    {
-        "name":  "formatGmailQueryDate_",
-        "path":  "gmailSearch.js",
-        "line":  18
-    },
-    {
-        "name":  "validateGmailInvoiceLabel_",
-        "path":  "gmailValidate.js",
-        "line":  1
-    },
-    {
-        "name":  "getExistingHashIndex_",
-        "path":  "hashUtils.js",
-        "line":  4
-    },
-    {
-        "name":  "filterRowsByHashIndex_",
-        "path":  "hashUtils.js",
-        "line":  24
-    },
-    {
-        "name":  "buildHashFromText_",
-        "path":  "hashUtils.js",
-        "line":  62
-    },
-    {
-        "name":  "buildInvoiceItemHash_",
-        "path":  "hashUtils.js",
-        "line":  82
-    },
-    {
-        "name":  "generateHashForExistingRows_",
-        "path":  "hashUtils.js",
-        "line":  103
-    },
-    {
-        "name":  "main",
-        "path":  "main.js",
-        "line":  1
-    },
-    {
-        "name":  "_mainInternal_",
-        "path":  "main.js",
-        "line":  11
-    },
-    {
-        "name":  "loadVietTatDictionary_",
-        "path":  "normalization.js",
-        "line":  2
-    },
-    {
-        "name":  "normalizeInvoiceNo_",
-        "path":  "normalization.js",
-        "line":  36
-    },
-    {
-        "name":  "parseInvoiceDateValue_",
-        "path":  "normalization.js",
-        "line":  51
-    },
-    {
-        "name":  "buildValidDate_",
-        "path":  "normalization.js",
-        "line":  80
-    },
-    {
-        "name":  "getInvoiceYearFromDate_",
-        "path":  "normalization.js",
-        "line":  94
-    },
-    {
-        "name":  "normalizeCustomerName_",
-        "path":  "normalization.js",
-        "line":  102
-    },
-    {
-        "name":  "normalizedEmailText_",
-        "path":  "normalization.js",
-        "line":  138
-    },
-    {
-        "name":  "normalizeTextForCompare_",
-        "path":  "normalization.js",
-        "line":  178
-    },
-    {
-        "name":  "normalizeHashText_",
-        "path":  "normalization.js",
-        "line":  195
-    },
-    {
-        "name":  "normalizeCompanyForCompare_",
-        "path":  "normalization.js",
-        "line":  240
-    },
-    {
-        "name":  "isVatInvoicePDF_",
-        "path":  "pdfParser.js",
-        "line":  1
-    },
-    {
-        "name":  "extractPdfText_",
-        "path":  "pdfParser.js",
-        "line":  14
-    },
-    {
-        "name":  "extractVatMetaFromPDFText_",
-        "path":  "pdfParser.js",
-        "line":  34
-    },
-    {
-        "name":  "extractAllTaxCodes_",
-        "path":  "pdfParser.js",
-        "line":  74
-    },
-    {
-        "name":  "pickCounterpartyTaxCode_",
-        "path":  "pdfParser.js",
-        "line":  80
-    },
-    {
-        "name":  "buildVatPdfFileName_",
-        "path":  "pdfParser.js",
-        "line":  92
-    },
-    {
-        "name":  "parseVietnamDate_",
-        "path":  "pdfParser.js",
-        "line":  118
-    },
-    {
-        "name":  "assertScriptOwner_",
-        "path":  "sercurity.js",
-        "line":  11
-    },
-    {
-        "name":  "auditTriggers_",
-        "path":  "sercurity.js",
-        "line":  30
-    },
-    {
-        "name":  "enableAuthorizedTrigger_",
-        "path":  "sercurity.js",
-        "line":  43
-    },
-    {
-        "name":  "assertTriggerSignature_",
-        "path":  "sercurity.js",
-        "line":  77
-    },
-    {
-        "name":  "assertAntiReplayTrigger_",
-        "path":  "sercurity.js",
-        "line":  94
-    },
-    {
-        "name":  "assertTriggerMinuteSignature_",
-        "path":  "sercurity.js",
-        "line":  119
-    },
-    {
-        "name":  "initSecurityOwner",
-        "path":  "sercurity.js",
-        "line":  135
-    },
-    {
-        "name":  "clearLog",
-        "path":  "sheetFileLog.js",
-        "line":  1
-    },
-    {
-        "name":  "buildInvoiceKey_",
-        "path":  "sheetHoaDon.js",
-        "line":  1
-    },
-    {
-        "name":  "upsertHoaDonFile_",
-        "path":  "sheetHoaDon.js",
-        "line":  20
-    },
-    {
-        "name":  "removeEmptyInvoiceRows_",
-        "path":  "sheetHoaDon.js",
-        "line":  77
-    },
-    {
-        "name":  "ensureViewFormula_",
-        "path":  "sheetHoaDon.js",
-        "line":  100
-    },
-    {
-        "name":  "onOpen",
-        "path":  "sheetMenu.js",
-        "line":  1
-    },
-    {
-        "name":  "showSidebar",
-        "path":  "sheetMenu.js",
-        "line":  13
-    },
-    {
-        "name":  "menuCapNhatTonKho",
-        "path":  "sheetMenu.js",
-        "line":  21
-    },
-    {
-        "name":  "capNhatNhapXuatBQGQ",
-        "path":  "sheetNhapXuat.js",
-        "line":  1
-    },
-    {
-        "name":  "resetProgressNX_",
-        "path":  "sheetNhapXuat.js",
-        "line":  143
-    },
-    {
-        "name":  "setProgressNX_",
-        "path":  "sheetNhapXuat.js",
-        "line":  147
-    },
-    {
-        "name":  "getProgressNX",
-        "path":  "sheetNhapXuat.js",
-        "line":  151
-    },
-    {
-        "name":  "isNXRunning_",
-        "path":  "sheetNhapXuat.js",
-        "line":  155
-    },
-    {
-        "name":  "setNXRunning_",
-        "path":  "sheetNhapXuat.js",
-        "line":  161
-    },
-    {
-        "name":  "lockButtons",
-        "path":  "sheetSidebar.html",
-        "line":  245
-    },
-    {
-        "name":  "unlockButtons",
-        "path":  "sheetSidebar.html",
-        "line":  257
-    },
-    {
-        "name":  "runTonKho",
-        "path":  "sheetSidebar.html",
-        "line":  275
-    },
-    {
-        "name":  "runBQGQ",
-        "path":  "sheetSidebar.html",
-        "line":  288
-    },
-    {
-        "name":  "fetchProgress",
-        "path":  "sheetSidebar.html",
-        "line":  303
-    },
-    {
-        "name":  "bar",
-        "path":  "sheetSidebar.html",
-        "line":  351
-    },
-    {
-        "name":  "checkAllDone",
-        "path":  "sheetSidebar.html",
-        "line":  359
-    },
-    {
-        "name":  "resetState",
-        "path":  "sheetSidebar.html",
-        "line":  371
-    },
-    {
-        "name":  "setStatus",
-        "path":  "sheetSidebar.html",
-        "line":  383
-    },
-    {
-        "name":  "handleError",
-        "path":  "sheetSidebar.html",
-        "line":  387
-    },
-    {
-        "name":  "clearLog",
-        "path":  "sheetSidebar.html",
-        "line":  393
-    },
-    {
-        "name":  "lockPeriod",
-        "path":  "sheetSidebar.html",
-        "line":  398
-    },
-    {
-        "name":  "toggleDropdown",
-        "path":  "sheetSidebar.html",
-        "line":  402
-    },
-    {
-        "name":  "hoaDonNhap",
-        "path":  "sheetSidebar.html",
-        "line":  407
-    },
-    {
-        "name":  "hoaDonXuat",
-        "path":  "sheetSidebar.html",
-        "line":  411
-    },
-    {
-        "name":  "capNhatTonKho",
-        "path":  "sheetTonKho.js",
-        "line":  1
-    },
-    {
-        "name":  "findTotalRow_",
-        "path":  "sheetTonKho.js",
-        "line":  226
-    },
-    {
-        "name":  "resetProgressTK_",
-        "path":  "sheetTonKho.js",
-        "line":  241
-    },
-    {
-        "name":  "setProgressTK_",
-        "path":  "sheetTonKho.js",
-        "line":  245
-    },
-    {
-        "name":  "getProgressTK",
-        "path":  "sheetTonKho.js",
-        "line":  249
-    },
-    {
-        "name":  "isTKRunning_",
-        "path":  "sheetTonKho.js",
-        "line":  253
-    },
-    {
-        "name":  "setTKRunning_",
-        "path":  "sheetTonKho.js",
-        "line":  259
-    },
-    {
-        "name":  "buildTonKhoItemCodeFormatMap_",
-        "path":  "sheetTonKho.js",
-        "line":  268
-    },
-    {
-        "name":  "key",
-        "path":  "sheetUtils.js",
-        "line":  5
-    },
-    {
-        "name":  "getOrCreateASheet_",
-        "path":  "sheetUtils.js",
-        "line":  33
-    },
-    {
-        "name":  "writeInvoicesToSheet_",
-        "path":  "sheetWriter.js",
-        "line":  1
-    },
-    {
-        "name":  "deleteEmptyRows_",
-        "path":  "sheetWriter.js",
-        "line":  151
-    },
-    {
-        "name":  "buildInvoiceTypeFormatMap_",
-        "path":  "sheetWriter.js",
-        "line":  174
-    },
-    {
-        "name":  "buildInvoiceItemCodeFormatMap_",
-        "path":  "sheetWriter.js",
-        "line":  208
-    },
-    {
-        "name":  "sortSheetBySTT_",
-        "path":  "sheetWriter.js",
-        "line":  244
-    },
-    {
-        "name":  "reapplyInvoiceFormats_",
-        "path":  "sheetWriter.js",
-        "line":  264
-    },
-    {
-        "name":  "applyInvoiceFormatsForRows_",
-        "path":  "sheetWriter.js",
-        "line":  339
-    },
-    {
-        "name":  "createProcessStats_",
-        "path":  "stats.js",
-        "line":  2
-    },
-    {
-        "name":  "onEdit",
-        "path":  "triggers.js",
-        "line":  1
-    },
-    {
-        "name":  "debugLog_",
-        "path":  "utils.js",
-        "line":  6
-    },
-    {
-        "name":  "debugLogLazy_",
-        "path":  "utils.js",
-        "line":  16
-    },
-    {
-        "name":  "clearAllScriptProperties_",
-        "path":  "utils.js",
-        "line":  22
-    },
-    {
-        "name":  "doGet",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  37
-    },
-    {
-        "name":  "showVietHoaDonSidebar",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  44
-    },
-    {
-        "name":  "vhdGetInitialData",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  52
-    },
-    {
-        "name":  "vhdGetTonKhoItems",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  71
-    },
-    {
-        "name":  "getTonKhoItems_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  75
-    },
-    {
-        "name":  "normalizeHeader_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  124
-    },
-    {
-        "name":  "findHeaderCol_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  133
-    },
-    {
-        "name":  "parseVnNumber_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  141
-    },
-    {
-        "name":  "getDefaultInput_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  161
-    },
-    {
-        "name":  "readVietHoaDonInput_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  177
-    },
-    {
-        "name":  "readNamedOrCell_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  195
-    },
-    {
-        "name":  "setNamedRange_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  201
-    },
-    {
-        "name":  "getOrCreateSheet_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  207
-    },
-    {
-        "name":  "toNumber_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  211
-    },
-    {
-        "name":  "toBool_",
-        "path":  "VietHoaDon_GAS.js",
-        "line":  215
-    },
-    {
-        "name":  "parseVN",
-        "path":  "VietHoaDon_UI.html",
-        "line":  312
-    },
-    {
-        "name":  "formatVN",
-        "path":  "VietHoaDon_UI.html",
-        "line":  333
-    },
-    {
-        "name":  "formatVNTrim",
-        "path":  "VietHoaDon_UI.html",
-        "line":  336
-    },
-    {
-        "name":  "val",
-        "path":  "VietHoaDon_UI.html",
-        "line":  341
-    },
-    {
-        "name":  "valOrDefault",
-        "path":  "VietHoaDon_UI.html",
-        "line":  347
-    },
-    {
-        "name":  "setVal",
-        "path":  "VietHoaDon_UI.html",
-        "line":  355
-    },
-    {
-        "name":  "fmt",
-        "path":  "VietHoaDon_UI.html",
-        "line":  362
-    },
-    {
-        "name":  "fmtFixed",
-        "path":  "VietHoaDon_UI.html",
-        "line":  363
-    },
-    {
-        "name":  "fmtSigned",
-        "path":  "VietHoaDon_UI.html",
-        "line":  364
-    },
-    {
-        "name":  "escapeHtml",
-        "path":  "VietHoaDon_UI.html",
-        "line":  372
-    },
-    {
-        "name":  "decimals",
-        "path":  "VietHoaDon_UI.html",
-        "line":  373
-    },
-    {
-        "name":  "pow10",
-        "path":  "VietHoaDon_UI.html",
-        "line":  374
-    },
-    {
-        "name":  "baseStep",
-        "path":  "VietHoaDon_UI.html",
-        "line":  375
-    },
-    {
-        "name":  "roundN",
-        "path":  "VietHoaDon_UI.html",
-        "line":  376
-    },
-    {
-        "name":  "accountingRound",
-        "path":  "VietHoaDon_UI.html",
-        "line":  378
-    },
-    {
-        "name":  "getDisplayToleranceBounds",
-        "path":  "VietHoaDon_UI.html",
-        "line":  383
-    },
-    {
-        "name":  "bindFormatInputs",
-        "path":  "VietHoaDon_UI.html",
-        "line":  396
-    },
-    {
-        "name":  "bindSelectAllInputs",
-        "path":  "VietHoaDon_UI.html",
-        "line":  420
-    },
-    {
-        "name":  "formatInput",
-        "path":  "VietHoaDon_UI.html",
-        "line":  426
-    },
-    {
-        "name":  "getMaxDecimalsByItemCount",
-        "path":  "VietHoaDon_UI.html",
-        "line":  434
-    },
-    {
-        "name":  "onDecimalsChanged",
-        "path":  "VietHoaDon_UI.html",
-        "line":  442
-    },
-    {
-        "name":  "normalizeStepInput",
-        "path":  "VietHoaDon_UI.html",
-        "line":  471
-    },
-    {
-        "name":  "showStatus",
-        "path":  "VietHoaDon_UI.html",
-        "line":  488
-    },
-    {
-        "name":  "updateSpeedWarning",
-        "path":  "VietHoaDon_UI.html",
-        "line":  490
-    },
-    {
-        "name":  "setBusy",
-        "path":  "VietHoaDon_UI.html",
-        "line":  522
-    },
-    {
-        "name":  "setLoadedState",
-        "path":  "VietHoaDon_UI.html",
-        "line":  523
-    },
-    {
-        "name":  "taxOnly",
-        "path":  "VietHoaDon_UI.html",
-        "line":  529
-    },
-    {
-        "name":  "priorityOnly",
-        "path":  "VietHoaDon_UI.html",
-        "line":  534
-    },
-    {
-        "name":  "addItemForm",
-        "path":  "VietHoaDon_UI.html",
-        "line":  540
-    },
-    {
-        "name":  "removeItemForm",
-        "path":  "VietHoaDon_UI.html",
-        "line":  573
-    },
-    {
-        "name":  "renumberItems",
-        "path":  "VietHoaDon_UI.html",
-        "line":  581
-    },
-    {
-        "name":  "loadFromSheet",
-        "path":  "VietHoaDon_UI.html",
-        "line":  593
-    },
-    {
-        "name":  "fillItemSelects",
-        "path":  "VietHoaDon_UI.html",
-        "line":  628
-    },
-    {
-        "name":  "fillOneItemSelect",
-        "path":  "VietHoaDon_UI.html",
-        "line":  629
-    },
-    {
-        "name":  "applyItem",
-        "path":  "VietHoaDon_UI.html",
-        "line":  643
-    },
-    {
-        "name":  "collect",
-        "path":  "VietHoaDon_UI.html",
-        "line":  661
-    },
-    {
-        "name":  "validate",
-        "path":  "VietHoaDon_UI.html",
-        "line":  682
-    },
-    {
-        "name":  "startCalc",
-        "path":  "VietHoaDon_UI.html",
-        "line":  693
-    },
-    {
-        "name":  "stopCalc",
-        "path":  "VietHoaDon_UI.html",
-        "line":  707
-    },
-    {
-        "name":  "addVarMeta_",
-        "path":  "VietHoaDon_UI.html",
-        "line":  711
-    },
-    {
-        "name":  "prepareJobCache",
-        "path":  "VietHoaDon_UI.html",
-        "line":  725
-    },
-    {
-        "name":  "initCursor",
-        "path":  "VietHoaDon_UI.html",
-        "line":  743
-    },
-    {
-        "name":  "processBatch",
-        "path":  "VietHoaDon_UI.html",
-        "line":  766
-    },
-    {
-        "name":  "stepSingleSolveDG",
-        "path":  "VietHoaDon_UI.html",
-        "line":  785
-    },
-    {
-        "name":  "stepSingleSolveSL",
-        "path":  "VietHoaDon_UI.html",
-        "line":  803
-    },
-    {
-        "name":  "countSteps",
-        "path":  "VietHoaDon_UI.html",
-        "line":  822
-    },
-    {
-        "name":  "sampleByPass",
-        "path":  "VietHoaDon_UI.html",
-        "line":  827
-    },
-    {
-        "name":  "buildFastPartial",
-        "path":  "VietHoaDon_UI.html",
-        "line":  837
-    },
-    {
-        "name":  "stepMultiFastSolveDG",
-        "path":  "VietHoaDon_UI.html",
-        "line":  860
-    },
-    {
-        "name":  "stepMultiFastSolveSL",
-        "path":  "VietHoaDon_UI.html",
-        "line":  894
-    },
-    {
-        "name":  "buildPartialFromVars",
-        "path":  "VietHoaDon_UI.html",
-        "line":  928
-    },
-    {
-        "name":  "stepMultiSolveDG",
-        "path":  "VietHoaDon_UI.html",
-        "line":  939
-    },
-    {
-        "name":  "stepMultiSolveSL",
-        "path":  "VietHoaDon_UI.html",
-        "line":  971
-    },
-    {
-        "name":  "advanceCursor",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1003
-    },
-    {
-        "name":  "isRowWithinTolerance",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1015
-    },
-    {
-        "name":  "trimRowsIfNeeded",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1029
-    },
-    {
-        "name":  "addRow",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1050
-    },
-    {
-        "name":  "sortRows",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1074
-    },
-    {
-        "name":  "finishJob",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1083
-    },
-    {
-        "name":  "renderHeader",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1094
-    },
-    {
-        "name":  "selectRow",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1100
-    },
-    {
-        "name":  "renderRows",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1101
-    },
-    {
-        "name":  "updateMetrics",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1115
-    },
-    {
-        "name":  "renderEmptyResult",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1122
-    },
-    {
-        "name":  "clearResult",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1126
-    },
-    {
-        "name":  "resetForm",
-        "path":  "VietHoaDon_UI.html",
-        "line":  1132
-    },
-    {
-        "name":  "parseInvoiceXML_",
-        "path":  "xmlParser.js",
-        "line":  6
-    },
-    {
-        "name":  "isVatInvoiceXML_",
-        "path":  "xmlParser.js",
-        "line":  30
-    },
-    {
-        "name":  "loadXmlDocument_",
-        "path":  "xmlParser.js",
-        "line":  38
-    },
-    {
-        "name":  "parseInvoiceMeta_",
-        "path":  "xmlParser.js",
-        "line":  49
-    },
-    {
-        "name":  "extractXmlMeta_",
-        "path":  "xmlParser.js",
-        "line":  65
-    },
-    {
-        "name":  "parseSeller_",
-        "path":  "xmlParser.js",
-        "line":  76
-    },
-    {
-        "name":  "parseBuyer_",
-        "path":  "xmlParser.js",
-        "line":  92
-    },
-    {
-        "name":  "parseInvoiceItems_",
-        "path":  "xmlParser.js",
-        "line":  147
-    },
-    {
-        "name":  "buildItemCodeList_",
-        "path":  "xmlParser.js",
-        "line":  178
-    },
-    {
-        "name":  "getItemCodeFromSheet_",
-        "path":  "xmlParser.js",
-        "line":  206
-    }
+[
+  {
+    "name": "mainRun",
+    "path": "_debugMain.js",
+    "line": 1
+  },
+  {
+    "name": "triggerScanInvoiceDriveFolder",
+    "path": "_triggerDriveScanner.js",
+    "line": 1
+  },
+  {
+    "name": "isDriveScanBudgetDone_",
+    "path": "_triggerDriveScanner.js",
+    "line": 42
+  },
+  {
+    "name": "scanFilesInFolder_",
+    "path": "_triggerDriveScanner.js",
+    "line": 46
+  },
+  {
+    "name": "parseInvoiceXMLFile_",
+    "path": "_triggerDriveScanner.js",
+    "line": 83
+  },
+  {
+    "name": "parseInvoiceFromFileName_",
+    "path": "_triggerDriveScanner.js",
+    "line": 106
+  },
+  {
+    "name": "buildInvoiceRowsFromParsed_",
+    "path": "_triggerDriveScanner.js",
+    "line": 129
+  },
+  {
+    "name": "guardTrigger_",
+    "path": "_triggerMarkInvoiceEmails.js",
+    "line": 5
+  },
+  {
+    "name": "triggerMarkAllInvoiceEmails",
+    "path": "_triggerMarkInvoiceEmails.js",
+    "line": 11
+  },
+  {
+    "name": "getNormalizedFromTrigger_",
+    "path": "_triggerMarkInvoiceEmails.js",
+    "line": 93
+  },
+  {
+    "name": "isOutgoingInvoice_",
+    "path": "_triggerMarkInvoiceEmails.js",
+    "line": 101
+  },
+  {
+    "name": "isIncomingInvoice_",
+    "path": "_triggerMarkInvoiceEmails.js",
+    "line": 113
+  },
+  {
+    "name": "isInvoiceContent_",
+    "path": "_triggerMarkInvoiceEmails.js",
+    "line": 151
+  },
+  {
+    "name": "isExcludedSender_",
+    "path": "_triggerMarkInvoiceEmails.js",
+    "line": 230
+  },
+  {
+    "name": "extractSenderDomain_",
+    "path": "_triggerMarkInvoiceEmails.js",
+    "line": 263
+  },
+  {
+    "name": "getOrCreateYearFolder_",
+    "path": "driveUtils.js",
+    "line": 1
+  },
+  {
+    "name": "saveInvoicePdfToDrive_",
+    "path": "driveUtils.js",
+    "line": 14
+  },
+  {
+    "name": "fileExistsInFolder_",
+    "path": "driveUtils.js",
+    "line": 22
+  },
+  {
+    "name": "findFileInFolder_",
+    "path": "driveUtils.js",
+    "line": 28
+  },
+  {
+    "name": "normalizeCommon_",
+    "path": "EmailDedupService.js",
+    "line": 14
+  },
+  {
+    "name": "normalizeEmailBody_",
+    "path": "EmailDedupService.js",
+    "line": 21
+  },
+  {
+    "name": "normalizeXml_",
+    "path": "EmailDedupService.js",
+    "line": 32
+  },
+  {
+    "name": "hashText_",
+    "path": "EmailDedupService.js",
+    "line": 44
+  },
+  {
+    "name": "isDuplicateBodyInThread_",
+    "path": "EmailDedupService.js",
+    "line": 52
+  },
+  {
+    "name": "isDuplicateAttachment_",
+    "path": "EmailDedupService.js",
+    "line": 67
+  },
+  {
+    "name": "resetThreadCache_",
+    "path": "EmailDedupService.js",
+    "line": 89
+  },
+  {
+    "name": "collectThreadMessagesAndAttachments_",
+    "path": "gmailCollection.js",
+    "line": 1
+  },
+  {
+    "name": "detectCompanyName_",
+    "path": "gmailDetector.js",
+    "line": 11
+  },
+  {
+    "name": "findInText_",
+    "path": "gmailDetector.js",
+    "line": 15
+  },
+  {
+    "name": "isSameCompany_",
+    "path": "gmailDetector.js",
+    "line": 56
+  },
+  {
+    "name": "detectInvoiceNo_",
+    "path": "gmailDetector.js",
+    "line": 81
+  },
+  {
+    "name": "detectCompanyTaxCode_",
+    "path": "gmailDetector.js",
+    "line": 129
+  },
+  {
+    "name": "getOrCreateLabel_",
+    "path": "gmailLabels.js",
+    "line": 1
+  },
+  {
+    "name": "threadHasAllLabel_",
+    "path": "gmailLabels.js",
+    "line": 6
+  },
+  {
+    "name": "setExclusiveLabel_",
+    "path": "gmailLabels.js",
+    "line": 11
+  },
+  {
+    "name": "initInvoiceProcessLabels_",
+    "path": "gmailLabels.js",
+    "line": 27
+  },
+  {
+    "name": "threadHasLabels_",
+    "path": "gmailLabels.js",
+    "line": 48
+  },
+  {
+    "name": "deleteAndRecreateGmailLabels_",
+    "path": "gmailLabels.js",
+    "line": 59
+  },
+  {
+    "name": "extractAllLinksFromMessage_",
+    "path": "gmailProcessInvoiceLINK.js",
+    "line": 1
+  },
+  {
+    "name": "isValidInvoiceLink_",
+    "path": "gmailProcessInvoiceLINK.js",
+    "line": 14
+  },
+  {
+    "name": "tryDownloadPdf_",
+    "path": "gmailProcessInvoiceLINK.js",
+    "line": 27
+  },
+  {
+    "name": "extractPdfLinkFromHtml_",
+    "path": "gmailProcessInvoiceLINK.js",
+    "line": 71
+  },
+  {
+    "name": "resolveHtmlUrl_",
+    "path": "gmailProcessInvoiceLINK.js",
+    "line": 101
+  },
+  {
+    "name": "saveInvoiceLinkPdf_",
+    "path": "gmailProcessInvoiceLINK.js",
+    "line": 127
+  },
+  {
+    "name": "writeLinksToTable_",
+    "path": "gmailProcessInvoiceLINK.js",
+    "line": 193
+  },
+  {
+    "name": "processInvoiceAllXMLAttachments_",
+    "path": "gmailProcessInvoiceXML.js",
+    "line": 1
+  },
+  {
+    "name": "processInvoiceXMLAttachment_",
+    "path": "gmailProcessInvoiceXML.js",
+    "line": 80
+  },
+  {
+    "name": "saveInvoiceXmlToDrive_",
+    "path": "gmailProcessInvoiceXML.js",
+    "line": 127
+  },
+  {
+    "name": "scanInvoiceOutEmails_",
+    "path": "gmailScanner.js",
+    "line": 4
+  },
+  {
+    "name": "scanInvoiceInEmails_",
+    "path": "gmailScanner.js",
+    "line": 246
+  },
+  {
+    "name": "buildInvoiceQuery_",
+    "path": "gmailSearch.js",
+    "line": 1
+  },
+  {
+    "name": "searchInvoiceThreads_",
+    "path": "gmailSearch.js",
+    "line": 9
+  },
+  {
+    "name": "formatGmailQueryDate_",
+    "path": "gmailSearch.js",
+    "line": 18
+  },
+  {
+    "name": "validateGmailInvoiceLabel_",
+    "path": "gmailValidate.js",
+    "line": 1
+  },
+  {
+    "name": "getExistingHashIndex_",
+    "path": "hashUtils.js",
+    "line": 4
+  },
+  {
+    "name": "filterRowsByHashIndex_",
+    "path": "hashUtils.js",
+    "line": 24
+  },
+  {
+    "name": "buildHashFromText_",
+    "path": "hashUtils.js",
+    "line": 62
+  },
+  {
+    "name": "buildInvoiceItemHash_",
+    "path": "hashUtils.js",
+    "line": 82
+  },
+  {
+    "name": "generateHashForExistingRows_",
+    "path": "hashUtils.js",
+    "line": 103
+  },
+  {
+    "name": "main",
+    "path": "main.js",
+    "line": 1
+  },
+  {
+    "name": "_mainInternal_",
+    "path": "main.js",
+    "line": 11
+  },
+  {
+    "name": "loadVietTatDictionary_",
+    "path": "normalization.js",
+    "line": 2
+  },
+  {
+    "name": "normalizeInvoiceNo_",
+    "path": "normalization.js",
+    "line": 36
+  },
+  {
+    "name": "parseInvoiceDateValue_",
+    "path": "normalization.js",
+    "line": 51
+  },
+  {
+    "name": "buildValidDate_",
+    "path": "normalization.js",
+    "line": 80
+  },
+  {
+    "name": "getInvoiceYearFromDate_",
+    "path": "normalization.js",
+    "line": 94
+  },
+  {
+    "name": "normalizeCustomerName_",
+    "path": "normalization.js",
+    "line": 102
+  },
+  {
+    "name": "normalizedEmailText_",
+    "path": "normalization.js",
+    "line": 138
+  },
+  {
+    "name": "normalizeTextForCompare_",
+    "path": "normalization.js",
+    "line": 178
+  },
+  {
+    "name": "normalizeHashText_",
+    "path": "normalization.js",
+    "line": 195
+  },
+  {
+    "name": "normalizeCompanyForCompare_",
+    "path": "normalization.js",
+    "line": 240
+  },
+  {
+    "name": "isVatInvoicePDF_",
+    "path": "pdfParser.js",
+    "line": 1
+  },
+  {
+    "name": "extractPdfText_",
+    "path": "pdfParser.js",
+    "line": 14
+  },
+  {
+    "name": "extractVatMetaFromPDFText_",
+    "path": "pdfParser.js",
+    "line": 34
+  },
+  {
+    "name": "extractAllTaxCodes_",
+    "path": "pdfParser.js",
+    "line": 74
+  },
+  {
+    "name": "pickCounterpartyTaxCode_",
+    "path": "pdfParser.js",
+    "line": 80
+  },
+  {
+    "name": "buildVatPdfFileName_",
+    "path": "pdfParser.js",
+    "line": 92
+  },
+  {
+    "name": "parseVietnamDate_",
+    "path": "pdfParser.js",
+    "line": 118
+  },
+  {
+    "name": "assertScriptOwner_",
+    "path": "sercurity.js",
+    "line": 11
+  },
+  {
+    "name": "auditTriggers_",
+    "path": "sercurity.js",
+    "line": 30
+  },
+  {
+    "name": "enableAuthorizedTrigger_",
+    "path": "sercurity.js",
+    "line": 43
+  },
+  {
+    "name": "assertTriggerSignature_",
+    "path": "sercurity.js",
+    "line": 77
+  },
+  {
+    "name": "assertAntiReplayTrigger_",
+    "path": "sercurity.js",
+    "line": 94
+  },
+  {
+    "name": "assertTriggerMinuteSignature_",
+    "path": "sercurity.js",
+    "line": 119
+  },
+  {
+    "name": "initSecurityOwner",
+    "path": "sercurity.js",
+    "line": 135
+  },
+  {
+    "name": "clearLog",
+    "path": "sheetFileLog.js",
+    "line": 1
+  },
+  {
+    "name": "buildInvoiceKey_",
+    "path": "sheetHoaDon.js",
+    "line": 1
+  },
+  {
+    "name": "upsertHoaDonFile_",
+    "path": "sheetHoaDon.js",
+    "line": 20
+  },
+  {
+    "name": "removeEmptyInvoiceRows_",
+    "path": "sheetHoaDon.js",
+    "line": 77
+  },
+  {
+    "name": "ensureViewFormula_",
+    "path": "sheetHoaDon.js",
+    "line": 100
+  },
+  {
+    "name": "onOpen",
+    "path": "sheetMenu.js",
+    "line": 1
+  },
+  {
+    "name": "showSidebar",
+    "path": "sheetMenu.js",
+    "line": 13
+  },
+  {
+    "name": "menuCapNhatTonKho",
+    "path": "sheetMenu.js",
+    "line": 21
+  },
+  {
+    "name": "capNhatNhapXuatBQGQ",
+    "path": "sheetNhapXuat.js",
+    "line": 1
+  },
+  {
+    "name": "resetProgressNX_",
+    "path": "sheetNhapXuat.js",
+    "line": 143
+  },
+  {
+    "name": "setProgressNX_",
+    "path": "sheetNhapXuat.js",
+    "line": 147
+  },
+  {
+    "name": "getProgressNX",
+    "path": "sheetNhapXuat.js",
+    "line": 151
+  },
+  {
+    "name": "isNXRunning_",
+    "path": "sheetNhapXuat.js",
+    "line": 155
+  },
+  {
+    "name": "setNXRunning_",
+    "path": "sheetNhapXuat.js",
+    "line": 161
+  },
+  {
+    "name": "lockButtons",
+    "path": "sheetSidebar.html",
+    "line": 245
+  },
+  {
+    "name": "unlockButtons",
+    "path": "sheetSidebar.html",
+    "line": 257
+  },
+  {
+    "name": "runTonKho",
+    "path": "sheetSidebar.html",
+    "line": 275
+  },
+  {
+    "name": "runBQGQ",
+    "path": "sheetSidebar.html",
+    "line": 288
+  },
+  {
+    "name": "fetchProgress",
+    "path": "sheetSidebar.html",
+    "line": 303
+  },
+  {
+    "name": "bar",
+    "path": "sheetSidebar.html",
+    "line": 351
+  },
+  {
+    "name": "checkAllDone",
+    "path": "sheetSidebar.html",
+    "line": 359
+  },
+  {
+    "name": "resetState",
+    "path": "sheetSidebar.html",
+    "line": 371
+  },
+  {
+    "name": "setStatus",
+    "path": "sheetSidebar.html",
+    "line": 383
+  },
+  {
+    "name": "handleError",
+    "path": "sheetSidebar.html",
+    "line": 387
+  },
+  {
+    "name": "clearLog",
+    "path": "sheetSidebar.html",
+    "line": 393
+  },
+  {
+    "name": "lockPeriod",
+    "path": "sheetSidebar.html",
+    "line": 398
+  },
+  {
+    "name": "toggleDropdown",
+    "path": "sheetSidebar.html",
+    "line": 402
+  },
+  {
+    "name": "hoaDonNhap",
+    "path": "sheetSidebar.html",
+    "line": 407
+  },
+  {
+    "name": "hoaDonXuat",
+    "path": "sheetSidebar.html",
+    "line": 411
+  },
+  {
+    "name": "capNhatTonKho",
+    "path": "sheetTonKho.js",
+    "line": 1
+  },
+  {
+    "name": "findTotalRow_",
+    "path": "sheetTonKho.js",
+    "line": 226
+  },
+  {
+    "name": "resetProgressTK_",
+    "path": "sheetTonKho.js",
+    "line": 241
+  },
+  {
+    "name": "setProgressTK_",
+    "path": "sheetTonKho.js",
+    "line": 245
+  },
+  {
+    "name": "getProgressTK",
+    "path": "sheetTonKho.js",
+    "line": 249
+  },
+  {
+    "name": "isTKRunning_",
+    "path": "sheetTonKho.js",
+    "line": 253
+  },
+  {
+    "name": "setTKRunning_",
+    "path": "sheetTonKho.js",
+    "line": 259
+  },
+  {
+    "name": "buildTonKhoItemCodeFormatMap_",
+    "path": "sheetTonKho.js",
+    "line": 268
+  },
+  {
+    "name": "key",
+    "path": "sheetUtils.js",
+    "line": 5
+  },
+  {
+    "name": "getOrCreateASheet_",
+    "path": "sheetUtils.js",
+    "line": 33
+  },
+  {
+    "name": "writeInvoicesToSheet_",
+    "path": "sheetWriter.js",
+    "line": 1
+  },
+  {
+    "name": "deleteEmptyRows_",
+    "path": "sheetWriter.js",
+    "line": 151
+  },
+  {
+    "name": "buildInvoiceTypeFormatMap_",
+    "path": "sheetWriter.js",
+    "line": 174
+  },
+  {
+    "name": "buildInvoiceItemCodeFormatMap_",
+    "path": "sheetWriter.js",
+    "line": 208
+  },
+  {
+    "name": "sortSheetBySTT_",
+    "path": "sheetWriter.js",
+    "line": 244
+  },
+  {
+    "name": "reapplyInvoiceFormats_",
+    "path": "sheetWriter.js",
+    "line": 264
+  },
+  {
+    "name": "applyInvoiceFormatsForRows_",
+    "path": "sheetWriter.js",
+    "line": 339
+  },
+  {
+    "name": "createProcessStats_",
+    "path": "stats.js",
+    "line": 2
+  },
+  {
+    "name": "onEdit",
+    "path": "triggers.js",
+    "line": 1
+  },
+  {
+    "name": "debugLog_",
+    "path": "utils.js",
+    "line": 6
+  },
+  {
+    "name": "debugLogLazy_",
+    "path": "utils.js",
+    "line": 16
+  },
+  {
+    "name": "clearAllScriptProperties_",
+    "path": "utils.js",
+    "line": 22
+  },
+  {
+    "name": "doGet",
+    "path": "VietHoaDon_GAS.js",
+    "line": 37
+  },
+  {
+    "name": "showVietHoaDonSidebar",
+    "path": "VietHoaDon_GAS.js",
+    "line": 44
+  },
+  {
+    "name": "vhdGetInitialData",
+    "path": "VietHoaDon_GAS.js",
+    "line": 52
+  },
+  {
+    "name": "vhdGetTonKhoItems",
+    "path": "VietHoaDon_GAS.js",
+    "line": 71
+  },
+  {
+    "name": "getTonKhoItems_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 75
+  },
+  {
+    "name": "normalizeHeader_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 124
+  },
+  {
+    "name": "findHeaderCol_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 133
+  },
+  {
+    "name": "parseVnNumber_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 141
+  },
+  {
+    "name": "getDefaultInput_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 161
+  },
+  {
+    "name": "readVietHoaDonInput_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 177
+  },
+  {
+    "name": "readNamedOrCell_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 195
+  },
+  {
+    "name": "setNamedRange_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 201
+  },
+  {
+    "name": "getOrCreateSheet_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 207
+  },
+  {
+    "name": "toNumber_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 211
+  },
+  {
+    "name": "toBool_",
+    "path": "VietHoaDon_GAS.js",
+    "line": 215
+  },
+  {
+    "name": "parseVN",
+    "path": "VietHoaDon_UI.html",
+    "line": 312
+  },
+  {
+    "name": "formatVN",
+    "path": "VietHoaDon_UI.html",
+    "line": 333
+  },
+  {
+    "name": "formatVNTrim",
+    "path": "VietHoaDon_UI.html",
+    "line": 336
+  },
+  {
+    "name": "val",
+    "path": "VietHoaDon_UI.html",
+    "line": 341
+  },
+  {
+    "name": "valOrDefault",
+    "path": "VietHoaDon_UI.html",
+    "line": 347
+  },
+  {
+    "name": "setVal",
+    "path": "VietHoaDon_UI.html",
+    "line": 355
+  },
+  {
+    "name": "fmt",
+    "path": "VietHoaDon_UI.html",
+    "line": 362
+  },
+  {
+    "name": "fmtFixed",
+    "path": "VietHoaDon_UI.html",
+    "line": 363
+  },
+  {
+    "name": "fmtSigned",
+    "path": "VietHoaDon_UI.html",
+    "line": 364
+  },
+  {
+    "name": "escapeHtml",
+    "path": "VietHoaDon_UI.html",
+    "line": 372
+  },
+  {
+    "name": "decimals",
+    "path": "VietHoaDon_UI.html",
+    "line": 373
+  },
+  {
+    "name": "pow10",
+    "path": "VietHoaDon_UI.html",
+    "line": 374
+  },
+  {
+    "name": "baseStep",
+    "path": "VietHoaDon_UI.html",
+    "line": 375
+  },
+  {
+    "name": "roundN",
+    "path": "VietHoaDon_UI.html",
+    "line": 376
+  },
+  {
+    "name": "accountingRound",
+    "path": "VietHoaDon_UI.html",
+    "line": 378
+  },
+  {
+    "name": "getDisplayToleranceBounds",
+    "path": "VietHoaDon_UI.html",
+    "line": 383
+  },
+  {
+    "name": "bindFormatInputs",
+    "path": "VietHoaDon_UI.html",
+    "line": 396
+  },
+  {
+    "name": "bindSelectAllInputs",
+    "path": "VietHoaDon_UI.html",
+    "line": 420
+  },
+  {
+    "name": "formatInput",
+    "path": "VietHoaDon_UI.html",
+    "line": 426
+  },
+  {
+    "name": "getMaxDecimalsByItemCount",
+    "path": "VietHoaDon_UI.html",
+    "line": 434
+  },
+  {
+    "name": "onDecimalsChanged",
+    "path": "VietHoaDon_UI.html",
+    "line": 442
+  },
+  {
+    "name": "normalizeStepInput",
+    "path": "VietHoaDon_UI.html",
+    "line": 471
+  },
+  {
+    "name": "showStatus",
+    "path": "VietHoaDon_UI.html",
+    "line": 488
+  },
+  {
+    "name": "updateSpeedWarning",
+    "path": "VietHoaDon_UI.html",
+    "line": 490
+  },
+  {
+    "name": "setBusy",
+    "path": "VietHoaDon_UI.html",
+    "line": 522
+  },
+  {
+    "name": "setLoadedState",
+    "path": "VietHoaDon_UI.html",
+    "line": 523
+  },
+  {
+    "name": "taxOnly",
+    "path": "VietHoaDon_UI.html",
+    "line": 529
+  },
+  {
+    "name": "priorityOnly",
+    "path": "VietHoaDon_UI.html",
+    "line": 534
+  },
+  {
+    "name": "addItemForm",
+    "path": "VietHoaDon_UI.html",
+    "line": 540
+  },
+  {
+    "name": "removeItemForm",
+    "path": "VietHoaDon_UI.html",
+    "line": 573
+  },
+  {
+    "name": "renumberItems",
+    "path": "VietHoaDon_UI.html",
+    "line": 581
+  },
+  {
+    "name": "loadFromSheet",
+    "path": "VietHoaDon_UI.html",
+    "line": 593
+  },
+  {
+    "name": "fillItemSelects",
+    "path": "VietHoaDon_UI.html",
+    "line": 628
+  },
+  {
+    "name": "fillOneItemSelect",
+    "path": "VietHoaDon_UI.html",
+    "line": 629
+  },
+  {
+    "name": "applyItem",
+    "path": "VietHoaDon_UI.html",
+    "line": 643
+  },
+  {
+    "name": "collect",
+    "path": "VietHoaDon_UI.html",
+    "line": 661
+  },
+  {
+    "name": "validate",
+    "path": "VietHoaDon_UI.html",
+    "line": 682
+  },
+  {
+    "name": "startCalc",
+    "path": "VietHoaDon_UI.html",
+    "line": 693
+  },
+  {
+    "name": "stopCalc",
+    "path": "VietHoaDon_UI.html",
+    "line": 707
+  },
+  {
+    "name": "addVarMeta_",
+    "path": "VietHoaDon_UI.html",
+    "line": 711
+  },
+  {
+    "name": "prepareJobCache",
+    "path": "VietHoaDon_UI.html",
+    "line": 725
+  },
+  {
+    "name": "initCursor",
+    "path": "VietHoaDon_UI.html",
+    "line": 743
+  },
+  {
+    "name": "processBatch",
+    "path": "VietHoaDon_UI.html",
+    "line": 766
+  },
+  {
+    "name": "stepSingleSolveDG",
+    "path": "VietHoaDon_UI.html",
+    "line": 785
+  },
+  {
+    "name": "stepSingleSolveSL",
+    "path": "VietHoaDon_UI.html",
+    "line": 803
+  },
+  {
+    "name": "countSteps",
+    "path": "VietHoaDon_UI.html",
+    "line": 822
+  },
+  {
+    "name": "sampleByPass",
+    "path": "VietHoaDon_UI.html",
+    "line": 827
+  },
+  {
+    "name": "buildFastPartial",
+    "path": "VietHoaDon_UI.html",
+    "line": 837
+  },
+  {
+    "name": "stepMultiFastSolveDG",
+    "path": "VietHoaDon_UI.html",
+    "line": 860
+  },
+  {
+    "name": "stepMultiFastSolveSL",
+    "path": "VietHoaDon_UI.html",
+    "line": 894
+  },
+  {
+    "name": "buildPartialFromVars",
+    "path": "VietHoaDon_UI.html",
+    "line": 928
+  },
+  {
+    "name": "stepMultiSolveDG",
+    "path": "VietHoaDon_UI.html",
+    "line": 939
+  },
+  {
+    "name": "stepMultiSolveSL",
+    "path": "VietHoaDon_UI.html",
+    "line": 971
+  },
+  {
+    "name": "advanceCursor",
+    "path": "VietHoaDon_UI.html",
+    "line": 1003
+  },
+  {
+    "name": "isRowWithinTolerance",
+    "path": "VietHoaDon_UI.html",
+    "line": 1015
+  },
+  {
+    "name": "trimRowsIfNeeded",
+    "path": "VietHoaDon_UI.html",
+    "line": 1029
+  },
+  {
+    "name": "addRow",
+    "path": "VietHoaDon_UI.html",
+    "line": 1050
+  },
+  {
+    "name": "sortRows",
+    "path": "VietHoaDon_UI.html",
+    "line": 1074
+  },
+  {
+    "name": "finishJob",
+    "path": "VietHoaDon_UI.html",
+    "line": 1083
+  },
+  {
+    "name": "renderHeader",
+    "path": "VietHoaDon_UI.html",
+    "line": 1094
+  },
+  {
+    "name": "selectRow",
+    "path": "VietHoaDon_UI.html",
+    "line": 1100
+  },
+  {
+    "name": "renderRows",
+    "path": "VietHoaDon_UI.html",
+    "line": 1101
+  },
+  {
+    "name": "updateMetrics",
+    "path": "VietHoaDon_UI.html",
+    "line": 1115
+  },
+  {
+    "name": "renderEmptyResult",
+    "path": "VietHoaDon_UI.html",
+    "line": 1122
+  },
+  {
+    "name": "clearResult",
+    "path": "VietHoaDon_UI.html",
+    "line": 1126
+  },
+  {
+    "name": "resetForm",
+    "path": "VietHoaDon_UI.html",
+    "line": 1132
+  },
+  {
+    "name": "parseInvoiceXML_",
+    "path": "xmlParser.js",
+    "line": 6
+  },
+  {
+    "name": "isVatInvoiceXML_",
+    "path": "xmlParser.js",
+    "line": 30
+  },
+  {
+    "name": "loadXmlDocument_",
+    "path": "xmlParser.js",
+    "line": 38
+  },
+  {
+    "name": "parseInvoiceMeta_",
+    "path": "xmlParser.js",
+    "line": 49
+  },
+  {
+    "name": "extractXmlMeta_",
+    "path": "xmlParser.js",
+    "line": 65
+  },
+  {
+    "name": "parseSeller_",
+    "path": "xmlParser.js",
+    "line": 76
+  },
+  {
+    "name": "parseBuyer_",
+    "path": "xmlParser.js",
+    "line": 92
+  },
+  {
+    "name": "parseInvoiceItems_",
+    "path": "xmlParser.js",
+    "line": 147
+  },
+  {
+    "name": "buildItemCodeList_",
+    "path": "xmlParser.js",
+    "line": 178
+  },
+  {
+    "name": "getItemCodeFromSheet_",
+    "path": "xmlParser.js",
+    "line": 206
+  }
 ]
