@@ -1,11 +1,20 @@
-﻿# 04 Master Plan
+# 04 Master Plan
+
+BUNDLE_A=PASS
+BUNDLE_B=PASS
+OWNER_REVIEW=PASS
+OWNER_MARKER=APPROVE_RECOMMENDED_20
+DATA_CONTRACT_STATUS=OWNER_APPROVED_V1
+INVARIANTS_STATUS=OWNER_APPROVED_V1
+OWNER_DECISIONS_PENDING_COUNT=0
+NEXT_ALLOWED_BUNDLE=BUNDLE_C_CRITICAL_RUNTIME_FIXES_LOCAL_ONLY
 
 ## Roadmap
 
-1. Bundle A - Foundation, read-only evidence, audit, data contract draft.
-2. Bundle B - Fixture and local test foundation.
-3. Bundle C - Critical runtime fixes local-only.
-4. Separate prompt - Owner review.
+1. Bundle A - Foundation, read-only evidence, audit, and data contract preparation. Status: PASS.
+2. Bundle B - Fixture and local test foundation. Status: PASS.
+3. Owner review - Recommended 20 decisions approved. Status: PASS.
+4. Bundle C - Critical runtime fixes, local-only, behind the Bundle B test foundation.
 5. Separate prompt - GAS push.
 6. Separate prompt - Production smoke.
 7. Separate prompt - Reconciliation.
@@ -13,24 +22,10 @@
 
 ## Phase Boundary
 
-- Safe local documentation and checkers may be grouped.
-- Production mutation, GAS push, Firebase deploy, migration, and owner policy decisions must remain separate.
+- Bundle C may begin local-only runtime fixes using the owner-approved data contract.
+- Production mutation, GAS push, Firebase deploy, remote execution, and Git push remain separate approvals.
+- Google Sheets remains canonical until parity report, rollback plan, and owner cutover marker exist.
 
 ## Current Next Step
 
-Resume A01 only after the owner provides 	on kho - DATABASE.xlsx in the project folder or confirms another exact local workbook path for read-only parsing.
-
-
-## Bundle B Result
-
-Bundle B adds local fixtures, Node VM GAS sandbox, current behavior tests, schema tests, static safety tests, confirmed bug reproduction tests, and checkers. Bundle C runtime fixes remain blocked pending owner review because data contract and invariants are draft.
-
-
-## Bundle B Result
-
-Bundle B adds local fixtures, Node VM GAS sandbox, current behavior tests, schema tests, static safety tests, confirmed bug reproduction tests, and checkers. Bundle C runtime fixes remain blocked pending owner review because data contract and invariants are draft.
-
-
-## Bundle B Result
-
-Bundle B adds local fixtures, Node VM GAS sandbox, current behavior tests, schema tests, static safety tests, confirmed bug reproduction tests, and checkers. Bundle C runtime fixes remain blocked pending owner review because data contract and invariants are draft.
+Start `BUNDLE_C_CRITICAL_RUNTIME_FIXES_LOCAL_ONLY` from commit `5af0a6ba23c84d027e9a55a535cbc5fd1ca10f22` or its owner-approval docs successor.

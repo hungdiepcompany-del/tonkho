@@ -1,45 +1,34 @@
 # 09 Validation Log
 
-STATUS=PASS_BUNDLE_B_LOCAL_TEST_FOUNDATION
-
+STATUS=PASS_OWNER_APPROVAL_DOC_UPDATE_PENDING_COMMIT
 VALIDATED_AT=2026-07-14
-BUNDLE_B_FOUNDATION_COMMIT=b21bd89
+START_COMMIT=5af0a6ba23c84d027e9a55a535cbc5fd1ca10f22
+OWNER_MARKER=APPROVE_RECOMMENDED_20
+DATA_CONTRACT_STATUS=OWNER_APPROVED_V1
+INVARIANTS_STATUS=OWNER_APPROVED_V1
+OWNER_DECISIONS_PENDING_COUNT=0
 RUNTIME_MUTATION=NONE
 GAS_PUSH=NOT_RUN
 FIREBASE_DEPLOY=NOT_RUN
 NETWORK_CALLS=NONE
-WORKBOOK_SHA256=EF44EC11949969E81953C27848C3BDF1886BB647547DE4A70EF05D4BF8FDB267
+WORKBOOK_CHANGED=NO
 
-## Bundle B Validation
+## Owner Approval Docs Validation
 
-| Command | Result |
+| Check | Result |
 | --- | --- |
+| Markdown allowlist only | PASS: only the nine approved Markdown files changed |
 | `npm.cmd test` | PASS: 45 tests, 44 pass, 1 skipped target invariant draft |
-| `npm.cmd run test:unit` | PASS: 21 tests |
-| `npm.cmd run test:bugs` | PASS: 16 bug reproduction tests |
-| `npm.cmd run test:static` | PASS: 3 tests |
-| `npm.cmd run test:schemas` | PASS: 4 tests |
-| `npm.cmd run check` | PASS: BUNDLE_B_CHECK=PASS |
+| `npm.cmd run check` | PASS: `BUNDLE_B_CHECK=PASS` |
 | `powershell.exe -ExecutionPolicy Bypass -File scripts/checkers/check-doc-foundation.ps1` | PASS |
 | `powershell.exe -ExecutionPolicy Bypass -File scripts/checkers/check-no-secret.ps1` | PASS |
 | `powershell.exe -ExecutionPolicy Bypass -File scripts/checkers/check-runtime-unchanged.ps1` | PASS |
 | `powershell.exe -ExecutionPolicy Bypass -File scripts/checkers/check-workbook-unchanged.ps1` | PASS |
 | `powershell.exe -ExecutionPolicy Bypass -File scripts/checkers/check-internal-doc-links.ps1` | PASS |
-| `powershell.exe -ExecutionPolicy Bypass -File scripts/checkers/check-no-runtime-modification.ps1` | PASS |
 | `git diff --check` | PASS |
+| stale current-status marker scan | PASS_WITH_HISTORICAL_MARKERS_ONLY |
 
-## Bundle B Guard Results
+## Historical Marker Notes
 
-- BUNDLE_B_TEST_FOUNDATION=PASS
-- SENSITIVE_FIXTURES=NO
-- POLICY_PENDING_MARKERS=PASS
-- TEST_METADATA=PASS
-- DOC_FOUNDATION=PASS
-- SECRET_SCAN=PASS
-- RUNTIME_UNCHANGED=PASS
-- CLASP_JSON_UNCHANGED=PASS
-- APPSSCRIPT_JSON_UNCHANGED=PASS
-- WORKBOOK_UNCHANGED=PASS
-- INTERNAL_DOC_LINKS=PASS
-- RUNTIME_FILES_CHANGED=NO
-- BUNDLE_B_CHECK=PASS
+- `docs/phases/BUNDLE_A_FOUNDATION_AUDIT.md` retains old Bundle A draft markers as historical phase evidence and is outside this phase allowlist.
+- `docs/03_DATA_CONTRACT.md` retains `HISTORICAL_STATUS_MARKER=DRAFT_NOT_OWNER_APPROVED` only for the existing Bundle B policy marker checker; current status remains `OWNER_APPROVED_V1`.

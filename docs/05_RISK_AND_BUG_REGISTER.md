@@ -155,6 +155,25 @@ PROPOSED_DIRECTION=Add ambiguity detection and review queue.
 TEST_REQUIRED=Overlapping catalog names fixture.
 OWNER_DECISION_REQUIRED=YES
 
+## SGDS-HIGH-011
+
+BUG_ID=SGDS-HIGH-011
+TITLE=BQGQ calculation depends on row order before approved ordering policy is implemented
+SEVERITY=HIGH
+STATUS=CONFIRMED_FROM_TEST_BASELINE
+FILES=sheetNhapXuat.js
+FUNCTIONS=capNhatNhapXuatBQGQ
+EVIDENCE=Bundle B test `tests/bugs/bqgq-ordering.test.mjs` captures current row-order sensitivity.
+REPRODUCTION_CONDITION=Same transactions presented in different row order before immutable transaction ordering is enforced.
+DATA_IMPACT=Average cost and stock calculations can vary with sheet/order state.
+RUNTIME_IMPACT=Inventory projection can drift across rebuilds.
+PROPOSED_INVARIANT=BQGQ sorts by `issueDate`, immutable `transactionSequence`, then `sourceLineNo`.
+PROPOSED_DIRECTION=Bundle C should implement owner-approved ordering behind local tests.
+TEST_REQUIRED=BQGQ ordering fixture.
+OWNER_DECISION_REQUIRED=NO
+OWNER_POLICY_DECISIONS=APPROVED_RECOMMENDED_20
+RUNTIME_FIX_STATUS=NOT_STARTED
+
 ## SGDS-HIGH-006
 
 BUG_ID=SGDS-HIGH-006
@@ -448,6 +467,7 @@ OWNER_DECISION_REQUIRED=NO
 
 BUNDLE_B_COVERAGE_STATUS=PASS
 TEST_COVERAGE=YES_FOR_MANDATED_B05_REPRODUCTION_GROUPS
+OWNER_POLICY_DECISIONS=APPROVED_RECOMMENDED_20
 RUNTIME_FIX_STATUS=NOT_STARTED
 
 | Bug or policy area | Test path | Test result |
@@ -457,7 +477,8 @@ RUNTIME_FIX_STATUS=NOT_STARTED
 | SGDS-HIGH-001 XML first-only incoming attachment processing | `tests/bugs/xml-first-only.test.mjs` | BUG_REPRODUCED |
 | SGDS-HIGH-002 Drive scanner dedup bypass | `tests/bugs/drive-dedup-bypass.test.mjs` | BUG_REPRODUCED |
 | SGDS-HIGH-003 hash identity omits economic fields | `tests/bugs/hash-identity.test.mjs` | BUG_REPRODUCED |
-| SGDS-HIGH-005 BQGQ row-order item matching | `tests/bugs/bqgq-ordering.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-005 item-code ordered substring matching | `tests/bugs/bqgq-ordering.test.mjs` | BUG_REPRODUCED_SOURCE_PATTERN |
+| SGDS-HIGH-011 BQGQ row-order sensitivity | `tests/bugs/bqgq-ordering.test.mjs` | BUG_REPRODUCED |
 | SGDS-HIGH-006 over-sell BQGQ display policy gap | `tests/bugs/oversell-display.test.mjs` | BUG_REPRODUCED_POLICY_PENDING |
 | SGDS-HIGH-007 TonKho over-sell reset policy gap | `tests/bugs/oversell-display.test.mjs` | BUG_REPRODUCED_POLICY_PENDING |
 | SGDS-HIGH-008 and SGDS-LOW-001 FileLog competition and clear scope | `tests/bugs/filelog-competition.test.mjs` | BUG_REPRODUCED |

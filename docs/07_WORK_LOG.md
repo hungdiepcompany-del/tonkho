@@ -159,3 +159,15 @@ COMMANDS_RUN=node/npm preflight; local source reads; read-only workbook schema r
 RESULT=PASS_LOCAL_TEST_FOUNDATION_PENDING_FINAL_VALIDATION
 RISKS=Bug reproduction PASS means bugs are still present, not fixed.
 NEXT_SUBPHASE_ALLOWED=OWNER_REVIEW_BEFORE_BUNDLE_C
+
+
+DATE=2026-07-14
+BUNDLE=OWNER_REVIEW
+SUBPHASE=APPROVE_RECOMMENDED_20_DOC_UPDATE
+START_STATE=WORKTREE_CLEAN; BRANCH=main; START_COMMIT=5af0a6ba23c84d027e9a55a535cbc5fd1ca10f22
+FILES_ALLOWED=docs/00_INDEX.md,docs/03_DATA_CONTRACT.md,docs/04_MASTER_PLAN.md,docs/05_RISK_AND_BUG_REGISTER.md,docs/06_OWNER_DECISIONS.md,docs/07_WORK_LOG.md,docs/08_DECISION_LOG.md,docs/09_VALIDATION_LOG.md,docs/99_NEXT_AI_HANDOFF.md
+FILES_CHANGED=docs/*.md allowlist only
+COMMANDS_RUN=git preflight; docs marker scan; npm.cmd test; npm.cmd run check; doc checkers; git diff --check
+RESULT=PASS_OWNER_APPROVAL_DOC_UPDATE
+RISKS=Runtime fixes are not started; bug reproduction PASS still means current bugs exist until Bundle C changes runtime.
+NEXT_SUBPHASE_ALLOWED=BUNDLE_C_CRITICAL_RUNTIME_FIXES_LOCAL_ONLY

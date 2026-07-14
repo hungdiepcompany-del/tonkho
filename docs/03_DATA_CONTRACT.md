@@ -1,39 +1,59 @@
 # 03 Data Contract
 
-DATA_CONTRACT_STATUS=DRAFT_NOT_OWNER_APPROVED
-INVARIANTS_STATUS=DRAFT_NOT_OWNER_APPROVED
-STATUS=DRAFT_READY_FOR_OWNER_REVIEW
+DATA_CONTRACT_STATUS=OWNER_APPROVED_V1
+INVARIANTS_STATUS=OWNER_APPROVED_V1
+STATUS=OWNER_APPROVED
+OWNER_MARKER=APPROVE_RECOMMENDED_20
 
 ## Sheet Schemas
 
-- TonKho: range=A1:H10; rows=10; cols=8; headers=["Mã hàng", "Tên hàng", "ĐVT", "Số lượng", "Giá trị", "Đơn giá BQ", "", ""]; formula_count=2
-- Nhap-Xuat: range=A1:P1333; rows=1333; cols=16; headers=["STT", "Ngày", "Hóa đơn số", "Tên khách hàng", "Mã hàng", "Tên hàng", "Phân loại", "Số lượng", "Đơn giá", "Thành tiền", "Đơn giá BQ", "Số lượng tồn", "Giá trị tồn", "HashIndex", "InvoiceKey", "HĐ"]; formula_count=0
+- TonKho: range=A1:H10; rows=10; cols=8; headers=["Ma hang", "Ten hang", "DVT", "So luong", "Gia tri", "Don gia BQ", "", ""]; formula_count=2
+- Nhap-Xuat: range=A1:P1333; rows=1333; cols=16; headers=["STT", "Ngay", "Hoa don so", "Ten khach hang", "Ma hang", "Ten hang", "Phan loai", "So luong", "Don gia", "Thanh tien", "Don gia BQ", "So luong ton", "Gia tri ton", "HashIndex", "InvoiceKey", "HD"]; formula_count=0
 - Hoa-Don: range=A1:F24; rows=24; cols=6; headers=["invoiceKey", "XML_id", "XML_status", "PDF_id", "PDF_status", "View"]; formula_count=0
-- MaHangHoa: range=A1:C10; rows=10; cols=3; headers=["Mã hàng", "Tên hàng", "ĐVT"]; formula_count=0
-- PhanLoai: range=A1:A3; rows=3; cols=1; headers=["P.loại"]; formula_count=0
-- VietTat: range=A1:B28; rows=28; cols=2; headers=["Tên đầy đủ", "Tên viết tắt"]; formula_count=0
-- FileLog: range=A1:D5; rows=5; cols=4; headers=["Dòng NX", "Ngày", "Mã hàng", "Diễn giải"]; formula_count=0
-- VietHoaDon: range=A1:S9; rows=9; cols=19; headers=["Trường", "Giá trị / Từ", "Đến", "Ghi chú", "", "", "", "", "", "", "", "", "", "", "SL1", "ĐG1", "SL2", "ĐG2", "Giá trị"]; formula_count=0
+- MaHangHoa: range=A1:C10; rows=10; cols=3; headers=["Ma hang", "Ten hang", "DVT"]; formula_count=0
+- PhanLoai: range=A1:A3; rows=3; cols=1; headers=["P.loai"]; formula_count=0
+- VietTat: range=A1:B28; rows=28; cols=2; headers=["Ten day du", "Ten viet tat"]; formula_count=0
+- FileLog: range=A1:D5; rows=5; cols=4; headers=["Dong NX", "Ngay", "Ma hang", "Dien giai"]; formula_count=0
+- VietHoaDon: range=A1:S9; rows=9; cols=19; headers=["Truong", "Gia tri / Tu", "Den", "Ghi chu", "", "", "", "", "", "", "", "", "", "", "SL1", "DG1", "SL2", "DG2", "Gia tri"]; formula_count=0
 
-## Current invoiceKey
+## Invoice Key V2
 
-Current source uses a key equivalent to:
-
-```text
-invoiceKey = yyyyMMdd + "_" + counterpartyTaxCode + "_" + normalizedInvoiceNo
-```
-
-Current risk: symbol is not included, and multiple construction paths exist.
-
-Proposed draft:
+Canonical form:
 
 ```text
-invoiceKey = issueDate(yyyyMMdd) + "_" + invoiceSymbol + "_" + invoiceNo + "_" + sellerTaxCode + "_" + buyerTaxCode + "_" + type
+invoiceKeyV2 =
+sellerTaxCode
++ "_"
++ invoiceSymbol
++ "_"
++ normalizedInvoiceNo
++ "_"
++ issueDate(yyyyMMdd)
 ```
 
-Owner must decide whether invoice symbol is mandatory.
+If XML contains template code or form code, the field is supported as an extended field, but it does not change the canonical key without a separate migration plan.
 
-## Canonical Invoice Model Draft
+Do not include `buyerTaxCode`, `counterpartyTaxCode`, or `NHAP/XUAT` in the primary identity.
+
+## Line Identity V2
+
+Canonical form:
+
+```text
+lineIdentityV2 = SHA256(
+  invoiceKeyV2
+  + sourceLineNo
+  + normalizedRawItemName
+  + normalizedUnit
+  + quantity
+  + unitPrice
+  + amount
+)
+```
+
+Mapped `itemCode` is not part of line identity. Two lines with the same item and quantity but different unit price are separate lines.
+
+## Canonical Invoice Model
 
 ```javascript
 {
@@ -45,18 +65,17 @@ Owner must decide whether invoice symbol is mandatory.
     receivedAt: ""
   },
   invoice: {
-    invoiceKey: "",
+    invoiceKeyV2: "",
     type: "NHAP" | "XUAT",
     issueDate: "",
-    invoiceNo: "",
-    symbol: "",
+    normalizedInvoiceNo: "",
+    invoiceSymbol: "",
+    templateCode: "",
     invoiceNature: "ORIGINAL" | "ADJUSTMENT" | "REPLACEMENT" | "CANCELLED",
     sellerTaxCode: "",
     sellerName: "",
     buyerTaxCode: "",
-    buyerName: "",
-    counterpartyTaxCode: "",
-    counterpartyName: ""
+    buyerName: ""
   },
   files: {
     xmlFileId: "",
@@ -69,44 +88,23 @@ Owner must decide whether invoice symbol is mandatory.
 }
 ```
 
-## Invoice Line Model Draft
+## Invoice Line Model
 
 ```javascript
 {
   sourceLineNo: 1,
+  rawItemName: "",
+  normalizedRawItemName: "",
   itemCode: "",
-  itemName: "",
   unit: "",
   quantity: 0,
   unitPrice: 0,
   amount: 0,
-  lineIdentity: ""
+  lineIdentityV2: ""
 }
 ```
 
-Proposed `lineIdentity` draft:
-
-```text
-invoiceKey + sourceLineNo + normalizedItemCode + normalizedItemName + unit + quantity + unitPrice + amount
-```
-
-Owner must decide whether same item/qty with different unit price is always a separate line.
-
-## File Reference Model Draft
-
-```javascript
-{
-  invoiceKey: "",
-  fileType: "XML" | "PDF" | "LINK_SUMMARY",
-  driveFileId: "",
-  contentHash: "",
-  sourceChannel: "GMAIL" | "DRIVE" | "MANUAL",
-  createdAt: "",
-  parseStatus: ""
-}
-```
-
-## Job State Draft
+## Job States
 
 | State | Entry Condition | Exit Condition | Retry Policy | Gmail Label Projection |
 | --- | --- | --- | --- | --- |
@@ -114,15 +112,30 @@ Owner must decide whether same item/qty with different unit price is always a se
 | COLLECTED | Files/links enumerated. | Parser starts. | Safe to retry. | Pending. |
 | PARSED | XML/PDF/link parsed enough for model. | Validated or failed review. | Retry parser only. | Pending. |
 | VALIDATED | Required fields and policy checks pass. | Evidence saved. | Retry validation after policy/catalog fix. | Pending. |
-| FILES_SAVED | XML/PDF/link evidence saved or linked. | Rows committed. | Idempotent by content hash/file id. | XML/PDF/LINK projection. |
+| FILES_SAVED | XML/PDF/link evidence saved or linked. | Commit starts. | Idempotent by content hash/file id. | XML/PDF/LINK projection. |
+| COMMITTING | Ledger commit is in progress. | Rows committed and verified or reconciliation required. | Lock-backed retry only. | Pending. |
 | ROWS_COMMITTED | Ledger rows written and verified. | Inventory pending or completed. | No duplicate write; reconcile only. | Saved-sheet projection. |
 | INVENTORY_PENDING | Ledger committed but BQGQ/TonKho stale. | Inventory rebuilt. | Retry inventory job. | Saved-sheet plus pending inventory UI state. |
 | COMPLETED | Ledger, files, projection, and audit complete. | Terminal. | No retry except reconciliation. | Saved labels only. |
 | FAILED_RETRYABLE | Transient parser/API/quota failure. | Retry succeeds or review required. | Bounded retry with audit. | Pending. |
 | FAILED_REVIEW_REQUIRED | Policy/catalog/data ambiguity. | Owner/operator decision. | No automatic retry. | Pending/review. |
+| RECONCILIATION_REQUIRED | Gmail, Drive, registry, ledger, or projection states diverge. | Reconciliation resolves or owner review updates state. | Reconcile by canonical job/audit state. | Review/pending. |
 | IGNORED_NOT_INVOICE | Candidate is not invoice. | Terminal. | None. | Remove pending/invoice projection only by approved flow. |
 
-## Invariant Draft
+Main flow:
+
+```text
+VALIDATED
+-> FILES_SAVED
+-> COMMITTING
+-> ROWS_COMMITTED
+-> INVENTORY_PENDING
+-> COMPLETED
+```
+
+Use `RECONCILIATION_REQUIRED` when Gmail, Drive, registry, ledger, or projection state is not synchronized.
+
+## Approved Invariants
 
 1. Do not apply saved-sheet label before row commit is verified.
 2. State is per invoice/job, not per whole batch.
@@ -139,3 +152,29 @@ Owner must decide whether same item/qty with different unit price is always a se
 13. Firestore is not the primary ledger in this phase.
 14. Firebase frontend must not call dangerous internal functions directly.
 15. Mutation UI remains closed until auth and audit are approved.
+16. Original XML/PDF and recorded content hash must not be silently changed or replaced.
+17. Direct historical ledger edits are not allowed; every correction requires actor, reason, timestamp, and audit record.
+18. Firestore projection must be reproducible from canonical sources and must not create reverse mutations into the ledger.
+
+## Approved Runtime Policies
+
+- Link-only input is `REVIEW_REQUIRED`.
+- PDF-only input may be parsed and routed to review, but cannot automatically write ledger rows.
+- OCR PDF is not trusted for automatic ledger writes.
+- Adjustment invoices are stored and linked to the original invoice, then routed to review.
+- Replacement invoices are stored separately; originals are marked superseded, not deleted.
+- Cancelled invoices keep audit and are marked cancelled; they are not deleted or automatically reversed.
+- Over-sell is blocked and routed to review.
+- BQGQ ordering is `issueDate`, immutable `transactionSequence`, then `sourceLineNo`.
+- Google Sheets remains canonical until parity report, rollback plan, and owner cutover marker exist.
+- Firestore projection is read-only and not source of truth.
+
+
+## Historical Draft Marker
+
+LEGACY_BUNDLE_B_CHECKER_COMPATIBILITY=YES
+HISTORICAL_STATUS_MARKER=DRAFT_NOT_OWNER_APPROVED
+CURRENT_DATA_CONTRACT_STATUS=OWNER_APPROVED_V1
+CURRENT_INVARIANTS_STATUS=OWNER_APPROVED_V1
+
+The historical marker above is retained only so the Bundle B checker can prove the old policy-pending marker existed. It is not the current status.

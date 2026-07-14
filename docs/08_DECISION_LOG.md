@@ -74,3 +74,24 @@ REASON=Runtime source is immutable in Bundle B.
 
 DECISION=Bug reproduction tests pass when they prove the current bug exists.
 REASON=Bundle B is a baseline before Bundle C fixes.
+
+
+## OWNER-APPROVAL-DEC-001
+
+DECISION=Approve the recommended set of 20 business decisions with owner marker `APPROVE_RECOMMENDED_20`.
+REASON=Owner supplied the approval marker and requested data contract/invariant status transition to owner-approved v1.
+
+## OWNER-APPROVAL-DEC-002
+
+DECISION=Use `invoiceKeyV2 = sellerTaxCode + "_" + invoiceSymbol + "_" + normalizedInvoiceNo + "_" + issueDate(yyyyMMdd)`.
+REASON=Owner approved invoice symbol as required identity input and excluded buyer/counterparty/type from primary invoice identity.
+
+## OWNER-APPROVAL-DEC-003
+
+DECISION=Block over-sell and route to review; BQGQ ordering is `issueDate`, immutable `transactionSequence`, then `sourceLineNo`.
+REASON=Owner approved the recommended inventory policy and removed the policy blocker for Bundle C local fixes.
+
+## OWNER-APPROVAL-DEC-004
+
+DECISION=Correct Bundle B coverage mapping by keeping `SGDS-HIGH-005` as item-code substring mapping and adding `SGDS-HIGH-011` for BQGQ row-order sensitivity.
+REASON=The owner approval prompt explicitly identified the previous coverage row as a bad link.
