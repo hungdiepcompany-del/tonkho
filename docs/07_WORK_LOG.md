@@ -207,3 +207,15 @@ COMMANDS_RUN=git preflight; .clasp.json scriptId check; clasp account check; npm
 RESULT=PASS_PUSHED_NOT_SMOKE_VERIFIED
 RISKS=SGDS-CRIT-003 durable transaction remains not fixed; production smoke not run.
 NEXT_SUBPHASE_ALLOWED=OWNER_REVIEW_POST_PUSH_AND_SMOKE_SCOPE
+
+
+DATE=2026-07-14
+BUNDLE=BUNDLE_C_READ_ONLY_UI_SMOKE
+SUBPHASE=READ_ONLY_UI_PRODUCTION_SMOKE
+START_STATE=WORKTREE_CLEAN; BRANCH=main; START_COMMIT=e095b46d923c8db117f94eb96b23ec9c577e7c06; OWNER_MARKER=OWNER_APPROVE_BUNDLE_C_READ_ONLY_UI_SMOKE
+FILES_ALLOWED=docs/releases/BUNDLE_C_READ_ONLY_UI_SMOKE.md,docs/00_INDEX.md,docs/07_WORK_LOG.md,docs/09_VALIDATION_LOG.md,docs/99_NEXT_AI_HANDOFF.md
+FILES_CHANGED=blocker report and handoff docs only
+COMMANDS_RUN=git preflight; clasp account/script checks; pre/post read-only clasp inventory; npm.cmd test; npm.cmd run check; npm.cmd run check:bundle-c; source/docs spreadsheet evidence search
+RESULT=BLOCKED_MANUAL_BROWSER_VERIFICATION_REQUIRED
+RISKS=UI not observed; spreadsheet ID not safely discoverable from local source/docs; no controllable logged-in browser tool available in this session.
+NEXT_SUBPHASE_ALLOWED=RESUME_BUNDLE_C_READ_ONLY_UI_SMOKE_WITH_MANUAL_BROWSER_VERIFICATION

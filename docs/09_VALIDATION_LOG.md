@@ -114,3 +114,36 @@ TRIGGER_MUTATION=NONE_BY_PHASE
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ALLOWED_PHASE=OWNER_REVIEW_POST_PUSH_AND_SMOKE_SCOPE
 OWNER_MARKERS_REQUIRED=OWNER_APPROVE_BUNDLE_C_PRODUCTION_SMOKE
+
+
+## Bundle C Read-Only UI Smoke Validation
+
+BUNDLE_C_READ_ONLY_UI_SMOKE_STATUS=BLOCKED_MANUAL_BROWSER_VERIFICATION_REQUIRED
+VALIDATED_AT=2026-07-14
+OWNER_MARKER=OWNER_APPROVE_BUNDLE_C_READ_ONLY_UI_SMOKE
+START_HEAD=e095b46d923c8db117f94eb96b23ec9c577e7c06
+AUTHORIZED_ACCOUNT=hungdiepcompany@gmail.com
+ACCOUNT_MATCH=YES
+CLASP_SCRIPT_ID=19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+SCRIPT_ID_MATCH=YES
+
+| Check | Result |
+| --- | --- |
+| Git preflight | PASS |
+| clasp account/script check | PASS |
+| pre-smoke clasp status/versions/deployments | PASS_READ_ONLY: 34 files, 34 versions, 2 deployments |
+| `npm.cmd test` | PASS: 48 tests, 47 pass, 1 skipped |
+| `npm.cmd run check` | PASS: `BUNDLE_C_AGGREGATE_CHECK=PASS` |
+| `npm.cmd run check:bundle-c` | PASS: `BUNDLE_C_CHECK=PASS` |
+| `git diff --check` before docs | PASS |
+| `git status --short` before docs | PASS clean |
+| spreadsheet source/docs evidence search | BLOCKED: no safe spreadsheet URL/ID discovered |
+| browser UI inspection | NOT_RUN_BLOCKED: no controllable logged-in browser tool available |
+| post-blocker clasp status/versions/deployments | PASS_READ_ONLY: 34 files, 34 versions, 2 deployments |
+
+GAS_PUSH_DURING_SMOKE=NO
+GAS_DEPLOY_DURING_SMOKE=NO
+GAS_FUNCTION_RUN_BY_CLI=NO
+PRODUCTION_UI_SMOKE_RESULT=NOT_VERIFIED_BROWSER_BLOCKED
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ALLOWED_PHASE=RESUME_BUNDLE_C_READ_ONLY_UI_SMOKE_WITH_MANUAL_BROWSER_VERIFICATION
