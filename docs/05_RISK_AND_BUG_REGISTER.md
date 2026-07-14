@@ -1,7 +1,7 @@
 # 05 Risk And Bug Register
 
 A02_STATUS=PASS_BUG_REGISTER_COMPLETE
-RUNTIME_CODE_CHANGED=NO
+RUNTIME_CODE_CHANGED=YES_LOCAL_ONLY
 
 Severity counts:
 
@@ -35,6 +35,11 @@ PROPOSED_INVARIANT=Saved label only after per-invoice row commit is confirmed.
 PROPOSED_DIRECTION=Introduce per-invoice job state and label projection after commit.
 TEST_REQUIRED=Mixed accepted/duplicate/failure batch fixture.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/bugs/batch-state.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## SGDS-CRIT-002
 
@@ -52,6 +57,11 @@ PROPOSED_INVARIANT=Never delete ledger rows solely because hash is blank.
 PROPOSED_DIRECTION=Report/quarantine blank-hash rows; repair only in owner-approved flow.
 TEST_REQUIRED=Blank-hash historical row fixture.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/bugs/implicit-row-delete.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## SGDS-CRIT-003
 
@@ -103,6 +113,11 @@ PROPOSED_INVARIANT=Gmail and Drive ingestion use one idempotent commit core.
 PROPOSED_DIRECTION=Bundle C should refactor behind local tests.
 TEST_REQUIRED=Drive/Gmail duplicate fixture.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/bugs/drive-dedup-bypass.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## SGDS-HIGH-003
 
@@ -241,6 +256,11 @@ PROPOSED_INVARIANT=Running state lasts at least as long as job or is lock-backed
 PROPOSED_DIRECTION=Use lock/job state, not only cache TTL.
 TEST_REQUIRED=Long-run simulation fixture.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/bugs/progress-state.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## SGDS-HIGH-010
 
@@ -258,6 +278,11 @@ PROPOSED_INVARIANT=Temporary OCR artifacts cleaned in finally.
 PROPOSED_DIRECTION=Wrap cleanup in finally with file id guard.
 TEST_REQUIRED=Exception-in-OCR cleanup fixture.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/unit/pdf-link.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## SGDS-MEDIUM-001
 
@@ -309,6 +334,11 @@ PROPOSED_INVARIANT=Sheet constants are defined and tested.
 PROPOSED_DIRECTION=Use `TONKHO_SHEET_NAME` or define `SHEET_NAME` after owner intent.
 TEST_REQUIRED=VHD initial load fixture.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/bugs/vhd-config.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## SGDS-MEDIUM-004
 
@@ -343,6 +373,11 @@ PROPOSED_INVARIANT=Every used config key is declared with default and docs.
 PROPOSED_DIRECTION=Add config only in runtime-fix phase.
 TEST_REQUIRED=Config inventory checker.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/bugs/config-stats.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## SGDS-MEDIUM-006
 
@@ -377,6 +412,11 @@ PROPOSED_INVARIANT=Every job exits with completed/failed terminal state.
 PROPOSED_DIRECTION=Set terminal progress in all early exits.
 TEST_REQUIRED=No-row fixture.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/bugs/progress-state.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## SGDS-MEDIUM-008
 
@@ -462,6 +502,11 @@ PROPOSED_INVARIANT=Production logs avoid raw invoice/body content.
 PROPOSED_DIRECTION=Sanitize debug logs in runtime-fix phase.
 TEST_REQUIRED=Logging fixture.
 OWNER_DECISION_REQUIRED=NO
+ORIGINAL_STATUS=CONFIRMED_FROM_SOURCE
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+BUNDLE_C_TEST=tests/bugs/log-sanitization.test.mjs
+BUNDLE_C_TEST_RESULT=REGRESSION_INVARIANT_PASS
 
 ## Bundle B Local Test Coverage
 
@@ -472,27 +517,44 @@ RUNTIME_FIX_STATUS=NOT_STARTED
 
 | Bug or policy area | Test path | Test result |
 | --- | --- | --- |
-| SGDS-CRIT-001 batch-level saved label state | `tests/bugs/batch-state.test.mjs` | BUG_REPRODUCED |
-| SGDS-CRIT-002 implicit blank-hash row delete | `tests/bugs/implicit-row-delete.test.mjs` | BUG_REPRODUCED |
+| SGDS-CRIT-001 batch-level saved label state | `tests/bugs/batch-state.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
+| SGDS-CRIT-002 implicit blank-hash row delete | `tests/bugs/implicit-row-delete.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
 | SGDS-HIGH-001 XML first-only incoming attachment processing | `tests/bugs/xml-first-only.test.mjs` | BUG_REPRODUCED |
-| SGDS-HIGH-002 Drive scanner dedup bypass | `tests/bugs/drive-dedup-bypass.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-002 Drive scanner dedup bypass | `tests/bugs/drive-dedup-bypass.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
 | SGDS-HIGH-003 hash identity omits economic fields | `tests/bugs/hash-identity.test.mjs` | BUG_REPRODUCED |
 | SGDS-HIGH-005 item-code ordered substring matching | `tests/bugs/bqgq-ordering.test.mjs` | BUG_REPRODUCED_SOURCE_PATTERN |
 | SGDS-HIGH-011 BQGQ row-order sensitivity | `tests/bugs/bqgq-ordering.test.mjs` | BUG_REPRODUCED |
 | SGDS-HIGH-006 over-sell BQGQ display policy gap | `tests/bugs/oversell-display.test.mjs` | BUG_REPRODUCED_POLICY_PENDING |
 | SGDS-HIGH-007 TonKho over-sell reset policy gap | `tests/bugs/oversell-display.test.mjs` | BUG_REPRODUCED_POLICY_PENDING |
 | SGDS-HIGH-008 and SGDS-LOW-001 FileLog competition and clear scope | `tests/bugs/filelog-competition.test.mjs` | BUG_REPRODUCED |
-| SGDS-HIGH-009 running/progress cache and early exit state | `tests/bugs/progress-state.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-009 running/progress cache and early exit state | `tests/bugs/progress-state.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
 | SGDS-MEDIUM-001 PDF VAT first-50-character detection | `tests/unit/pdf-link.test.mjs` | CURRENT_BEHAVIOR_CAPTURED |
 | SGDS-MEDIUM-002 XML namespace fragility | `tests/unit/xml-parser.test.mjs` | CURRENT_BEHAVIOR_CAPTURED |
-| SGDS-MEDIUM-003 VHD undefined sheet config | `tests/bugs/vhd-config.test.mjs` | BUG_REPRODUCED |
+| SGDS-MEDIUM-003 VHD undefined sheet config | `tests/bugs/vhd-config.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
 | SGDS-MEDIUM-004 workbook named-range contract mismatch | `tests/schema/sheet-contract.test.mjs` | SCHEMA_CONTRACT_CAPTURED |
-| SGDS-MEDIUM-007 early returns can leave progress incomplete | `tests/bugs/progress-state.test.mjs` | BUG_REPRODUCED |
-| Customer abbreviation regex escape bug | `tests/bugs/regex-escape.test.mjs` | BUG_REPRODUCED |
-| Dead code after writer return | `tests/bugs/dead-code.test.mjs` | BUG_REPRODUCED |
+| SGDS-MEDIUM-007 early returns can leave progress incomplete | `tests/bugs/progress-state.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
+| Customer abbreviation regex escape bug | `tests/bugs/regex-escape.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
+| Dead code after writer return | `tests/bugs/dead-code.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
 | Body duplicate branch skips attachment collection | `tests/bugs/body-dedup-attachment.test.mjs` | BUG_REPRODUCED |
 
 CONFIRMED_BUGS_WITH_TESTS=13
 CONFIRMED_BUGS_NOT_LOCALLY_TESTABLE=0_FOR_MANDATED_B05_GROUPS
 POLICY_PENDING_TEST_COUNT=1
 SKIPPED_TEST_COUNT=1_TARGET_INVARIANT_DRAFT
+
+
+## Bundle C Local Fix Coverage
+
+BUNDLE_C_STATUS=PASS_CRITICAL_RUNTIME_FIXES_LOCAL
+LOCAL_FIX_STATUS=FIXED_LOCAL_NOT_DEPLOYED
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+SGDS_CRIT_003_STATUS=NOT_FIXED_DESIGN_RISK_REMAINS
+
+| Area | Test path | Result |
+| --- | --- | --- |
+| SGDS-HIGH-010 OCR temp cleanup | `tests/unit/pdf-link.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
+| SGDS-MEDIUM-005 Drive scan config | `tests/bugs/config-stats.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
+| SGDS-LOW-002 safe logging | `tests/bugs/log-sanitization.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
+| Stats initialization | `tests/bugs/config-stats.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
+
+Bundle C does not mark any fix as deployed or production-verified.

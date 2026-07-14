@@ -24,33 +24,178 @@ function getExistingHashIndex_() {
 function filterRowsByHashIndex_(items, stats) {
   const existed = getExistingHashIndex_();
   const batchSet = new Set();
+  const safeStats = ensureCommitStats_(stats);
 
   return items.map(item => {
     const { type, row } = item;
+    const bucket = ensureCommitStatsBucket_(safeStats, type);
 
     if (!row) return { ...item, status: 'skip' };
 
     const hash = row[CONFIG.NHAPXUAT_INDEX.hash];
-    const bucket = stats[type.toLowerCase()];
 
     if (!hash) return { ...item, status: 'skip' };
 
     if (existed.has(hash)) {
-      stats.duplicateExisting++;
+      safeStats.duplicateExisting++;
       bucket.duplicate++;
       return { ...item, status: 'duplicated' };
     }
 
     if (batchSet.has(hash)) {
-      stats.duplicateBatch++;
+      safeStats.duplicateBatch++;
       bucket.duplicate++;
       return { ...item, status: 'duplicated' };
     }
 
     batchSet.add(hash);
-    stats.accepted++;
+    safeStats.accepted++;
     bucket.accepted++;
     return { ...item, status: 'accepted' };
+  });
+}
+
+function ensureCommitStats_(stats) {
+  return stats || {
+    scanned: 0,
+    in: { scanned: 0, accepted: 0, duplicate: 0 },
+    out: { scanned: 0, accepted: 0, duplicate: 0 },
+    duplicateExisting: 0,
+    duplicateBatch: 0,
+    accepted: 0,
+    emptyHash: 0,
+    hashed: 0
+  };
+}
+
+function ensureCommitStatsBucket_(stats, type) {
+  const key = String(type || "").toLowerCase() === "out" ? "out" : "in";
+  stats[key] = stats[key] || { scanned: 0, accepted: 0, duplicate: 0 };
+  return stats[key];
+}
+
+function prepareInvoiceRowsForCommit_(items, stats, options = {}) {
+  const safeStats = ensureCommitStats_(stats);
+  const { dic, dicVietTat } = loadVietTatDictionary_();
+  const debugPrefix = options.debugPrefix || "COMMIT";
+
+  const rowsWithHash = (items || []).map((item, i) => {
+    const r = item.row || [];
+    const type = item.type || (String(r[5] || "").toUpperCase() === "XUAT" ? "OUT" : "IN");
+    const bucket = ensureCommitStatsBucket_(safeStats, type);
+    bucket.scanned++;
+
+    const invoiceKey =
+      r[CONFIG.NHAPXUAT_INDEX.invoiceKey] ||
+      r[8] ||
+      item.invoiceKey ||
+      "";
+
+    const customerName = normalizeCustomerName_(r[2], dic, dicVietTat);
+
+    const values = {
+      invoiceDate: r[0],
+      invoiceNo: r[1],
+      customerName,
+      itemCode: r[3],
+      itemName: r[4],
+      invoiceType: r[5],
+      qty: r[6]
+    };
+
+    const hash = buildInvoiceItemHash_(
+      values,
+      CONFIG.DEBUG_HASH ? `${debugPrefix} ${type} row ${i + 1}` : ""
+    );
+
+    if (!hash) safeStats.emptyHash++;
+    else safeStats.hashed++;
+
+    const rowOut = [];
+    rowOut[CONFIG.NHAPXUAT_INDEX.invoiceDate] = r[0];
+    rowOut[CONFIG.NHAPXUAT_INDEX.invoiceNo] = r[1];
+    rowOut[CONFIG.NHAPXUAT_INDEX.customerName] = customerName;
+    rowOut[CONFIG.NHAPXUAT_INDEX.itemCode] = r[3];
+    rowOut[CONFIG.NHAPXUAT_INDEX.itemName] = r[4];
+    rowOut[CONFIG.NHAPXUAT_INDEX.invoiceType] = r[5];
+    rowOut[CONFIG.NHAPXUAT_INDEX.qty] = r[6];
+    rowOut[CONFIG.NHAPXUAT_INDEX.price] = r[7];
+    rowOut[CONFIG.NHAPXUAT_INDEX.hash] = hash;
+    rowOut[CONFIG.NHAPXUAT_INDEX.invoiceKey] = invoiceKey;
+
+    return {
+      ...item,
+      type,
+      row: rowOut,
+      invoiceKey,
+      sourceKey: buildCommitSourceKey_(item, invoiceKey, i),
+      writeStatus: "NOT_ATTEMPTED",
+      errorCode: ""
+    };
+  });
+
+  return filterRowsByHashIndex_(rowsWithHash, safeStats);
+}
+
+function buildCommitSourceKey_(item, invoiceKey, index) {
+  if (item.sourceKey) return item.sourceKey;
+  if (item.thread && typeof item.thread.getId === "function") {
+    return "THREAD:" + item.thread.getId() + ":" + (invoiceKey || index);
+  }
+  return (invoiceKey ? "INVOICE:" + invoiceKey : "ROW:" + index);
+}
+
+function commitPreparedInvoiceRows_(processed) {
+  const rowsToWrite = (processed || [])
+    .filter(x => x.status === "accepted")
+    .map(x => x.row);
+
+  let writeError = null;
+
+  if (rowsToWrite.length) {
+    try {
+      writeInvoicesToSheet_(rowsToWrite);
+    } catch (err) {
+      writeError = err;
+      debugLog_("LOI GHI SHEET: " + (err.message || err));
+    }
+  }
+
+  return (processed || []).map(item => {
+    if (item.status === "duplicated") {
+      return { ...item, writeStatus: "ALREADY_COMMITTED", errorCode: "" };
+    }
+    if (item.status === "accepted") {
+      return writeError
+        ? { ...item, writeStatus: "FAILED", errorCode: "WRITE_FAILED" }
+        : { ...item, writeStatus: "COMMITTED", errorCode: "" };
+    }
+    return { ...item, writeStatus: "NOT_ATTEMPTED", errorCode: item.errorCode || "SKIPPED" };
+  });
+}
+
+function projectCommitLabelsByThread_(commitResults) {
+  const byThread = new Map();
+
+  (commitResults || []).forEach(item => {
+    if (!item.thread) return;
+    const arr = byThread.get(item.thread) || [];
+    arr.push(item);
+    byThread.set(item.thread, arr);
+  });
+
+  byThread.forEach((items, thread) => {
+    const eligible = items.filter(x =>
+      x.writeStatus === "COMMITTED" ||
+      x.writeStatus === "ALREADY_COMMITTED" ||
+      x.writeStatus === "FAILED" ||
+      x.writeStatus === "NOT_ATTEMPTED"
+    );
+    const allCommitted = eligible.length > 0 && eligible.every(x =>
+      x.writeStatus === "COMMITTED" ||
+      x.writeStatus === "ALREADY_COMMITTED"
+    );
+    setExclusiveLabel_(thread, allCommitted ? "SAVED_SHEET" : "PENDING");
   });
 }
 

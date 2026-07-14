@@ -7,14 +7,14 @@ OWNER_MARKER=APPROVE_RECOMMENDED_20
 DATA_CONTRACT_STATUS=OWNER_APPROVED_V1
 INVARIANTS_STATUS=OWNER_APPROVED_V1
 OWNER_DECISIONS_PENDING_COUNT=0
-NEXT_ALLOWED_BUNDLE=BUNDLE_C_CRITICAL_RUNTIME_FIXES_LOCAL_ONLY
+NEXT_ALLOWED_BUNDLE=OWNER_REVIEW_BUNDLE_C_DIFF
 
 ## Roadmap
 
 1. Bundle A - Foundation, read-only evidence, audit, and data contract preparation. Status: PASS.
 2. Bundle B - Fixture and local test foundation. Status: PASS.
 3. Owner review - Recommended 20 decisions approved. Status: PASS.
-4. Bundle C - Critical runtime fixes, local-only, behind the Bundle B test foundation.
+4. Bundle C - Critical runtime fixes, local-only, behind the Bundle B test foundation. Status: PASS local-only.
 5. Separate prompt - GAS push.
 6. Separate prompt - Production smoke.
 7. Separate prompt - Reconciliation.
@@ -28,4 +28,4 @@ NEXT_ALLOWED_BUNDLE=BUNDLE_C_CRITICAL_RUNTIME_FIXES_LOCAL_ONLY
 
 ## Current Next Step
 
-Start `BUNDLE_C_CRITICAL_RUNTIME_FIXES_LOCAL_ONLY` from commit `5af0a6ba23c84d027e9a55a535cbc5fd1ca10f22` or its owner-approval docs successor.
+Review the Bundle C local diff and validation evidence. Do not push GAS, deploy Firebase, mutate production data, or push Git without a separate prompt.

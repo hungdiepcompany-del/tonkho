@@ -10,6 +10,7 @@
 
 const VHD = {
   TONKHO_SHEET_NAME: 'TonKho',
+  INPUT_SHEET_NAME: 'VietHoaDon',
 
   INPUT_CELLS: {
     sl1Be: 'B5',
@@ -51,7 +52,7 @@ function showVietHoaDonSidebar() {
 
 function vhdGetInitialData() {
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(VHD.SHEET_NAME);
+  const sh = ss.getSheetByName(VHD.INPUT_SHEET_NAME);
   const input = sh ? readVietHoaDonInput_(ss, sh) : {};
 
   return {

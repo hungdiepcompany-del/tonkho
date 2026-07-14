@@ -1,13 +1,17 @@
 function capNhatTonKho(ngayDen) {
 
   if (isTKRunning_()) {
-    throw new Error("Đang cập nhật tồn kho, vui lòng chờ...");
+    setProgressTK_(100, "BLOCKED_ALREADY_RUNNING: Dang cap nhat ton kho");
+    throw new Error("Dang cap nhat ton kho, vui long cho...");
   }
 
   const lock = LockService.getScriptLock();
+  let lockAcquired = false;
   if (!lock.tryLock(1000)) {
-    throw new Error("Hệ thống đang xử lý tồn kho, thử lại sau.");
+    setProgressTK_(100, "BLOCKED_ALREADY_RUNNING: Khong lay duoc ScriptLock");
+    throw new Error("He thong dang xu ly ton kho, thu lai sau.");
   }
+  lockAcquired = true;
 
   setTKRunning_(true);
 
@@ -26,7 +30,8 @@ function capNhatTonKho(ngayDen) {
     const logSh = getOrCreateASheet_(CONFIG.SHEET_LOG);
 
     if (!shNX || !shTK || !shMH) {
-      throw new Error("Thiếu sheet bắt buộc");
+      setProgressTK_(100, "FAILED: Thieu sheet bat buoc");
+      throw new Error("Thieu sheet bat buoc");
     }
 
     /* ================= LOG ================= */
@@ -38,7 +43,10 @@ function capNhatTonKho(ngayDen) {
     setProgressTK_(5, "Đọc dữ liệu...");
 
     const lastRowNX = shNX.getLastRow();
-    if (lastRowNX < 2) return;
+    if (lastRowNX < 2) {
+      setProgressTK_(100, "COMPLETED: Khong co du lieu");
+      return;
+    }
 
     const nxData = shNX
       .getRange(2, 1, lastRowNX - 1, 13)
@@ -209,17 +217,21 @@ function capNhatTonKho(ngayDen) {
 
     const elapsed = ((Date.now() - t0) / 1000).toFixed(2);
 
-    setProgressTK_(100, "Hoàn tất 🎉");
+    setProgressTK_(100, "COMPLETED: Hoan tat");
     SpreadsheetApp.getActive().toast(
       `✅ Đã xong (${elapsed}s)`,
       "Cập nhật Tồn kho",
       5
     );
 
+  } catch (err) {
+    setProgressTK_(100, "FAILED: " + sanitizeLogValue_(err.message || err));
+    throw err;
   } finally {
-    // luôn luôn mở khóa bất kỳ hoàn cảnh nào
     setTKRunning_(false);
-    lock.releaseLock();
+    if (lockAcquired) {
+      lock.releaseLock();
+    }
   }
 }
 
@@ -299,4 +311,3 @@ function buildTonKhoItemCodeFormatMap_() {
 
   return map;
 }
-

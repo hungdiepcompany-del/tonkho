@@ -170,6 +170,16 @@ Use `RECONCILIATION_REQUIRED` when Gmail, Drive, registry, ledger, or projection
 - Firestore projection is read-only and not source of truth.
 
 
+## Bundle C Implementation Status
+
+BUNDLE_C_LOCAL_RUNTIME_STATUS=PASS_CRITICAL_RUNTIME_FIXES_LOCAL
+HASH_V1_CHANGED=NO
+INVOICE_KEY_PERSISTED_FORMAT_CHANGED=NO
+DURABLE_JOB_STATE_IMPLEMENTED=NO
+PRODUCTION_FIX_STATUS=NOT_DEPLOYED
+
+The owner-approved v1 contract remains unchanged. Bundle C only implements local safety behavior that is compatible with the current persisted HashIndex and invoiceKey format.
+
 ## Historical Draft Marker
 
 LEGACY_BUNDLE_B_CHECKER_COMPATIBILITY=YES

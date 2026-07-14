@@ -1,60 +1,68 @@
 function capNhatNhapXuatBQGQ() {
+  const lock = LockService.getScriptLock();
+  let lockAcquired = false;
 
   if (isNXRunning_()) {
-    throw new Error("Quy trình đang chạy, vui lòng chờ hoàn tất.");
+    setProgressNX_(100, "BLOCKED_ALREADY_RUNNING: Quy trinh dang chay");
+    throw new Error("Quy trinh dang chay, vui long cho hoan tat.");
   }
 
+  if (!lock.tryLock(1000)) {
+    setProgressNX_(100, "BLOCKED_ALREADY_RUNNING: Khong lay duoc ScriptLock");
+    throw new Error("He thong dang xu ly Nhap-Xuat, thu lai sau.");
+  }
+
+  lockAcquired = true;
   setNXRunning_(true);
 
   try {
-    debugLog_("Cập nhật Nhập/Xuất BGGQ");
+    debugLog_("Cap nhat Nhap/Xuat BQGQ");
 
     resetProgressNX_();
-    setProgressNX_(0, "Khởi tạo...");
+    setProgressNX_(0, "Khoi tao...");
 
-    SpreadsheetApp.getActive().toast("Đang chạy...", "Cập nhật BQGQ", 3);
+    SpreadsheetApp.getActive().toast("Dang chay...", "Cap nhat BQGQ", 3);
     const t0 = Date.now();
 
     const ss = SpreadsheetApp.getActive();
     const sh = ss.getSheetByName(CONFIG.SHEET_INVOICE);
     const logSh = getOrCreateASheet_(CONFIG.SHEET_LOG);
 
-    const lastRow = sh.getLastRow();
-    if (lastRow < 2) return;
+    if (!sh) {
+      setProgressNX_(100, "FAILED: Thieu sheet Nhap-Xuat");
+      throw new Error("Thieu sheet Nhap-Xuat");
+    }
 
-    const lastCol = sh.getLastColumn() - 1; // bỏ cột N
-    const dataRange = sh.getRange(2, 2, lastRow - 1, lastCol - 1); // bỏ cột A
+    const lastRow = sh.getLastRow();
+    if (lastRow < 2) {
+      setProgressNX_(100, "COMPLETED: Khong co du lieu");
+      return;
+    }
+
+    const lastCol = sh.getLastColumn() - 1;
+    const dataRange = sh.getRange(2, 2, lastRow - 1, lastCol - 1);
     const data = dataRange.getValues();
 
-    // Clear log (giữ header)
     logSh.getRange(2, 1, logSh.getMaxRows(), 2).clearContent();
-    logSh.getRange("A1:B1").setValues([["Dòng", "Diễn giải"]]);
+    logSh.getRange("A1:B1").setValues([["Dong", "Dien giai"]]);
 
-    /* =============================
-     * 1️⃣ GROUP THEO MÃ HÀNG (E)
-     * ============================= */
-    setProgressNX_(8, "Chuẩn bị dữ liệu...");
-
-    setProgressNX_(12, "Đang nhóm theo mã hàng...");
+    setProgressNX_(8, "Chuan bi du lieu...");
+    setProgressNX_(12, "Dang nhom theo ma hang...");
     const groups = {};
     data.forEach((row, i) => {
-      const ma = String(row[3] || "").trim(); // E
+      const ma = String(row[3] || "").trim();
       if (!ma) return;
       groups[ma] = groups[ma] || [];
       groups[ma].push(i);
     });
 
-    /* =============================
-     * 2️⃣ XỬ LÝ BQGQ (CHUNK)
-     * ============================= */
-    setProgressNX_(25, "Đang tính toán BQGQ...");
+    setProgressNX_(25, "Dang tinh toan BQGQ...");
 
     const logs = [];
-
     const keys = Object.keys(groups);
     const TOTAL = keys.length;
     const BATCH = 20;
-    const TOTAL_BATCH = Math.ceil(TOTAL / BATCH);
+    const TOTAL_BATCH = Math.max(1, Math.ceil(TOTAL / BATCH));
 
     for (let i = 0; i < TOTAL; i += BATCH) {
       const slice = keys.slice(i, i + BATCH);
@@ -78,7 +86,7 @@ function capNhatNhapXuatBQGQ() {
             row[8] = gt;
           } else if (loai === "XUAT") {
             if (sl > slTon) {
-              logs.push([rowIdx + 2, "Xuất vượt tồn"]);
+              logs.push([rowIdx + 2, "Xuat vuot ton"]);
               sl = slTon;
             }
             row[7] = dgbq;
@@ -104,39 +112,35 @@ function capNhatNhapXuatBQGQ() {
 
       setProgressNX_(
         percent,
-        `Đang tính ${Math.min(i + slice.length, TOTAL)}/${TOTAL}`
+        `Dang tinh ${Math.min(i + slice.length, TOTAL)}/${TOTAL}`
       );
-
-      // // ⭐ sleep THÔNG MINH: không làm chậm tổng thời gian
-      // if (batchIndex % 2 === 0) {
-      //   Utilities.sleep(100);
-      // }
     }
 
-    /* =============================
-     * 3️⃣ GHI NGƯỢC & LOG
-     * ============================= */
-    setProgressNX_(70, "Chuẩn bị ghi dữ liệu...");
+    setProgressNX_(70, "Chuan bi ghi du lieu...");
     Utilities.sleep(50);
-    setProgressNX_(95, "Đang ghi dữ liệu...");
+    setProgressNX_(95, "Dang ghi du lieu...");
     dataRange.setValues(data);
 
     if (logs.length) {
       logSh.getRange(2, 1, logs.length, 2).setValues(logs);
     }
 
-    setProgressNX_(98, "Hoàn tất bước cuối...");
-
-    setProgressNX_(100, "Hoàn tất 🎉");
+    setProgressNX_(98, "Hoan tat buoc cuoi...");
+    setProgressNX_(100, "COMPLETED: Hoan tat");
     PropertiesService.getScriptProperties().deleteProperty("NEED_RECALC_NX");
     SpreadsheetApp.getActive().toast(
-      `✅ Đã xong (${((Date.now() - t0) / 1000).toFixed(2)}s)`,
-      "Cập nhật Nhập/Xuất",
+      `Da xong (${((Date.now() - t0) / 1000).toFixed(2)}s)`,
+      "Cap nhat Nhap/Xuat",
       3
     );
+  } catch (err) {
+    setProgressNX_(100, "FAILED: " + sanitizeLogValue_(err.message || err));
+    throw err;
   } finally {
-    // 🔐 đảm bảo mở khóa kể cả khi lỗi
     setNXRunning_(false);
+    if (lockAcquired) {
+      lock.releaseLock();
+    }
   }
 }
 
@@ -166,4 +170,3 @@ function setNXRunning_(flag) {
     cache.remove("NX_RUNNING");
   }
 }
-

@@ -11,10 +11,9 @@ function writeInvoicesToSheet_(rows) {
     .getSheetByName(CONFIG.SHEET_INVOICE);
   if (!sh) throw new Error("Không tìm thấy sheet ghi dữ liệu: " + CONFIG.SHEET_INVOICE);
 
-  // 🧹 XOÁ CÁC DÒNG CÓ CỘT N RỖNG TRƯỚC KHI GHI
-  const deleted = deleteEmptyRows_(sh);
-  if (deleted > 0) {
-    debugLog_(`🧹 Đã xóa ${deleted} dòng có cột N rỗng`);
+  const blankHashRows = reportBlankHashRows_(sh);
+  if (blankHashRows > 0) {
+    debugLog_(`Blank hash ledger rows detected; no automatic deletion: ${blankHashRows}`);
   }
 
   // 🧠 build map format (coi như danh sách mã hợp lệ)
@@ -93,82 +92,16 @@ function writeInvoicesToSheet_(rows) {
     .setFontSizes(itemFontSizes)
     .setFontWeights(itemFontWeights);
   return;
-
-  // 🎨 apply format (presentation layer)
-  rows.forEach((r, i) => {
-
-    // ---------- invoiceType → cột G ----------
-    const invoiceType = r[5];
-    if (invoiceType) {
-      const fmt = typeFormatMap[invoiceType];
-      if (fmt) {
-        sh.getRange(startRow + i, 7) // G
-          .setFontColor(fmt.fontColor)
-          .setFontFamily(fmt.fontFamily)
-          .setFontSize(fmt.fontSize)
-          .setFontWeight(fmt.fontWeight);
-      }
-    }
-
-    // ---------- itemCode → cột E ----------
-    const itemCode = r[3]; // luôn hợp lệ sau bước chuẩn hoá
-    const fmt = itemCodeFormatMap[itemCode];
-    if (fmt) {
-      sh.getRange(startRow + i, 5) // E
-        .setFontColor(fmt.fontColor)
-        .setFontFamily(fmt.fontFamily)
-        .setFontSize(fmt.fontSize)
-        .setFontWeight(fmt.fontWeight);
-    }
-
-  });
 }
 
-// function deleteEmptyRows_(sh) {
-//   const lastRow = sh.getLastRow();
-//   if (lastRow < 2) return 0; // có 1 dòng chứa tiêu đề
-
-//   // Lấy dữ liệu cột A → N (giữ nguyên để không đổi cấu trúc)
-//   const range = sh.getRange(2, 1, lastRow - 1, 14);
-//   const values = range.getValues();
-
-//   let deleted = 0;
-
-//   // duyệt NGƯỢC để tránh lệch dòng
-//   for (let i = values.length - 1; i >= 0; i--) {
-//     const colN = values[i][13]; // cột N
-
-//     // ✔ CHỈ kiểm tra cột N rỗng
-//     if (colN === "" || colN === null) {
-//       sh.deleteRow(i + 2); // +2 vì bắt đầu từ row 2
-//       deleted++;
-//     }
-//   }
-
-//   return deleted;
-// }
-
-function deleteEmptyRows_(sh) {
-
+function reportBlankHashRows_(sh) {
   const lastRow = sh.getLastRow();
   if (lastRow < 2) return 0;
 
-  const range = sh.getRange(2, 1, lastRow - 1, 14); // A → N
+  const range = sh.getRange(2, 1, lastRow - 1, 14);
   const values = range.getValues();
 
-  let deleted = 0;
-
-  for (let i = values.length - 1; i >= 0; i--) {
-
-    const hash = values[i][13]; // cột N
-
-    if (!hash) {
-      sh.deleteRow(i + 2);
-      deleted++;
-    }
-  }
-
-  return deleted;
+  return values.filter(row => !row[13]).length;
 }
 
 function buildInvoiceTypeFormatMap_() {

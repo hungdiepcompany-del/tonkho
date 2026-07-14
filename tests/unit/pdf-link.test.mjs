@@ -31,3 +31,21 @@ test('URL extraction deduplicates and filters homepage/invalid protocol', () => 
 test('HTML PDF link resolver supports relative paths', () => {
   assert.equal(gas.call('extractPdfLinkFromHtml_', '<a href="/files/invoice.pdf?x=1">PDF</a>', 'https://example.test/base/page'), 'https://example.test/files/invoice.pdf?x=1');
 });
+
+
+test('OCR cleanup trashes temporary document when document read throws', () => {
+  const calls = [];
+  const localGas = loadGasSource({
+    files: ['utils.js', 'pdfParser.js'],
+    exportNames: ['extractPdfText_'],
+    stubs: {
+      CONFIG: { DEBUG_LOG: true },
+      Drive: { Files: { insert: () => ({ id: 'temp-doc-1' }) } },
+      DocumentApp: { openById: () => ({ getBody: () => ({ getText: () => { throw new Error('read failed raw invoice body'); } }) }) },
+      DriveApp: { getFileById: (id) => ({ setTrashed: (flag) => calls.push([id, flag]) }) },
+      Logger: { log: () => {} },
+    },
+  });
+  assert.throws(() => localGas.call('extractPdfText_', { name: 'sample.pdf' }), /read failed/);
+  assert.deepEqual(calls, [['temp-doc-1', true]]);
+});

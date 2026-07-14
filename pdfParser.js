@@ -12,22 +12,40 @@ function isVatInvoicePDF_(text) {
 
 // Trích xuất text từ file pdf
 function extractPdfText_(pdfBlob) {
-  const docFile = Drive.Files.insert(
-    {
-      title: "TMP_PDF_PARSE", // tạo file tạm google doc
-      mimeType: MimeType.GOOGLE_DOCS
-    },
-    pdfBlob,
-    { convert: true }
-  );
+  let tempDocId = null;
+  let parseError = null;
 
-  const doc = DocumentApp.openById(docFile.id);
-  const text = doc.getBody().getText() || "";
+  try {
+    const docFile = Drive.Files.insert(
+      {
+        title: "TMP_PDF_PARSE",
+        mimeType: MimeType.GOOGLE_DOCS
+      },
+      pdfBlob,
+      { convert: true }
+    );
 
-  // Docs chỉ dùng để parse → xóa
-  DriveApp.getFileById(docFile.id).setTrashed(true);
-
-  return text;
+    tempDocId = docFile && docFile.id;
+    const doc = DocumentApp.openById(tempDocId);
+    return doc.getBody().getText() || "";
+  } catch (err) {
+    parseError = err;
+    throw err;
+  } finally {
+    if (tempDocId) {
+      try {
+        DriveApp.getFileById(tempDocId).setTrashed(true);
+      } catch (cleanupErr) {
+        debugLog_(
+          "OCR temp cleanup failed: " +
+          sanitizeLogValue_(cleanupErr.message || cleanupErr)
+        );
+        if (!parseError) {
+          // Cleanup failure must not hide a successful parse.
+        }
+      }
+    }
+  }
 }
 
 // Extract meta tối thiểu từ PDF text (để đặt tên file)

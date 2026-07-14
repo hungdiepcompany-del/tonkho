@@ -207,7 +207,7 @@ function scanInvoiceOutEmails_() {
     // ======================================================
     // GẮN NHÃN TRẠNG THÁI THREAD (SHEET + XML)
     if (sheetWritten) {
-      thread.addLabel(saveSheetLabel);
+      debugLog_("OUT XML rows prepared; saved-sheet label deferred until commit");
     }
 
     if (anyXmlSaved) {
@@ -218,14 +218,14 @@ function scanInvoiceOutEmails_() {
       thread.addLabel(savePdfLabel);
     }
 
-    if (!sheetWritten || !anyXmlSaved) {
+    if (!anyXmlSaved) {
       thread.addLabel(pendingLabel);
     } else {
       thread.removeLabel(pendingLabel);
     }
 
     debugLog_(
-      `OUT | sheet=${sheetWritten} | xml=${anyXmlSaved} | pending=${(!sheetWritten || !anyXmlSaved)}`
+      `OUT | rowsPrepared=${sheetWritten} | xml=${anyXmlSaved} | pending=${(!anyXmlSaved)}`
     );
     } catch (err) {
       debugLog_("Loi xu ly thread OUT: " + (err.stack || err));
@@ -482,7 +482,7 @@ function scanInvoiceInEmails_() {
             const text = extractPdfText_(pdfBlob);
             if (!isVatInvoicePDF_(text)) continue;
 
-            debugLog_("PDF HĐ GTGT phát hiện trong link: " + link);
+            debugLog_("PDF HĐ GTGT phát hiện trong link: " + sanitizeUrlForLog_(link));
 
             pdfSaved = true;
 
@@ -577,7 +577,7 @@ function scanInvoiceInEmails_() {
     // 🏷 GẮN NHÃN THEO TRẠNG THÁI THỰC TẾ
 
     if (sheetWritten) {
-      thread.addLabel(saveSheetLabel);
+      debugLog_("IN XML rows prepared; saved-sheet label deferred until commit");
     }
 
     if (anyXmlSaved) {
@@ -589,7 +589,7 @@ function scanInvoiceInEmails_() {
     }
 
     // ⏳ Pending nếu CHƯA ĐỦ sheet hoặc PDF hoặc XML
-    if (!sheetWritten || !pdfSaved || !anyXmlSaved) {
+    if (!pdfSaved || !anyXmlSaved) {
       thread.addLabel(pendingLabel);
     } else {
       thread.removeLabel(pendingLabel);
@@ -600,7 +600,7 @@ function scanInvoiceInEmails_() {
     }
 
     debugLog_(
-      `IN | sheet=${sheetWritten} | xml=${anyXmlSaved} | pdf=${pdfSaved} | link=${linkSaved} | source=${sourceUsed || "N/A"}`
+      `IN | rowsPrepared=${sheetWritten} | xml=${anyXmlSaved} | pdf=${pdfSaved} | link=${linkSaved} | source=${sourceUsed || "N/A"}`
     );
     } catch (err) {
       debugLog_("Loi xu ly thread IN: " + (err.stack || err));
@@ -614,4 +614,3 @@ function scanInvoiceInEmails_() {
 
   return results;
 }
-

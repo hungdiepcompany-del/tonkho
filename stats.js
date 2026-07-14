@@ -6,6 +6,8 @@ function createProcessStats_() {
     out: { scanned: 0, accepted: 0, duplicate: 0 },
     duplicateExisting: 0,
     duplicateBatch: 0,
-    accepted: 0
+    accepted: 0,
+    emptyHash: 0,
+    hashed: 0
   };
 }

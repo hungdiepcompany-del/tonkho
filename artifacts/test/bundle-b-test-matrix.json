@@ -1,14 +1,14 @@
 [
   {
     "testId": "SGDS-BUG-001",
-    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "class": "REGRESSION_INVARIANT",
     "sourceFiles": [],
     "fixtureFiles": [],
     "ownerPolicyRequired": false,
     "path": "tests/bugs/batch-state.test.mjs",
     "result": "PASS",
-    "meaning": "BUG_REPRODUCED",
-    "futureAction": "Bundle C after owner review"
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
   },
   {
     "testId": "SGDS-BUG-002",
@@ -34,25 +34,25 @@
   },
   {
     "testId": "SGDS-BUG-004",
-    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "class": "REGRESSION_INVARIANT",
     "sourceFiles": [],
     "fixtureFiles": [],
     "ownerPolicyRequired": false,
     "path": "tests/bugs/dead-code.test.mjs",
     "result": "PASS",
-    "meaning": "BUG_REPRODUCED",
-    "futureAction": "Bundle C after owner review"
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
   },
   {
     "testId": "SGDS-BUG-005",
-    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "class": "REGRESSION_INVARIANT",
     "sourceFiles": [],
     "fixtureFiles": [],
     "ownerPolicyRequired": false,
     "path": "tests/bugs/drive-dedup-bypass.test.mjs",
     "result": "PASS",
-    "meaning": "BUG_REPRODUCED",
-    "futureAction": "Bundle C after owner review"
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
   },
   {
     "testId": "SGDS-BUG-006",
@@ -78,14 +78,14 @@
   },
   {
     "testId": "SGDS-BUG-008",
-    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "class": "REGRESSION_INVARIANT",
     "sourceFiles": [],
     "fixtureFiles": [],
     "ownerPolicyRequired": false,
     "path": "tests/bugs/implicit-row-delete.test.mjs",
     "result": "PASS",
-    "meaning": "BUG_REPRODUCED",
-    "futureAction": "Bundle C after owner review"
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
   },
   {
     "testId": "SGDS-BUG-009",
@@ -100,36 +100,36 @@
   },
   {
     "testId": "SGDS-BUG-010",
-    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "class": "REGRESSION_INVARIANT",
     "sourceFiles": [],
     "fixtureFiles": [],
     "ownerPolicyRequired": false,
     "path": "tests/bugs/progress-state.test.mjs",
     "result": "PASS",
-    "meaning": "BUG_REPRODUCED",
-    "futureAction": "Bundle C after owner review"
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
   },
   {
     "testId": "SGDS-BUG-011",
-    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "class": "REGRESSION_INVARIANT",
     "sourceFiles": [],
     "fixtureFiles": [],
     "ownerPolicyRequired": false,
     "path": "tests/bugs/regex-escape.test.mjs",
     "result": "PASS",
-    "meaning": "BUG_REPRODUCED",
-    "futureAction": "Bundle C after owner review"
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
   },
   {
     "testId": "SGDS-BUG-012",
-    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "class": "REGRESSION_INVARIANT",
     "sourceFiles": [],
     "fixtureFiles": [],
     "ownerPolicyRequired": false,
     "path": "tests/bugs/vhd-config.test.mjs",
     "result": "PASS",
-    "meaning": "BUG_REPRODUCED",
-    "futureAction": "Bundle C after owner review"
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
   },
   {
     "testId": "SGDS-BUG-013",
@@ -165,5 +165,45 @@
     "result": "SKIP",
     "meaning": "SKIPPED_RUNTIME_NOT_FIXED",
     "futureAction": "Owner review before Bundle C"
+  },
+  {
+    "testId": "SGDS-BUG-014",
+    "class": "REGRESSION_INVARIANT",
+    "sourceFiles": [
+      "config.js",
+      "stats.js"
+    ],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/config-stats.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
+  },
+  {
+    "testId": "SGDS-BUG-015",
+    "class": "REGRESSION_INVARIANT",
+    "sourceFiles": [
+      "utils.js"
+    ],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/log-sanitization.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
+  },
+  {
+    "testId": "SGDS-UNIT-002",
+    "class": "REGRESSION_INVARIANT",
+    "sourceFiles": [
+      "pdfParser.js"
+    ],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/unit/pdf-link.test.mjs",
+    "result": "PASS",
+    "meaning": "OCR_CLEANUP_BLOCKED_LOCAL_NOT_DEPLOYED",
+    "futureAction": "Owner review Bundle C diff before deploy"
   }
 ]

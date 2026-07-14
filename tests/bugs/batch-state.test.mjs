@@ -1,16 +1,22 @@
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
-const TEST_METADATA = defineTestMetadata({ testClass: 'CONFIRMED_BUG_REPRODUCTION', sourceFiles: ['main.js', 'gmailScanner.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
-test('BUG-BATCH-STATE: main uses one writeOk for all thread labels', () => {
-  const src = fs.readFileSync('main.js', 'utf8');
-  assert.match(src, /let writeOk = false/);
-  assert.match(src, /writeOk = true/);
-  assert.match(src, /const targetLabel = writeOk \? "SAVED_SHEET" : "PENDING"/);
-  assert.match(src, /threadSet\.forEach\(thread => \{\s*setExclusiveLabel_\(thread, targetLabel\)/s);
+const TEST_METADATA = defineTestMetadata({ testClass: 'REGRESSION_INVARIANT', sourceFiles: ['main.js', 'gmailScanner.js', 'hashUtils.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
+test('C01: main uses per-source commit results instead of one writeOk for all threads', () => {
+  const main = fs.readFileSync('main.js', 'utf8');
+  const hash = fs.readFileSync('hashUtils.js', 'utf8');
+  assert.doesNotMatch(main, /let writeOk = false/);
+  assert.doesNotMatch(main, /const targetLabel = writeOk/);
+  assert.match(main, /prepareInvoiceRowsForCommit_/);
+  assert.match(main, /commitPreparedInvoiceRows_/);
+  assert.match(main, /projectCommitLabelsByThread_/);
+  assert.match(hash, /writeStatus:\s*"COMMITTED"/);
+  assert.match(hash, /writeStatus:\s*"ALREADY_COMMITTED"/);
 });
-test('BUG-BATCH-STATE: scanner can add saved sheet label before main writer commit', () => {
+test('C01: scanner no longer projects saved-sheet label before commit', () => {
   const src = fs.readFileSync('gmailScanner.js', 'utf8');
-  assert.match(src, /if \(sheetWritten\) \{\s*thread\.addLabel\(saveSheetLabel\)/s);
+  assert.doesNotMatch(src, /thread\.addLabel\(saveSheetLabel\)/);
+  assert.match(src, /saved-sheet label deferred until commit/);
 });

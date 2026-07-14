@@ -95,3 +95,19 @@ REASON=Owner approved the recommended inventory policy and removed the policy bl
 
 DECISION=Correct Bundle B coverage mapping by keeping `SGDS-HIGH-005` as item-code substring mapping and adding `SGDS-HIGH-011` for BQGQ row-order sensitivity.
 REASON=The owner approval prompt explicitly identified the previous coverage row as a bad link.
+
+
+## BUNDLE-C-DEC-001
+
+DECISION=Keep Hash V1 and persisted invoiceKey format unchanged while adding shared local commit preparation.
+REASON=Current production data already stores HashIndex and invoiceKey in the existing format; identity migration requires a separate reconciliation phase.
+
+## BUNDLE-C-DEC-002
+
+DECISION=Treat Gmail labels as projections after per-source commit results.
+REASON=The owner-approved invariant says saved-sheet labels must only follow verified row commit or idempotent already-committed status.
+
+## BUNDLE-C-DEC-003
+
+DECISION=Remove Bundle B runtime-immutability checks from the aggregate local check and replace them with the Bundle C runtime-fix checker.
+REASON=Bundle C explicitly permits local runtime edits while still requiring no production mutation, no workbook mutation, and compatibility with existing identity formats.

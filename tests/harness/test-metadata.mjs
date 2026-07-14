@@ -5,6 +5,7 @@ export const TEST_CLASSES = new Set([
   'POLICY_PENDING',
   'STATIC_SOURCE_SAFETY',
   'SCHEMA_CONTRACT',
+  'REGRESSION_INVARIANT',
 ]);
 
 export function defineTestMetadata(meta) {

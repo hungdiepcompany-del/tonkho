@@ -99,6 +99,10 @@ function getInvoiceYearFromDate_(value) {
 // Chuẩn hóa Tên khách hàng
 const WORD_REGEX = /\S+/g;
 
+function escapeRegExp_(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function normalizeCustomerName_(txt, dic, dicVietTat) {
   if (typeof txt !== 'string' || !txt.trim()) return txt;
 
@@ -106,7 +110,7 @@ function normalizeCustomerName_(txt, dic, dicVietTat) {
 
   // B1: thay cụm từ
   for (const [k, v] of dic.entries()) {
-    const re = new RegExp(k, 'gi');
+    const re = new RegExp(escapeRegExp_(k), 'gi');
     out = out.replace(re, v);
   }
 

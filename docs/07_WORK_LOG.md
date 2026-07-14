@@ -171,3 +171,15 @@ COMMANDS_RUN=git preflight; docs marker scan; npm.cmd test; npm.cmd run check; d
 RESULT=PASS_OWNER_APPROVAL_DOC_UPDATE
 RISKS=Runtime fixes are not started; bug reproduction PASS still means current bugs exist until Bundle C changes runtime.
 NEXT_SUBPHASE_ALLOWED=BUNDLE_C_CRITICAL_RUNTIME_FIXES_LOCAL_ONLY
+
+
+DATE=2026-07-14
+BUNDLE=BUNDLE_C
+SUBPHASE=C01-C07
+START_STATE=WORKTREE_CLEAN; BRANCH=main; START_COMMIT=22f952ca9cc115740437963357db2ca5c79f33a6
+FILES_ALLOWED=runtime allowlist;package.json;tests/**;scripts/test/**;scripts/checkers/**;artifacts/test/**;docs/**
+FILES_CHANGED=runtime allowlist;package.json;tests/**;scripts/test/**;scripts/checkers/**;artifacts/test/**;docs/**
+COMMANDS_RUN=git/node/npm preflight; npm.cmd test; npm.cmd run check; focused unit/bug/check:bundle-c; docs/checkers; git diff --check
+RESULT=PASS_CRITICAL_RUNTIME_FIXES_LOCAL
+RISKS=SGDS-CRIT-003 durable job-state remains; production not deployed; GAS push not run.
+NEXT_SUBPHASE_ALLOWED=OWNER_REVIEW_BUNDLE_C_DIFF

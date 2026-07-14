@@ -94,7 +94,20 @@ function parseInvoiceXMLFile_(file, invoiceType) {
     const rows = buildInvoiceRowsFromParsed_(parsed, invoiceType);
 
     if (rows.length) {
-      writeInvoicesToSheet_(rows);
+      const prepared = prepareInvoiceRowsForCommit_(
+        rows.map((row, index) => ({
+          type: invoiceType === "IN" ? "IN" : "OUT",
+          row,
+          sourceKey: "DRIVE:" + file.getId() + ":" + index
+        })),
+        null,
+        { debugPrefix: "DRIVE" }
+      );
+      const committed = commitPreparedInvoiceRows_(prepared);
+      const failed = committed.filter(x => x.writeStatus === "FAILED");
+      if (failed.length) {
+        debugLog_("Drive XML commit failed: " + file.getName());
+      }
     }
 
     debugLog_("XML parsed -> " + file.getName());

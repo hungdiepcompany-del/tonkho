@@ -28,8 +28,9 @@ test('invoice number normalization converts numeric strings to number', () => {
   assert.equal(gas.call('normalizeInvoiceNo_', 'AB-000123'), 'AB-000123');
 });
 
-test('current customer abbreviation replacement treats dictionary key as regex', () => {
+test('customer abbreviation replacement escapes regex characters', () => {
   const dic = new Map([['A+B', 'ABBR']]);
   const dicVietTat = new Set(['ABBR']);
-  assert.equal(gas.call('normalizeCustomerName_', 'AAAB sample', dic, dicVietTat), 'ABBR Sample');
+  assert.equal(gas.call('normalizeCustomerName_', 'AAAB sample', dic, dicVietTat), 'Aaab Sample');
+  assert.equal(gas.call('normalizeCustomerName_', 'A+B sample', dic, dicVietTat), 'ABBR Sample');
 });

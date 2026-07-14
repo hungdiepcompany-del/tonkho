@@ -8,14 +8,13 @@ const commands = [
   ['node', ['scripts/checkers/check-test-metadata.mjs']],
   ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-doc-foundation.ps1']],
   ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-no-secret.ps1']],
-  ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-runtime-unchanged.ps1']],
   ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-workbook-unchanged.ps1']],
   ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-internal-doc-links.ps1']],
-  ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-no-runtime-modification.ps1']],
+  ['node', ['scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs']],
 ];
 
 for (const [cmd, args] of commands) {
   const res = spawnSync(cmd, args, { stdio: 'inherit', shell: false });
   if (res.status !== 0) process.exit(res.status ?? 1);
 }
-console.log('BUNDLE_B_CHECK=PASS');
+console.log('BUNDLE_C_AGGREGATE_CHECK=PASS');

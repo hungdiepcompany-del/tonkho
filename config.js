@@ -80,6 +80,7 @@ const CONFIG = {
   MAX_THREADS: 30,
   // GIỚI HẠN SỐ EMAIL MỖI LẦN QUÉT
   MAX_EMAIL_SCAN: 50,
+  MAX_DRIVE_SCAN_FILES: 100,
 
   /*
    * TỪ KHÓA NHẬN DIỆN EMAIL HÓA ĐƠN

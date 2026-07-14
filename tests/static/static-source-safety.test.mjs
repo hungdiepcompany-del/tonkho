@@ -1,3 +1,4 @@
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,7 +17,7 @@ test('production entrypoints are not invoked by tests', () => {
   }
 });
 
-test('source still contains Bundle B target bugs for reproduction suites', () => {
-  assert.match(read('main.js'), /let writeOk = false[\s\S]*const targetLabel = writeOk/);
-  assert.match(read('sheetWriter.js'), /deleteEmptyRows_\(sh\)[\s\S]*sh\.deleteRow/);
+test('Bundle C fixed critical safety patterns remain blocked', () => {
+  assert.doesNotMatch(read('main.js'), /let writeOk = false[\s\S]*const targetLabel = writeOk/);
+  assert.doesNotMatch(read('sheetWriter.js'), /deleteEmptyRows_\(sh\)[\s\S]*sh\.deleteRow/);
 });
