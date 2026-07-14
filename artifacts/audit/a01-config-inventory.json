@@ -1,0 +1,117 @@
+﻿{
+    "generated_at":  "2026-07-14T12:24:31",
+    "config_keys_declared":  [
+                                 "DEBUG_HASH",
+                                 "DEBUG_LOG",
+                                 "DELETE_LABELS_ON_RUN",
+                                 "DOMAINS",
+                                 "EMAILS",
+                                 "EXCLUDED_KEYWORDS",
+                                 "EXCLUDED_SENDERS",
+                                 "HASH_COLUME",
+                                 "HASH_COLUME_BEGIN",
+                                 "HASH_COLUME_END",
+                                 "INVOICE_FROMDATE",
+                                 "INVOICE_IN_FOLDER_ID",
+                                 "INVOICE_IN_LABEL",
+                                 "INVOICE_KEYWORDS",
+                                 "INVOICE_OUT_FOLDER_ID",
+                                 "INVOICE_OUT_LABEL",
+                                 "LOCK_WAIT",
+                                 "MAX_EMAIL_SCAN",
+                                 "MAX_THREADS",
+                                 "MY_COMPANY",
+                                 "MY_EMAIL",
+                                 "MY_TAXCODE",
+                                 "NHAPXUAT_INDEX",
+                                 "OCR_SLEEP1",
+                                 "OCR_SLEEP2",
+                                 "PARENT_FOLDER_ID",
+                                 "PENDING_LABEL",
+                                 "RESET_PROPERTIES_ON_RUN",
+                                 "SAVE_LINK_LABEL",
+                                 "SAVE_PDF_LABEL",
+                                 "SAVE_SHEET_LABEL",
+                                 "SAVE_XML_LABEL",
+                                 "SHEET_ABBREVIATIONS",
+                                 "SHEET_FILES",
+                                 "SHEET_INVOICE",
+                                 "SHEET_ITEMCODE",
+                                 "SHEET_ITEMTYPE",
+                                 "SHEET_LOG",
+                                 "SHEET_TONKHO",
+                                 "SLIDE_TEMPLATE_ID"
+                             ],
+    "script_property_keys_seen_in_source":  [
+                                                "AUTHORIZED_TRIGGER_AT",
+                                                "DEBUG_RUNNING",
+                                                "LAST_TRIGGER_MINUTE",
+                                                "LAST_TRIGGER_RUN",
+                                                "NEED_RECALC_NX",
+                                                "SCRIPT_OWNER_EMAIL",
+                                                "TRIGGER_SECRET"
+                                            ],
+    "sheet_names_declared_or_referenced":  [
+                                               "FileLog",
+                                               "Hoa-Don",
+                                               "MaHangHoa",
+                                               "Nhap-Xuat",
+                                               "PhanLoai",
+                                               "TonKho",
+                                               "VietHoaDon",
+                                               "VietTat"
+                                           ],
+    "gmail_label_config_keys":  [
+                                    "INVOICE_IN_LABEL",
+                                    "INVOICE_OUT_LABEL",
+                                    "SAVE_SHEET_LABEL",
+                                    "PENDING_LABEL",
+                                    "SAVE_PDF_LABEL",
+                                    "SAVE_XML_LABEL",
+                                    "SAVE_LINK_LABEL"
+                                ],
+    "drive_resource_identifier_keys":  [
+                                           "PARENT_FOLDER_ID",
+                                           "INVOICE_IN_FOLDER_ID",
+                                           "INVOICE_OUT_FOLDER_ID",
+                                           "SLIDE_TEMPLATE_ID"
+                                       ],
+    "cache_keys_seen":  [
+                            "NX_RUNNING",
+                            "TK_RUNNING",
+                            "ProgressService:NX",
+                            "ProgressService:TK"
+                        ],
+    "trigger_handlers_seen":  [
+                                  "doGet",
+                                  "main",
+                                  "mainRun",
+                                  "onEdit",
+                                  "showSidebar",
+                                  "showStatus",
+                                  "showVietHoaDonSidebar",
+                                  "triggerMarkAllInvoiceEmails",
+                                  "triggerScanInvoiceDriveFolder"
+                              ],
+    "oauth_scopes":  [
+                         "https://mail.google.com/",
+                         "https://www.googleapis.com/auth/drive",
+                         "https://www.googleapis.com/auth/documents",
+                         "https://www.googleapis.com/auth/presentations",
+                         "https://www.googleapis.com/auth/script.container.ui",
+                         "https://www.googleapis.com/auth/script.external_request",
+                         "https://www.googleapis.com/auth/script.scriptapp",
+                         "https://www.googleapis.com/auth/spreadsheets",
+                         "https://www.googleapis.com/auth/userinfo.email"
+                     ],
+    "advanced_services":  [
+                              "Gmail:gmail:v1",
+                              "Drive:drive:v2",
+                              "Slides:slides:v1",
+                              "Sheets:sheets:v4"
+                          ],
+    "webapp":  {
+                   "executeAs":  "USER_DEPLOYING",
+                   "access":  "MYSELF"
+               }
+}

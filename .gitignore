@@ -1,0 +1,8 @@
+﻿.clasprc.json
+node_modules/
+_backup_before_pull/
+_clasp_config_backup/
+*.tmp
+*.temp
+*.log
+!PULL_GAS_CODE.log

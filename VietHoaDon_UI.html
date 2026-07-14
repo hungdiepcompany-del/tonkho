@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <style>
+    :root{
+      --bg:#f3f6fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#dbe4f0;--line2:#edf2f7;
+      --blue:#2563eb;--blue2:#1d4ed8;--blue-soft:#eff6ff;--red:#dc2626;--green:#047857;--green-soft:#e9fdf4;
+      --shadow:0 10px 26px rgba(15,23,42,.08);--r:14px;
+      --item1:#c9f4ff;--item1b:#defbff;--item2:#ffdfb8;--item2b:#fff0c7;--item3:#c8f6d5;--item3b:#ddf8b8;
+      --item4:#ddd6fe;--item4b:#f0d8ff;--item5:#c7d2fe;--item5b:#e2e8f0;
+      --center:#ffffff;--center2:#f8fbff;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;width:100%;height:100%;font-family:Tahoma,Arial,sans-serif;color:var(--text);
+      background:linear-gradient(180deg,#f8fbff 0%,var(--bg) 100%);font-size:13px;overflow:hidden;
+    }
+    .app{width:100vw;height:100vh;padding:10px;display:grid;grid-template-rows:auto 1fr;gap:8px;overflow:hidden}
+    .hero{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;
+      border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.94);
+      box-shadow:0 4px 14px rgba(15,23,42,.05);min-height:64px;
+    }
+    .eyebrow{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border-radius:999px;background:var(--blue-soft);color:var(--blue);font-size:11px;font-weight:700;margin-bottom:4px}
+    .app-icon{
+      width:30px;height:30px;border-radius:10px;
+      display:inline-flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,#e0f2fe,#bfdbfe);
+      box-shadow:0 5px 12px rgba(37,99,235,.16);
+      font-size:20px;
+      margin-right:8px;vertical-align:middle;
+    }
+    .brand-row{display:flex;align-items:center;gap:0}
+    .dot{
+      width:8px;height:8px;border-radius:99px;background:#ef4444;
+      box-shadow:0 0 0 rgba(239,68,68,.8);
+      animation:pulseRed 1s infinite;
+    }
+    @keyframes pulseRed{
+      0%{transform:scale(1);box-shadow:0 0 0 0 rgba(239,68,68,.75)}
+      70%{transform:scale(1.2);box-shadow:0 0 0 8px rgba(239,68,68,0)}
+      100%{transform:scale(1);box-shadow:0 0 0 0 rgba(239,68,68,0)}
+    }
+    h1{font-size:19px;line-height:1.2;margin:0;font-weight:800}
+    .sub{margin:4px 0 0;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hero-stat{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:250px}
+    .mini{background:#fff;border:1px solid var(--line2);border-radius:13px;padding:8px 11px}
+    .mini span{display:block;color:var(--muted);font-size:11px}.mini b{display:block;font-size:14px;margin-top:2px}
+
+    .layout{
+      display:grid;grid-template-columns:minmax(390px,33vw) minmax(220px,260px) 1fr;gap:8px;
+      min-height:0;overflow:hidden;align-items:stretch;
+    }
+    .panel,.results,.metric,.status,.control-panel{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--r)}
+    .panel{min-height:0;display:grid;grid-template-rows:auto auto 1fr;overflow:hidden}
+    .panel-head,.result-head,.control-head{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;
+      border-bottom:1px solid var(--line);font-weight:800;font-size:13px;
+    }
+    .head-sub{color:var(--muted);font-size:11px;font-weight:400}
+    .form-tools{padding:8px 10px;border-bottom:1px solid var(--line);background:#fbfdff}
+    .add-btn{
+      width:100%;height:34px;border:1px dashed #60a5fa;background:#eff6ff;color:#1d4ed8;
+      border-radius:11px;font-weight:800;cursor:pointer;font-family:Tahoma,Arial,sans-serif;
+    }
+    .form-body{padding:8px 10px;overflow:auto;min-height:0}
+    .item-card{
+      padding:10px;border:1px solid rgba(2,132,199,.18);border-radius:13px;margin-bottom:8px;
+      background:linear-gradient(180deg,var(--item1) 0%,var(--item1b) 100%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.75);
+    }
+    .item-card.tone-2{background:linear-gradient(180deg,var(--item2) 0%,var(--item2b) 100%);border-color:#fed7aa}
+    .item-card.tone-3{background:linear-gradient(180deg,var(--item3) 0%,var(--item3b) 100%);border-color:#bbf7d0}
+    .item-card.tone-4{background:linear-gradient(180deg,var(--item4) 0%,var(--item4b) 100%);border-color:#ddd6fe}
+    .item-card.tone-5{background:linear-gradient(180deg,var(--item5) 0%,var(--item5b) 100%);border-color:#c7d2fe}
+    .item-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+    .item-title{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px}
+    .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:8px;background:rgba(255,255,255,.7);color:#0369a1;font-size:12px;font-weight:800;flex:0 0 auto}
+    .remove-item{
+      width:auto;height:26px;border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:8px;
+      padding:0 8px;font-size:11px;font-weight:800;cursor:pointer;font-family:Tahoma,Arial,sans-serif;
+    }
+
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:7px}
+    .grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid.two{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0}
+    label{display:block;color:var(--muted);font-size:11px;margin:0 0 3px;font-weight:700}
+    .target-label{font-size:12px;color:#0f172a;font-weight:900}
+    input,select{
+      width:100%;height:32px;border:1px solid #c5d6e2;border-radius:9px;padding:5px 8px;
+      font-family:Tahoma,Arial,sans-serif;font-size:12px;background:#fff;outline:none;color:var(--text);
+    }
+    #giaTriMucTieu{font-weight:900;color:#0369a1;background:#f0f9ff;border-color:#7dd3fc}
+    input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    input[readonly]{background:#f8fafc;color:#475569}
+    .control-panel{min-height:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;background:linear-gradient(180deg,var(--center) 0%,var(--center2) 100%)}
+    .control-body{padding:10px;overflow:auto;min-height:0}
+    .control-section{padding:10px;border:1px solid var(--line2);border-radius:13px;background:#fff;margin-bottom:10px}
+    .section-title{font-weight:900;font-size:13px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+    .speed-tip{
+      margin-top:10px;
+      padding:9px 10px;
+      border-radius:12px;
+      border:1px solid #bfdbfe;
+      background:#eff6ff;
+      color:#1e3a8a;
+      font-size:11px;
+      line-height:1.45;
+    }
+    .speed-tip b{font-size:12px}
+    .speed-tip ul{margin:6px 0 0 16px;padding:0}
+    .speed-tip li{margin:2px 0}
+    .warn-inline{
+      display:none;
+      margin-top:8px;
+      padding:8px 9px;
+      border-radius:10px;
+      border:1px solid #fed7aa;
+      background:#fff7ed;
+      color:#9a3412;
+      font-size:11px;
+      line-height:1.4;
+    }
+    .warn-inline.show{display:block}
+    .choice-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .check-card{display:flex;align-items:center;justify-content:space-between;gap:7px;border:1px solid #c5d6e2;border-radius:11px;padding:8px;background:rgba(255,255,255,.85);min-height:48px}
+    .check-card b{font-size:12px}.check-card span{display:block;color:var(--muted);font-size:10px;margin-top:1px}
+    .check-card input{width:17px;height:17px;padding:0;accent-color:var(--blue);flex:0 0 auto}
+    .check-card.compact{min-height:40px;padding:7px 8px}.check-card.compact b{font-size:12px}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+    button.action{
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:16px;
+      width:100%;
+      height:52px;
+      padding:5px 6px;
+      font-family:Tahoma,Arial,sans-serif;
+      font-weight:900;
+      font-size:12px;
+      line-height:1.15;
+      cursor:pointer;
+      white-space:normal;
+      text-align:center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:.15s ease;
+      box-shadow:0 5px 12px rgba(15,23,42,.14);
+    }
+    button.action:hover{transform:translateY(-1px);box-shadow:0 8px 16px rgba(15,23,42,.18)}
+    button.action:active{transform:translateY(0);box-shadow:0 3px 8px rgba(15,23,42,.12)}
+    .primary{background:linear-gradient(180deg,#3b82f6,#1d4ed8);color:#fff}
+    .primary:hover{background:linear-gradient(180deg,#2563eb,#1e40af)}
+    .secondary{background:linear-gradient(180deg,#e0f2fe,#bae6fd);color:#075985}
+    .secondary.loaded{background:linear-gradient(180deg,#dcfce7,#bbf7d0);color:var(--green);border:1px solid #86efac}
+    .danger{background:linear-gradient(180deg,#fee2e2,#fecaca);color:#991b1b}
+    .ghost{background:linear-gradient(180deg,#ffffff,#f1f5f9);border:1px solid #cbd5e1;color:#334155}
+    button:disabled{opacity:.7;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+    .right{display:grid;grid-template-rows:auto auto 1fr;gap:8px;min-height:0;overflow:hidden}
+    .status{display:none;padding:8px 10px;line-height:1.35;font-size:13px}
+    .status.show{display:block}.status.ok{border-color:#bbf7d0;background:#f0fdf4;color:#166534}.status.err{border-color:#fecaca;background:#fef2f2;color:#991b1b}.status.work{border-color:#bfdbfe;background:#eff6ff;color:#1e40af}
+    .spin{display:inline-block;width:13px;height:13px;margin-right:7px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite;vertical-align:-2px}@keyframes spin{to{transform:rotate(360deg)}}
+    .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;min-height:64px}
+    .metric{padding:9px 11px}.metric span{display:block;color:var(--muted);font-size:11px;font-weight:700}.metric strong{display:block;font-size:18px;margin-top:3px}
+    .results{min-height:0;overflow:hidden;display:grid;grid-template-rows:auto 1fr}
+    .table-wrap{min-height:0;overflow:auto;border-radius:0 0 var(--r) var(--r)}
+    table{width:100%;border-collapse:collapse;background:#fff}
+    th{position:sticky;top:0;background:#f8fafc;z-index:1;color:#475569;font-size:12px;text-align:right;border-bottom:1px solid var(--line);padding:8px}
+    td{border-bottom:1px solid #eef2f7;padding:7px 8px;text-align:right;font-size:12px;white-space:nowrap}
+    th:first-child,td:first-child{text-align:center}
+    tbody tr:nth-child(odd){background:#ffffff} tbody tr:nth-child(even){background:#f7fbff}
+    tbody tr{cursor:pointer} tbody tr:hover{background:#ecfeff}
+    tbody tr.selected{background:#dbeafe!important;outline:2px solid #60a5fa;outline-offset:-2px}
+    .money.ok{color:#000;font-weight:800}.money.bad{color:var(--red);font-weight:800}.diff{color:#475569}.empty{padding:32px 20px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media(max-height:760px){
+      .hero{min-height:56px;padding:7px 12px}h1{font-size:17px}.sub{display:none}
+      .app{padding:7px;gap:6px}.layout{gap:6px}
+      .panel-head,.result-head,.control-head{padding:7px 9px}.form-tools{padding:6px 8px}.form-body,.control-body{padding:6px 8px}
+      .item-card,.control-section{padding:8px;margin-bottom:6px}input,select{height:29px;font-size:12px}.grid{gap:6px;margin-top:6px}
+      .metrics{min-height:56px}.metric{padding:7px 9px}.metric strong{font-size:16px}button.action{height:46px}
+    }
+    @media(max-width:1060px){
+      html,body{overflow:auto;height:auto}.app{height:auto;min-height:100vh;overflow:visible;padding:8px}
+      .hero-stat{display:none}.layout{grid-template-columns:1fr;overflow:visible}.panel,.right,.control-panel{overflow:visible}.form-body,.control-body{overflow:visible;max-height:none}
+      .actions{grid-template-columns:repeat(4,1fr);gap:8px}button.action{height:46px}.results{height:52vh;min-height:380px}
+      .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.choice-row{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:repeat(2,1fr)}.sub{white-space:normal}
+    }
+    @media(max-width:560px){
+      h1{font-size:17px}.grid,.grid.three{grid-template-columns:1fr 1fr}.actions{grid-template-columns:repeat(2,1fr)}
+      .results{height:52vh;min-height:340px}.metric strong{font-size:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="hero">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> VIẾT HÓA ĐƠN</div>
+        <div class="brand-row"><span class="app-icon">🧾</span><h1>Tính khớp tiền trước / sau thuế</h1></div>
+        <p class="sub">Số thập phân được tự giới hạn theo số mặt hàng để tránh chạy quá lâu.</p>
+      </div>
+      <div class="hero-stat">
+        <div class="mini"><span>Phát triển bởi:</span><b>hungdiepcompany</b></div>
+        <div class="mini"><span>Giới hạn dòng</span><b>100</b></div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="panel">
+        <div class="panel-head"><span>📦 Nhập mặt hàng</span><span class="head-sub" id="itemCountText">1 mặt hàng</span></div>
+        <div class="form-tools"><button class="add-btn" onclick="addItemForm()">➕ Thêm mặt hàng</button></div>
+        <div class="form-body"><div id="itemsWrap"></div></div>
+      </div>
+
+      <div class="control-panel">
+        <div class="control-head"><span>⚙️ Điều khiển</span><span class="head-sub"></span></div>
+        <div class="control-body">
+          <div class="control-section">
+            <div class="section-title"><span class="num">🎯</span>Mục tiêu & nghiệm</div>
+            <div class="grid three">
+              <div style="grid-column:1/-1">
+                <label class="target-label">Giá trị mục tiêu</label>
+                <input class="fmt-input" id="giaTriMucTieu" type="text" data-decimals="0" data-clear-zero="1" inputmode="decimal">
+                <div class="head-sub" style="margin-top:4px"></div>
+              </div>
+              <div><label>Sai số ±</label><input class="fmt-input" id="saiSoChoPhep" type="text" data-decimals="0" value="50" inputmode="decimal"></div>
+              <div><label>Số thập phân</label><input class="plain-number" id="soThapPhan" type="number" min="0" max="3" step="1" value="2" onchange="onDecimalsChanged()" oninput="onDecimalsChanged()"></div>
+              <div><label>Bước SL</label><input class="fmt-input step-input" id="buocSL" type="text" data-step-field="1" value="0,01" inputmode="decimal" onchange="normalizeStepInput('buocSL')" onblur="normalizeStepInput('buocSL')"></div>
+              <div><label>Bước ĐG</label><input class="fmt-input step-input" id="buocDG" type="text" data-step-field="1" value="0,01" inputmode="decimal" onchange="normalizeStepInput('buocDG')" onblur="normalizeStepInput('buocDG')"></div>
+              <div><label>Dòng hiển thị</label><input class="fmt-input" id="maxRows" type="text" data-decimals="0" value="100" inputmode="numeric"></div>
+              <div><label>Lô/lần</label><input class="fmt-input" id="batchSize" type="text" data-decimals="0" value="30.000" inputmode="numeric"></div>
+            </div>
+
+            <div class="speed-tip">
+              <b>Gợi ý khi tính nhiều mặt hàng</b>
+              <ul>
+                <li>Giữ <b>Dòng = 50</b> để trả kết quả nhanh.</li>
+                <li>Nếu chạy lâu hơn <b>20 giây</b>, tăng <b>Bước SL / ĐG</b> lên 0,1.</li>
+                <li>Nếu chạy hơn <b>1 phút</b>, tăng <b>Bước SL / ĐG</b> lên 1.</li>
+                <li>1 mặt hàng: Số thập phân tối đa = <b>3</b>.</li>
+                <li>2 mặt hàng: Số thập phân tối đa = <b>2</b>.</li>
+                <li>3 mặt hàng: Số thập phân tối đa = <b>1</b>.</li>
+                <li>Nhiều hơn 3 mặt hàng: Số thập phân = <b>0</b>.</li>
+              </ul>
+              <div id="speedWarn" class="warn-inline"></div>
+            </div>
+          </div>
+
+          <div class="control-section">
+            <div class="section-title"><span class="num">✅</span>Tùy chọn</div>
+            <div class="choice-row">
+              <label class="check-card compact"><div><b>Trước thuế</b></div><input id="optTruocThue" name="taxMode" type="checkbox" onchange="taxOnly(this)"></label>
+              <label class="check-card compact"><div><b>Sau thuế</b></div><input id="optSauThue" name="taxMode" type="checkbox" checked onchange="taxOnly(this)"></label>
+              <label class="check-card compact"><div><b>Ưu tiên SL</b></div><input id="uuTienSL" name="priorityMode" type="checkbox" onchange="priorityOnly(this)"></label>
+              <label class="check-card compact"><div><b>Ưu tiên ĐG</b></div><input id="uuTienDG" name="priorityMode" type="checkbox" onchange="priorityOnly(this)"></label>
+            </div>
+
+            <div class="actions">
+              <button class="action secondary" id="loadBtn" onclick="loadFromSheet()">📥<br>Dữ liệu</button>
+              <button class="action ghost" id="resetBtn" onclick="resetForm()">🧹<br>Xóa</button>
+              <button class="action primary" id="runBtn" onclick="startCalc()">⚡<br>Tính</button>
+              <button class="action danger" id="stopBtn" onclick="stopCalc()" disabled>⛔<br>Dừng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div id="status" class="status"></div>
+        <div class="metrics">
+          <div class="metric"><span>KẾT QUẢ</span><strong id="mCount">0</strong></div>
+          <div class="metric"><span>THỜI GIAN</span><strong id="mTime">0s</strong></div>
+          <div class="metric"><span>ĐÃ QUÉT</span><strong id="mLoop">0</strong></div>
+          <div class="metric"><span>TỐC ĐỘ</span><strong id="mSpeed">0/s</strong></div>
+        </div>
+
+        <div class="results">
+          <div class="result-head"><span>📋 Kết quả</span><span id="resultNote" class="head-sub">Chưa có dữ liệu</span></div>
+          <div class="table-wrap">
+            <table id="resultTable">
+              <thead id="resultHead"></thead>
+              <tbody id="resultBody"><tr><td><div class="empty">Bấm “Lấy dữ liệu”, chọn vật tư rồi bấm “Tính”.</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let tonKhoItems = [];
+  let job = null;
+  let itemSeq = 0;
+  let itemIds = [];
+
+  document.addEventListener('DOMContentLoaded', function(){
+    addItemForm();
+    bindFormatInputs(document);
+    bindSelectAllInputs(document);
+    onDecimalsChanged(true);
+    setLoadedState(false);
+    renderEmptyResult();
+    updateSpeedWarning();
+    loadFromSheet();
+  });
+
+  function parseVN(value){
+    if(value === null || value === undefined) return 0;
+    let s = String(value).trim().replace(/\s/g,'');
+    if(!s) return 0;
+
+    // Chuẩn nhập liệu: ô nhập chỉ dùng dấu phẩy làm dấu thập phân.
+    // Nếu người dùng gõ dấu chấm, xử lý như dấu phẩy khi cần, còn dấu chấm phân tách nghìn sẽ bị loại.
+    if(s.includes(',')) {
+      s = s.replace(/\./g,'').replace(',', '.');
+    } else if (s.includes('.')) {
+      const parts = s.split('.');
+      if (parts.length === 2 && parts[1].length !== 3) {
+        s = parts[0] + '.' + parts[1];
+      } else {
+        s = s.replace(/\./g,'');
+      }
+    }
+
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+  function formatVN(n,d=0){
+    return Number(n||0).toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
+  }
+  function formatVNTrim(n,d=0){
+    const fixed = Number(n||0).toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
+    if (d <= 0) return fixed;
+    return fixed.replace(/(,\d*?[1-9])0+$/,'$1').replace(/,0+$/,'');
+  }
+  function val(id){
+    const el=document.getElementById(id);
+    if(!el)return 0;
+    return parseVN(el.value);
+  }
+
+  function valOrDefault(id, defaultValue){
+    const el = document.getElementById(id);
+    if(!el) return defaultValue;
+    const raw = String(el.value || '').trim();
+    if(raw === '') return defaultValue;
+    const n = parseVN(raw);
+    return Number.isFinite(n) ? n : defaultValue;
+  }
+  function setVal(id,value,d=null){
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(value === '' || value === null || value === undefined){el.value='';return;}
+    const decimals = d === null ? Number(el.dataset.decimals || 0) : d;
+    el.value = formatVN(value, decimals);
+  }
+  function fmt(n,d=0){ return Number(n||0).toLocaleString('vi-VN',{maximumFractionDigits:d}); }
+  function fmtFixed(n,d){ return Number(n||0).toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+  function fmtSigned(n,d){
+    const v=Number(n||0);
+    const rounded = Number(v.toFixed(d));
+    if (Object.is(rounded, -0) || rounded === 0) {
+      return Number(0).toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
+    }
+    return (rounded>0?'+':'')+rounded.toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+  function decimals(){ return Math.max(0,Math.min(4,Math.floor(val('soThapPhan')||0))); }
+  function pow10(d){return Math.pow(10,d);}
+  function baseStep(){return 1 / pow10(decimals());}
+  function roundN(n,d){ const p=pow10(d); return Math.round((Number(n)+Number.EPSILON)*p)/p; }
+
+  function accountingRound(n){
+    // Chuẩn làm tròn kế toán cho số tiền dương: 0,5 làm tròn lên.
+    return Math.floor(Number(n || 0) + 0.5);
+  }
+
+  function getDisplayToleranceBounds(target, tolerance){
+    const t = accountingRound(target);
+    const tol = Math.max(0, Number(tolerance || 0));
+
+    // Vì Giá trị trên bảng là số đã làm tròn kế toán, vùng raw cần mở rộng 0,5.
+    // Ví dụ Sai số = 0 và target = 1.000: nhận raw từ 999,5 đến dưới 1.000,5.
+    return {
+      roundedTarget: t,
+      lowRaw: t - tol - 0.5,
+      highRaw: t + tol + 0.5 - 1e-9
+    };
+  }
+
+  function bindFormatInputs(root){
+    root.querySelectorAll('.fmt-input').forEach(el=>{
+      el.addEventListener('input',()=>{
+        // Chỉ nhận dấu phẩy trong ô nhập; nếu gõ dấu chấm thì đổi ngay thành dấu phẩy.
+        if (el.value.includes('.')) {
+          const pos = el.selectionStart;
+          el.value = el.value.replace(/\./g, ',');
+          try { el.setSelectionRange(pos, pos); } catch(e) {}
+        }
+      });
+      el.addEventListener('focus',()=>{
+        const current = parseVN(el.value);
+        if (el.dataset.clearZero === '1' && current === 0) {
+          el.value = '';
+        } else {
+          el.value = String(current || '').replace('.', ',');
+        }
+        setTimeout(()=>el.select(),0);
+      });
+      el.addEventListener('blur',()=>formatInput(el));
+      el.addEventListener('change',()=>formatInput(el));
+    });
+  }
+
+  function bindSelectAllInputs(root){
+    root.querySelectorAll('input:not(.fmt-input)').forEach(el=>{
+      if (el.type === 'checkbox') return;
+      el.addEventListener('focus',()=>setTimeout(()=>el.select && el.select(),0));
+    });
+  }
+  function formatInput(el){
+    const d = Number(el.dataset.decimals || 0);
+    const v = parseVN(el.value);
+    if(!v && el.value.trim()===''){return;}
+    el.value = el.classList.contains('step-input') ? formatVNTrim(v,d) : formatVN(v,d);
+  }
+
+  
+  function getMaxDecimalsByItemCount(){
+    const count = Math.max(1, itemIds.length);
+    if(count <= 1) return 3;
+    if(count === 2) return 2;
+    if(count === 3) return 1;
+    return 0;
+  }
+
+  function onDecimalsChanged(forceDefaultStep){
+    const maxD = getMaxDecimalsByItemCount();
+    let d = decimals();
+    if(d > maxD) d = maxD;
+    setVal('soThapPhan', d, 0);
+    const decEl = document.getElementById('soThapPhan');
+    if(decEl) decEl.max = String(maxD);
+
+    const step = 1 / Math.pow(10, d);
+
+    ['buocSL','buocDG'].forEach(id=>{
+      const el=document.getElementById(id);
+      el.dataset.decimals = String(d);
+
+      // Khi đổi Số thập phân, bước quét nhảy về bước chuẩn tương ứng:
+      // 1 -> 0,1 | 2 -> 0,01 | 3 -> 0,001 | 4 -> 0,0001.
+      // Sau đó người dùng vẫn có thể sửa tự do, miễn không vượt quá số chữ số thập phân.
+      if (forceDefaultStep !== false) {
+        el.value = formatVNTrim(step, d);
+      } else {
+        normalizeStepInput(id);
+      }
+    });
+
+    document.querySelectorAll('.item-num-input').forEach(el=>el.dataset.decimals=String(d));
+    document.querySelectorAll('.item-num-input').forEach(formatInput);
+    updateSpeedWarning();
+  }
+
+  function normalizeStepInput(id){
+    const d=decimals();
+    const step=baseStep();
+    const el=document.getElementById(id);
+    el.dataset.decimals = String(d);
+
+    let v = Math.abs(parseVN(el.value));
+    if (!v) v = step;
+
+    // Khống chế tối đa đúng số chữ số thập phân theo ô "Số TP".
+    // Ví dụ Số TP = 2: 0,001 -> 0,01; 0,050 -> 0,05; 1,230 -> 1,23.
+    v = roundN(v, d);
+    if (v < step) v = step;
+
+    el.value = formatVNTrim(v, d);
+  }
+
+  function showStatus(type,text){const el=document.getElementById('status');el.className='status show '+type;el.innerHTML=text;}
+
+  function updateSpeedWarning(){
+    const warn = document.getElementById('speedWarn');
+    if(!warn) return;
+
+    const itemCount = itemIds.length;
+    const d = decimals();
+    const stepSL = Math.abs(val('buocSL')) || baseStep();
+    const stepDG = Math.abs(val('buocDG')) || baseStep();
+    const messages = [];
+
+    const maxD = getMaxDecimalsByItemCount();
+    if(d >= maxD && itemCount >= 2){
+      messages.push('Số thập phân đang ở mức tối đa khuyến nghị cho ' + itemCount + ' mặt hàng.');
+    }
+    if(itemCount >= 2 && (stepSL < 0.1 || stepDG < 0.1)){
+      messages.push('Nếu chạy lâu hơn 20 giây, nên tăng Bước SL / ĐG lên 0,1.');
+    }
+    if(itemCount >= 2 && (stepSL < 1 || stepDG < 1)){
+      messages.push('Nếu chạy hơn 1 phút, nên tăng Bước SL / ĐG lên 1.');
+    }
+    if(itemCount > 3 && d !== 0){
+      messages.push('Nhiều hơn 3 mặt hàng nên dùng Số thập phân = 0.');
+    }
+
+    if(messages.length){
+      warn.className = 'warn-inline show';
+      warn.innerHTML = messages.join('<br>');
+    }else{
+      warn.className = 'warn-inline';
+      warn.innerHTML = '';
+    }
+  }
+  function setBusy(b){document.getElementById('runBtn').disabled=b;document.getElementById('stopBtn').disabled=!b;}
+  function setLoadedState(isLoaded){
+    const btn=document.getElementById('loadBtn');
+    btn.disabled=isLoaded;
+    btn.classList.toggle('loaded',isLoaded);
+    btn.innerHTML=isLoaded?'Đã lấy<br>dữ liệu':'Lấy<br>dữ liệu';
+  }
+  function taxOnly(el){
+    const a=document.getElementById('optTruocThue'), b=document.getElementById('optSauThue');
+    if(el===a){a.checked=true;b.checked=false;} else {b.checked=true;a.checked=false;}
+  }
+
+  function priorityOnly(el){
+    const a=document.getElementById('uuTienSL'), b=document.getElementById('uuTienDG');
+    if(el===a && a.checked) b.checked=false;
+    if(el===b && b.checked) a.checked=false;
+  }
+
+  function addItemForm(){
+    itemSeq += 1;
+    const id = itemSeq;
+    itemIds.push(id);
+    const tone = ((itemIds.length - 1) % 5) + 1;
+
+    const card=document.createElement('div');
+    card.className='item-card tone-'+tone;
+    card.id='itemCard_'+id;
+    card.innerHTML=`
+      <div class="item-head">
+        <div class="item-title"><span class="num item-num"></span><span>Mặt hàng</span></div>
+        <button class="remove-item" type="button" onclick="removeItemForm(${id})">Xóa mặt hàng</button>
+      </div>
+      <div class="grid two">
+        <div><label>Chọn từ TonKho</label><select id="itemSelect_${id}" onchange="applyItem(${id})"></select></div>
+        <div><label>Tên hàng</label><input id="ten_${id}" readonly></div>
+      </div>
+      <div class="grid">
+        <div><label>SL từ</label><input class="fmt-input item-num-input" id="slBe_${id}" type="text" data-decimals="2" inputmode="decimal"></div>
+        <div><label>SL đến</label><input class="fmt-input item-num-input" id="slTo_${id}" type="text" data-decimals="2" inputmode="decimal"></div>
+        <div><label>ĐG từ</label><input class="fmt-input item-num-input" id="dgBe_${id}" type="text" data-decimals="2" inputmode="decimal"></div>
+        <div><label>ĐG đến</label><input class="fmt-input item-num-input" id="dgTo_${id}" type="text" data-decimals="2" inputmode="decimal"></div>
+      </div>`;
+    document.getElementById('itemsWrap').appendChild(card);
+    bindFormatInputs(card);
+    bindSelectAllInputs(card);
+    fillOneItemSelect(id);
+    renumberItems();
+    onDecimalsChanged(false);
+    updateSpeedWarning();
+  }
+
+  function removeItemForm(id){
+    if(itemIds.length<=1){showStatus('err','Cần giữ lại ít nhất 1 mặt hàng.');return;}
+    itemIds=itemIds.filter(x=>x!==id);
+    const card=document.getElementById('itemCard_'+id);
+    if(card)card.remove();
+    renumberItems();
+  }
+
+  function renumberItems(){
+    itemIds.forEach((id,idx)=>{
+      const card=document.getElementById('itemCard_'+id);
+      if(!card)return;
+      card.className='item-card tone-'+(((idx)%5)+1);
+      card.querySelector('.item-num').textContent=idx+1;
+      card.querySelector('.item-title span:last-child').textContent='Mặt hàng '+(idx+1);
+      card.querySelector('.remove-item').style.display=itemIds.length>1?'inline-flex':'none';
+    });
+    document.getElementById('itemCountText').textContent=itemIds.length+' mặt hàng';
+  }
+
+  function loadFromSheet(){
+    showStatus('work','<span class="spin"></span>Đang đọc dữ liệu từ sheet TonKho...');
+    google.script.run.withSuccessHandler(function(resp){
+      const data=(resp&&resp.input)?resp.input:{};
+      tonKhoItems=(resp&&resp.tonKho)?resp.tonKho:[];
+      fillItemSelects();
+
+      setVal('giaTriMucTieu', data.giaTriMucTieu || '', 0);
+      setVal('saiSoChoPhep', data.saiSoChoPhep || 50, 0);
+      setVal('soThapPhan', data.soThapPhan || 2, 0);
+      setVal('maxRows', data.maxRows || 100, 0);
+      setVal('batchSize', data.batchSize || 30000, 0);
+      onDecimalsChanged();
+
+      const first=itemIds[0];
+      if(first){
+        setVal('slBe_'+first, data.sl1Be || '', decimals());
+        setVal('slTo_'+first, data.sl1To || '', decimals());
+        setVal('dgBe_'+first, data.dg1Be || '', decimals());
+        setVal('dgTo_'+first, data.dg1To || '', decimals());
+      }
+
+      document.getElementById('optTruocThue').checked=false;
+      document.getElementById('optSauThue').checked=true;
+      document.getElementById('uuTienSL').checked=!!data.uuTienSL;
+      document.getElementById('uuTienDG').checked=!!data.uuTienDG;
+      if (document.getElementById('uuTienSL').checked && document.getElementById('uuTienDG').checked) {
+        document.getElementById('uuTienDG').checked = false;
+      }
+      setLoadedState(true);
+      updateSpeedWarning();
+      showStatus('ok','Đã nạp <b>'+fmt(tonKhoItems.length)+'</b> mặt hàng từ sheet <b>TonKho</b>.');
+    }).withFailureHandler(err=>showStatus('err',escapeHtml(err.message||err))).vhdGetInitialData();
+  }
+
+  function fillItemSelects(){ itemIds.forEach(fillOneItemSelect); }
+  function fillOneItemSelect(id){
+    const sel=document.getElementById('itemSelect_'+id);
+    if(!sel)return;
+    const current=sel.value;
+    sel.innerHTML='<option value="">-- Chọn mã hàng --</option>';
+    tonKhoItems.forEach((it,idx)=>{
+      const opt=document.createElement('option');
+      opt.value=String(idx);
+      opt.textContent=it.maHang+' | '+it.tenHang+' | SL '+fmt(it.soLuong,2)+' | ĐG '+fmt(it.donGiaBQ,2);
+      sel.appendChild(opt);
+    });
+    if(current!=='')sel.value=current;
+  }
+
+  function applyItem(id){
+    const idx=document.getElementById('itemSelect_'+id).value;
+    if(idx===''){
+      document.getElementById('ten_'+id).value='';
+      ['slBe_','slTo_','dgBe_','dgTo_'].forEach(p=>setVal(p+id,''));
+      return;
+    }
+    const it=tonKhoItems[Number(idx)];
+    if(!it)return;
+    const d=decimals(), step=baseStep();
+    document.getElementById('ten_'+id).value=it.tenHang;
+    setVal('slBe_'+id,step,d);
+    setVal('slTo_'+id,Number(it.soLuong.toFixed(d)),d);
+    const dg=Number(it.donGiaBQ.toFixed(d));
+    setVal('dgBe_'+id,dg,d);
+    setVal('dgTo_'+id,dg,d);
+  }
+
+  function collect(){
+    onDecimalsChanged(false);
+    const d=decimals();
+    const items=itemIds.map(id=>({
+      id,slBe:val('slBe_'+id),slTo:val('slTo_'+id),dgBe:val('dgBe_'+id),dgTo:val('dgTo_'+id)
+    })).filter(x=>x.slBe>0||x.slTo>0||x.dgBe>0||x.dgTo>0);
+    return {
+      items,
+      giaTriMucTieu:Math.abs(val('giaTriMucTieu')),
+      saiSoChoPhep:Math.max(0, Math.abs(valOrDefault('saiSoChoPhep', 50))),
+      soThapPhan:d,
+      buocSL:Math.abs(val('buocSL'))||baseStep(),
+      buocDG:Math.abs(val('buocDG'))||baseStep(),
+      maxRows:Math.max(10,Math.floor(val('maxRows')||100)),
+      batchSize:Math.max(1000,Math.floor(val('batchSize')||30000)),
+      truocThue:document.getElementById('optTruocThue').checked,
+      uuTienSL:document.getElementById('uuTienSL').checked,
+      uuTienDG:document.getElementById('uuTienDG').checked
+    };
+  }
+
+  function validate(x){
+    if(!x.items.length)return 'Cần nhập ít nhất 1 mặt hàng.';
+    for(let i=0;i<x.items.length;i++){
+      const it=x.items[i];
+      if(it.slBe<=0||it.slTo<it.slBe)return 'SL mặt hàng '+(i+1)+' không hợp lệ.';
+      if(it.dgBe<=0||it.dgTo<it.dgBe)return 'ĐG mặt hàng '+(i+1)+' không hợp lệ.';
+    }
+    if(x.giaTriMucTieu<=0)return 'Giá trị mục tiêu phải lớn hơn 0.';
+    return '';
+  }
+
+  function startCalc(){
+    if(job)stopCalc();
+    const x=collect(),error=validate(x); updateSpeedWarning(); if(error)return showStatus('err',error);
+    const vat=x.truocThue?1:1.1;
+    job={x,stopped:false,rows:[],keys:new Set(),loop:0,start:performance.now(),lastRender:0,vat,targetAdj:x.giaTriMucTieu/vat,tolAdj:x.saiSoChoPhep/vat,done:false,cursor:null};
+    prepareJobCache(job);
+    initCursor(job);
+    clearResult();
+    setBusy(true);
+    showStatus('work', x.items.length > 1
+      ? '<span class="spin"></span>Đang sinh nghiệm nhanh cho nhiều mặt hàng. Có thể bấm <b>⛔<br>Dừng</b> bất cứ lúc nào.'
+      : '<span class="spin"></span>Đang tính theo từng lô. Có thể bấm <b>⛔<br>Dừng</b> bất cứ lúc nào.');
+    setTimeout(processBatch,0);
+  }
+  function stopCalc(){if(job){job.stopped=true;finishJob(false);}}
+
+  
+
+  function addVarMeta_(v, x){
+    const item = x.items[v.itemIndex];
+    if (v.type === 'sl') {
+      v.min = item.slBe;
+      v.max = item.slTo;
+      v.step = x.buocSL;
+    } else {
+      v.min = item.dgBe;
+      v.max = item.dgTo;
+      v.step = x.buocDG;
+    }
+    return v;
+  }
+
+  function prepareJobCache(j){
+    const x = j.x;
+    j._minNet = x.items.reduce((s,it)=>s + it.slBe * it.dgBe, 0);
+    j._maxNet = x.items.reduce((s,it)=>s + it.slTo * it.dgTo, 0);
+    const bounds = getDisplayToleranceBounds(x.giaTriMucTieu, x.saiSoChoPhep);
+    j._roundedTarget = bounds.roundedTarget;
+    j._displayLowRaw = bounds.lowRaw;
+    j._displayHighRaw = bounds.highRaw;
+    j._targetLow = bounds.lowRaw / j.vat;
+    j._targetHigh = bounds.highRaw / j.vat;
+    j._renderEveryMs = 420;
+
+    // Với từ 2 mặt hàng trở lên, không thể quét toàn bộ tổ hợp khi bước quét nhỏ.
+    // Giới hạn số mẫu sinh nghiệm để luôn có điểm dừng.
+    j._maxCandidatePasses = Math.min(800000, Math.max(50000, x.maxRows * 3000));
+    j._fastMulti = x.items.length > 1;
+  }
+
+  function initCursor(j){
+    const n=j.x.items.length;
+    const preferDG = !!j.x.uuTienDG;
+
+    // 1 mặt hàng: giữ nguyên logic quét đầy đủ.
+    if(n===1){
+      if(preferDG){
+        j.cursor={mode:'singleSolveSL', g:j.x.items[0].dgBe};
+      }else{
+        j.cursor={mode:'singleSolveDG', s:j.x.items[0].slBe};
+      }
+      return;
+    }
+
+    // Nhiều mặt hàng: dùng sinh nghiệm hữu hạn để tránh quét tổ hợp khổng lồ.
+    // Ưu tiên SL: sinh SL/ĐG các mặt hàng đầu + SL mặt hàng cuối, giải ĐG mặt hàng cuối.
+    // Ưu tiên ĐG: sinh SL/ĐG các mặt hàng đầu + ĐG mặt hàng cuối, giải SL mặt hàng cuối.
+    j.cursor = {
+      mode: preferDG ? 'multiFastSolveSL' : 'multiFastSolveDG',
+      pass: 0
+    };
+  }
+
+  function processBatch(){
+    if(!job||job.stopped)return;
+    const j=job,x=j.x; let ops=0;
+    while(ops<x.batchSize&&!j.done&&!j.stopped){
+      if(j.cursor.mode==='singleSolveDG') stepSingleSolveDG(j);
+      else if(j.cursor.mode==='singleSolveSL') stepSingleSolveSL(j);
+      else if(j.cursor.mode==='multiFastSolveDG') stepMultiFastSolveDG(j);
+      else if(j.cursor.mode==='multiFastSolveSL') stepMultiFastSolveSL(j);
+      else if(j.cursor.mode==='multiSolveDG') stepMultiSolveDG(j);
+      else stepMultiSolveSL(j);
+      ops++;
+      j.loop++;
+    }
+    updateMetrics(j);
+    if(performance.now()-j.lastRender>j._renderEveryMs){renderRows(j,false);j.lastRender=performance.now();}
+    if(j.done){finishJob(true);return;}
+    setTimeout(processBatch,0);
+  }
+
+  function stepSingleSolveDG(j){
+    const x=j.x,d=x.soThapPhan,it=x.items[0],sl=roundN(j.cursor.s,d);
+    if(sl>it.slTo+1e-9){j.done=true;return;}
+
+    const lo=Math.max(it.dgBe,j._targetLow/sl);
+    const hi=Math.min(it.dgTo,j._targetHigh/sl);
+    if(lo<=hi){
+      let dg=Math.ceil(lo/x.buocDG)*x.buocDG;
+      for(;dg<=hi+1e-9;dg+=x.buocDG){
+        addRow(j,[{sl,dg:roundN(dg,d)}]);
+        
+      }
+    }
+
+    j.cursor.s=roundN(j.cursor.s+x.buocSL,d);
+    
+  }
+
+  function stepSingleSolveSL(j){
+    const x=j.x,d=x.soThapPhan,it=x.items[0],dg=roundN(j.cursor.g,d);
+    if(dg>it.dgTo+1e-9){j.done=true;return;}
+
+    const lo=Math.max(it.slBe,j._targetLow/dg);
+    const hi=Math.min(it.slTo,j._targetHigh/dg);
+    if(lo<=hi){
+      let sl=Math.ceil(lo/x.buocSL)*x.buocSL;
+      for(;sl<=hi+1e-9;sl+=x.buocSL){
+        addRow(j,[{sl:roundN(sl,d),dg}]);
+        
+      }
+    }
+
+    j.cursor.g=roundN(j.cursor.g+x.buocDG,d);
+    
+  }
+
+  
+  function countSteps(min, max, step){
+    if(!step || step <= 0 || max < min) return 0;
+    return Math.max(0, Math.floor((max - min) / step + 1.000000001));
+  }
+
+  function sampleByPass(min, max, step, pass, salt, d){
+    const count = countSteps(min, max, step);
+    if(count <= 0) return roundN(min, d);
+
+    // Dùng bước nhảy tương đối nguyên tố nhỏ để rải đều thay vì đi tuần tự quá chậm.
+    const jump = 7919 + salt * 3571;
+    const idx = Math.abs((pass * jump + salt * 104729) % count);
+    return roundN(min + idx * step, d);
+  }
+
+  function buildFastPartial(j, solveMode){
+    const x = j.x;
+    const d = x.soThapPhan;
+    const n = x.items.length;
+    const pass = j.cursor.pass;
+    const partial = new Array(n).fill(null).map(()=>({sl:0,dg:0}));
+
+    for(let i=0;i<n-1;i++){
+      const it = x.items[i];
+      partial[i].sl = sampleByPass(it.slBe, it.slTo, x.buocSL, pass, i * 2 + 1, d);
+      partial[i].dg = sampleByPass(it.dgBe, it.dgTo, x.buocDG, pass, i * 2 + 2, d);
+    }
+
+    const last = x.items[n-1];
+    if(solveMode === 'dg'){
+      partial[n-1].sl = sampleByPass(last.slBe, last.slTo, x.buocSL, pass, n * 2 + 1, d);
+    }else{
+      partial[n-1].dg = sampleByPass(last.dgBe, last.dgTo, x.buocDG, pass, n * 2 + 2, d);
+    }
+
+    return partial;
+  }
+
+  function stepMultiFastSolveDG(j){
+    const x = j.x, d = x.soThapPhan, n = x.items.length;
+    const partial = buildFastPartial(j, 'dg');
+    let sum = 0;
+    for(let i=0;i<n-1;i++) sum += partial[i].sl * partial[i].dg;
+
+    const last = x.items[n-1];
+    const lastSl = partial[n-1].sl;
+
+    if(lastSl > 0){
+      const minPossible = sum + lastSl * last.dgBe;
+      const maxPossible = sum + lastSl * last.dgTo;
+
+      if(!(maxPossible < j._targetLow || minPossible > j._targetHigh)){
+        const remain = j.targetAdj - sum;
+        const lo = Math.max(last.dgBe, (remain - j.tolAdj) / lastSl);
+        const hi = Math.min(last.dgTo, (remain + j.tolAdj) / lastSl);
+
+        if(lo <= hi){
+          let dg = Math.ceil(lo / x.buocDG) * x.buocDG;
+          for(; dg <= hi + 1e-9; dg += x.buocDG){
+            const row = partial.map(p=>({sl:p.sl,dg:p.dg}));
+            row[n-1].dg = roundN(dg, d);
+            addRow(j, row);
+            
+          }
+        }
+      }
+    }
+
+    j.cursor.pass++;
+    if(j.cursor.pass >= j._maxCandidatePasses) j.done = true;
+  }
+
+  function stepMultiFastSolveSL(j){
+    const x = j.x, d = x.soThapPhan, n = x.items.length;
+    const partial = buildFastPartial(j, 'sl');
+    let sum = 0;
+    for(let i=0;i<n-1;i++) sum += partial[i].sl * partial[i].dg;
+
+    const last = x.items[n-1];
+    const lastDg = partial[n-1].dg;
+
+    if(lastDg > 0){
+      const minPossible = sum + last.slBe * lastDg;
+      const maxPossible = sum + last.slTo * lastDg;
+
+      if(!(maxPossible < j._targetLow || minPossible > j._targetHigh)){
+        const remain = j.targetAdj - sum;
+        const lo = Math.max(last.slBe, (remain - j.tolAdj) / lastDg);
+        const hi = Math.min(last.slTo, (remain + j.tolAdj) / lastDg);
+
+        if(lo <= hi){
+          let sl = Math.ceil(lo / x.buocSL) * x.buocSL;
+          for(; sl <= hi + 1e-9; sl += x.buocSL){
+            const row = partial.map(p=>({sl:p.sl,dg:p.dg}));
+            row[n-1].sl = roundN(sl, d);
+            addRow(j, row);
+            
+          }
+        }
+      }
+    }
+
+    j.cursor.pass++;
+    if(j.cursor.pass >= j._maxCandidatePasses) j.done = true;
+  }
+
+  function buildPartialFromVars(j){
+    const x=j.x,d=x.soThapPhan,n=x.items.length,vars=j.cursor.vars;
+    const partial=new Array(n).fill(null).map(()=>({sl:0,dg:0}));
+    for(const v of vars){
+      const value=roundN(v.value,d);
+      if(v.type==='sl')partial[v.itemIndex].sl=value;
+      else partial[v.itemIndex].dg=value;
+    }
+    return partial;
+  }
+
+  function stepMultiSolveDG(j){
+    const x=j.x,d=x.soThapPhan,n=x.items.length;
+    const partial=buildPartialFromVars(j);
+    let sum=0;
+    for(let i=0;i<n-1;i++)sum+=partial[i].sl*partial[i].dg;
+
+    const last=x.items[n-1],lastSl=partial[n-1].sl;
+    if(lastSl>0){
+      const minPossible = sum + lastSl * last.dgBe;
+      const maxPossible = sum + lastSl * last.dgTo;
+
+      // Prune nhanh: bỏ qua tổ hợp chắc chắn nằm ngoài vùng mục tiêu.
+      if(!(maxPossible < j._targetLow || minPossible > j._targetHigh)){
+        const remain=j.targetAdj-sum;
+        const lo=Math.max(last.dgBe,(j._targetLow-sum)/lastSl);
+        const hi=Math.min(last.dgTo,(j._targetHigh-sum)/lastSl);
+        if(lo<=hi){
+          let dg=Math.ceil(lo/x.buocDG)*x.buocDG;
+          for(;dg<=hi+1e-9;dg+=x.buocDG){
+            const row=partial.map(p=>({sl:p.sl,dg:p.dg}));
+            row[n-1].dg=roundN(dg,d);
+            addRow(j,row);
+            
+          }
+        }
+      }
+    }
+
+    advanceCursor(j);
+    
+  }
+
+  function stepMultiSolveSL(j){
+    const x=j.x,d=x.soThapPhan,n=x.items.length;
+    const partial=buildPartialFromVars(j);
+    let sum=0;
+    for(let i=0;i<n-1;i++)sum+=partial[i].sl*partial[i].dg;
+
+    const last=x.items[n-1],lastDg=partial[n-1].dg;
+    if(lastDg>0){
+      const minPossible = sum + last.slBe * lastDg;
+      const maxPossible = sum + last.slTo * lastDg;
+
+      // Prune nhanh: bỏ qua tổ hợp chắc chắn nằm ngoài vùng mục tiêu.
+      if(!(maxPossible < j._targetLow || minPossible > j._targetHigh)){
+        const remain=j.targetAdj-sum;
+        const lo=Math.max(last.slBe,(j._targetLow-sum)/lastDg);
+        const hi=Math.min(last.slTo,(j._targetHigh-sum)/lastDg);
+        if(lo<=hi){
+          let sl=Math.ceil(lo/x.buocSL)*x.buocSL;
+          for(;sl<=hi+1e-9;sl+=x.buocSL){
+            const row=partial.map(p=>({sl:p.sl,dg:p.dg}));
+            row[n-1].sl=roundN(sl,d);
+            addRow(j,row);
+            
+          }
+        }
+      }
+    }
+
+    advanceCursor(j);
+    
+  }
+
+  function advanceCursor(j){
+    const d=j.x.soThapPhan,vars=j.cursor.vars;
+    for(let p=vars.length-1;p>=0;p--){
+      const v=vars[p];
+      v.value=roundN(v.value+v.step,d);
+      if(v.value<=v.max+1e-9)return;
+      v.value=v.min;
+    }
+    j.done=true;
+  }
+
+  
+  function isRowWithinTolerance(j, giaTri){
+    const x = j.x;
+    const tolerance = Math.max(0, Number(x.saiSoChoPhep));
+    const roundedValue = accountingRound(giaTri);
+    const diff = roundedValue - j._roundedTarget;
+
+    // Nếu Sai số = 0: chỉ nhận giá trị hiển thị sau làm tròn đúng bằng mục tiêu.
+    if(tolerance <= 0){
+      return diff === 0;
+    }
+
+    return Math.abs(diff) <= tolerance;
+  }
+
+  function trimRowsIfNeeded(j){
+    const limit = Math.max(10, Number(j.x.maxRows || 100));
+    const keep = Math.max(limit * 5, 500);
+
+    // Dòng chỉ là giới hạn hiển thị. Để tránh đầy RAM khi có nhiều nghiệm,
+    // lưu dư một vùng đệm rồi giữ lại các nghiệm gần mục tiêu nhất.
+    if(j.rows.length <= keep) return;
+
+    sortRows(j);
+    j.rows.length = keep;
+    j.keys = new Set(j.rows.map(r => {
+      let key = '';
+      const d = j.x.soThapPhan;
+      for(let i=0;i<r.items.length;i++){
+        if(i) key += '|';
+        key += Number(r.items[i].sl).toFixed(d) + '|' + Number(r.items[i].dg).toFixed(d);
+      }
+      return key;
+    }));
+  }
+
+  function addRow(j,rowItems){
+    const x=j.x,d=x.soThapPhan;
+    const net=rowItems.reduce((s,it)=>s+it.sl*it.dg,0);
+    const giaTriRaw=net*j.vat;
+
+    // Bước 1: kiểm tra Sai số trước theo giá trị sau làm tròn kế toán.
+    if(!isRowWithinTolerance(j, giaTriRaw)) return;
+
+    const giaTri=accountingRound(giaTriRaw);
+    const saiSo=giaTri-j._roundedTarget;
+
+    // Bước 2: sau khi đạt điều kiện Sai số mới kiểm tra trùng nghiệm / giới hạn lưu.
+    let key='';
+    for(let i=0;i<rowItems.length;i++){
+      if(i) key+='|';
+      key+=Number(rowItems[i].sl).toFixed(d)+'|'+Number(rowItems[i].dg).toFixed(d);
+    }
+    if(j.keys.has(key))return;
+    j.keys.add(key);
+
+    j.rows.push({items:rowItems,giaTriRaw,giaTri,saiSo,saiSoAbs:Math.abs(saiSo),khop:saiSo===0});
+    trimRowsIfNeeded(j);
+  }
+
+  function sortRows(j){
+    const x=j.x;
+    j.rows.sort((a,b)=>{
+      const sa=a.items.reduce((s,it)=>s+it.sl,0),sb=b.items.reduce((s,it)=>s+it.sl,0);
+      const ga=a.items.reduce((s,it)=>s+it.dg,0),gb=b.items.reduce((s,it)=>s+it.dg,0);
+      return a.saiSoAbs-b.saiSoAbs||a.saiSo-b.saiSo||(x.uuTienDG?(ga-gb):0)||(x.uuTienSL?(sa-sb):0);
+    });
+  }
+
+  function finishJob(completed){
+    if(!job)return;
+    sortRows(job);renderRows(job,true);updateMetrics(job);setBusy(false);
+    const sec=(performance.now()-job.start)/1000;
+    const limitNote = (completed && job.x.items.length > 1 && job.cursor && job.cursor.pass >= job._maxCandidatePasses && job.rows.length < job.x.maxRows)
+      ? ' Đã chạm giới hạn mẫu để tránh treo; có thể tăng sai số, tăng bước quét hoặc giảm số mặt hàng nếu cần thêm nghiệm.'
+      : '';
+    const txt=completed?`Tính xong. Tìm được <b>${fmt(job.rows.length)}</b> nghiệm trong khoảng mục tiêu ±${fmt(job.x.saiSoChoPhep)}đ. Thời gian: <b>${sec.toFixed(2)}s</b>.${limitNote}`:`Đã dừng. Đã tìm được <b>${fmt(job.rows.length)}</b> nghiệm trước khi dừng.`;
+    showStatus(completed?'ok':'err',txt); job=null;
+  }
+
+  function renderHeader(n){
+    let h='<tr><th>#</th>';
+    for(let i=1;i<=n;i++)h+='<th>SL'+i+'</th><th>ĐG'+i+'</th>';
+    h+='<th>Giá trị</th><th>Lệch</th></tr>';
+    document.getElementById('resultHead').innerHTML=h;
+  }
+  function selectRow(tr){document.querySelectorAll('#resultBody tr.selected').forEach(r=>r.classList.remove('selected'));tr.classList.add('selected');}
+  function renderRows(j,final){
+    if(final)sortRows(j); renderHeader(j.x.items.length);
+    const body=document.getElementById('resultBody'); body.innerHTML='';
+    if(!j.rows.length){body.innerHTML='<tr><td colspan="'+(j.x.items.length*2+3)+'"><div class="empty">Chưa có kết quả phù hợp.</div></td></tr>';document.getElementById('resultNote').textContent='Không có nghiệm';return;}
+    const d=j.x.soThapPhan,frag=document.createDocumentFragment();
+    j.rows.slice(0,j.x.maxRows).forEach((r,i)=>{
+      const tr=document.createElement('tr'); tr.onclick=function(){selectRow(tr)};
+      let html='<td>'+(i+1)+'</td>';
+      r.items.forEach(it=>{html+='<td>'+fmtFixed(it.sl,d)+'</td><td>'+fmtFixed(it.dg,d)+'</td>';});
+      html+='<td class="money '+(r.khop?'ok':'bad')+'">'+fmt(r.giaTri,0)+'</td><td class="diff">'+fmtSigned(r.saiSo,0)+'</td>';
+      tr.innerHTML=html; frag.appendChild(tr);
+    });
+    body.appendChild(frag); document.getElementById('resultNote').textContent='Hiển thị '+fmt(Math.min(j.rows.length,j.x.maxRows))+' dòng';
+  }
+  function updateMetrics(j){
+    const sec=(performance.now()-j.start)/1000;
+    document.getElementById('mCount').textContent=fmt(j.rows.length);
+    document.getElementById('mTime').textContent=sec.toFixed(2)+'s';
+    document.getElementById('mLoop').textContent=fmt(j.loop);
+    document.getElementById('mSpeed').textContent=fmt(sec>0?Math.round(j.loop/sec):0)+'/s';
+  }
+  function renderEmptyResult(){
+    document.getElementById('resultHead').innerHTML='<tr><th>Kết quả</th></tr>';
+    document.getElementById('resultBody').innerHTML='<tr><td><div class="empty">Bấm “Lấy dữ liệu”, chọn vật tư rồi bấm “Tính”.</div></td></tr>';
+  }
+  function clearResult(){
+    document.getElementById('mCount').textContent='0';document.getElementById('mTime').textContent='0s';document.getElementById('mLoop').textContent='0';document.getElementById('mSpeed').textContent='0/s';document.getElementById('resultNote').textContent='Đang tính...';
+    const n=Math.max(1, job && job.x ? job.x.items.length : collect().items.length);
+    renderHeader(n);
+    document.getElementById('resultBody').innerHTML='<tr><td colspan="'+(n*2+3)+'"><div class="empty">Đang tính...</div></td></tr>';
+  }
+  function resetForm(){
+    if(job)stopCalc();
+    itemIds.forEach(id=>{const card=document.getElementById('itemCard_'+id); if(card)card.remove();});
+    itemIds=[];itemSeq=0;tonKhoItems=[];addItemForm();
+    ['giaTriMucTieu','saiSoChoPhep','soThapPhan','buocSL','buocDG','maxRows','batchSize'].forEach(id=>setVal(id,''));
+    setVal('saiSoChoPhep',50,0);setVal('soThapPhan',2,0);onDecimalsChanged();setVal('maxRows',100,0);setVal('batchSize',30000,0);
+    document.getElementById('optTruocThue').checked=false;document.getElementById('optSauThue').checked=true;document.getElementById('uuTienSL').checked=false;document.getElementById('uuTienDG').checked=false;
+    setLoadedState(false);document.getElementById('resultNote').textContent='Chưa có dữ liệu';
+    document.getElementById('mCount').textContent='0';document.getElementById('mTime').textContent='0s';document.getElementById('mLoop').textContent='0';document.getElementById('mSpeed').textContent='0/s';
+    renderEmptyResult();showStatus('ok','Đã xóa form. Có thể bấm “Lấy dữ liệu” lại.');
+  }
+</script>
+</body>
+</html>

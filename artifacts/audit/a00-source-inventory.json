@@ -1,0 +1,249 @@
+﻿{
+    "generated_at":  "2026-07-14T12:24:30",
+    "project":  "SyncGmailDriveSheet",
+    "target_path":  "D:\\CODE\\SyncGmailDriveSheet",
+    "expected_script_id":  "19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM",
+    "expected_google_account":  "hungdiepcompany@gmail.com",
+    "source_file_count_before_bundle_docs":  39,
+    "runtime_file_count":  33,
+    "workbook_expected_path":  "D:\\CODE\\SyncGmailDriveSheet\\ton kho - DATABASE.xlsx",
+    "workbook_found":  false,
+    "as_is_found_in_target":  false,
+    "as_is_found_external":  true,
+    "files":  [
+                  {
+                      "path":  ".clasp.json",
+                      "kind":  "clasp_config",
+                      "length":  109,
+                      "last_write_time":  "2026-07-14T10:26:59"
+                  },
+                  {
+                      "path":  ".gitignore",
+                      "kind":  "local_other",
+                      "length":  113,
+                      "last_write_time":  "2026-07-14T12:24:01"
+                  },
+                  {
+                      "path":  "_debugMain.js",
+                      "kind":  "runtime_gas",
+                      "length":  283,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "_triggerDriveScanner.js",
+                      "kind":  "runtime_gas",
+                      "length":  4552,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "_triggerMarkInvoiceEmails.js",
+                      "kind":  "runtime_gas",
+                      "length":  7734,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "appsscript.json",
+                      "kind":  "manifest",
+                      "length":  1251,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "config.js",
+                      "kind":  "runtime_gas",
+                      "length":  3654,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "driveUtils.js",
+                      "kind":  "runtime_gas",
+                      "length":  915,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "EmailDedupService.js",
+                      "kind":  "runtime_gas",
+                      "length":  2462,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "gmailCollection.js",
+                      "kind":  "runtime_gas",
+                      "length":  665,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "gmailDetector.js",
+                      "kind":  "runtime_gas",
+                      "length":  3970,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "gmailLabels.js",
+                      "kind":  "runtime_gas",
+                      "length":  2190,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "gmailProcessInvoiceLINK.js",
+                      "kind":  "runtime_gas",
+                      "length":  6407,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "gmailProcessInvoiceXML.js",
+                      "kind":  "runtime_gas",
+                      "length":  3847,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "gmailScanner.js",
+                      "kind":  "runtime_gas",
+                      "length":  16776,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "gmailSearch.js",
+                      "kind":  "runtime_gas",
+                      "length":  716,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "gmailValidate.js",
+                      "kind":  "runtime_gas",
+                      "length":  211,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "hashUtils.js",
+                      "kind":  "runtime_gas",
+                      "length":  4029,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "main.js",
+                      "kind":  "runtime_gas",
+                      "length":  3564,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "normalization.js",
+                      "kind":  "runtime_gas",
+                      "length":  6642,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "pdfParser.js",
+                      "kind":  "runtime_gas",
+                      "length":  3039,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "PLANNING.md",
+                      "kind":  "documentation",
+                      "length":  7443,
+                      "last_write_time":  "2026-07-14T12:00:51"
+                  },
+                  {
+                      "path":  "PULL_GAS_CODE.bat",
+                      "kind":  "pull_script",
+                      "length":  16697,
+                      "last_write_time":  "2026-07-14T10:29:49"
+                  },
+                  {
+                      "path":  "PULL_GAS_CODE.log",
+                      "kind":  "pull_log",
+                      "length":  2452,
+                      "last_write_time":  "2026-07-14T10:45:41"
+                  },
+                  {
+                      "path":  "sercurity.js",
+                      "kind":  "runtime_gas",
+                      "length":  4149,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "sheetFileLog.js",
+                      "kind":  "runtime_gas",
+                      "length":  125,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "sheetHoaDon.js",
+                      "kind":  "runtime_gas",
+                      "length":  3137,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "sheetMenu.js",
+                      "kind":  "runtime_gas",
+                      "length":  900,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "sheetNhapXuat.js",
+                      "kind":  "runtime_gas",
+                      "length":  4787,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "sheetSidebar.html",
+                      "kind":  "runtime_gas",
+                      "length":  9779,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "sheetTonKho.js",
+                      "kind":  "runtime_gas",
+                      "length":  8400,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "sheetUtils.js",
+                      "kind":  "runtime_gas",
+                      "length":  749,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "sheetWriter.js",
+                      "kind":  "runtime_gas",
+                      "length":  11668,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "stats.js",
+                      "kind":  "runtime_gas",
+                      "length":  261,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "triggers.js",
+                      "kind":  "runtime_gas",
+                      "length":  2461,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "utils.js",
+                      "kind":  "runtime_gas",
+                      "length":  646,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "VietHoaDon_GAS.js",
+                      "kind":  "runtime_gas",
+                      "length":  6132,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "VietHoaDon_UI.html",
+                      "kind":  "runtime_gas",
+                      "length":  52619,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  },
+                  {
+                      "path":  "xmlParser.js",
+                      "kind":  "runtime_gas",
+                      "length":  5865,
+                      "last_write_time":  "2026-07-14T10:45:38"
+                  }
+              ]
+}

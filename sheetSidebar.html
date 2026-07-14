@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 24px;
+      background: #f8fafc;
+    }
+
+    h3 {
+      margin: 0 0 18px;
+      font-size: 25px;
+      font-weight: 700;
+      color: #0f172a;
+      text-align: center;
+    }
+
+    button {
+      background: transparent !important;
+      color: #2563eb !important;
+      border: 1px solid #cbd5f5 !important;
+      box-shadow: none !important;
+      filter: none !important;
+      font-size: 18px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+
+      transition:
+        background-color .15s ease,
+        color .15s ease,
+        transform .15s ease;
+    }
+
+    button span,
+    button svg {
+      color: inherit;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      background-color: transparent;
+      color: #9ca3af;
+      transform: none;
+    }
+
+    .primary {
+      background: transparent;
+      color: #fff;
+    }
+
+    .secondary {
+      background: transparent;
+      color: #fff;
+    }
+
+    .danger {
+      background: transparent;
+      color: #fff;
+    }
+
+    .ghost {
+      background: transparent;
+      color: #374151;
+    }
+
+    .status {
+      margin-top: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #047857;
+      text-align: center;
+    }
+
+    /* ===== PROGRESS ===== */
+    .progress-wrap {
+      margin-top: 16px;
+    }
+
+    .progress-text {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+
+    .progress {
+      width: 100%;
+      height: 12px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #22c55e);
+      transition: width .35s ease;
+    }
+
+    #wrap-tk .progress-bar {
+      background: linear-gradient(90deg, #16a34a, #4ade80);
+    }
+
+    /* ===== DROPDOWN ===== */
+    .dropdown {
+      margin-bottom: 14px;
+    }
+
+    .dropdown-header {
+      background: #e0f2fe;
+      /* xanh da trời nhạt */
+      color: #0f172a;
+      /* đen nhạt */
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      border: 1px solid #bae6fd;
+      /* viền nhẹ cho nổi */
+    }
+
+    .dropdown-body {
+      display: none;
+      margin-top: 10px;
+      background: transparent;
+      /* 👈 trong suốt */
+    }
+
+
+    .dropdown.open .dropdown-body {
+      display: block;
+    }
+
+    .arrow {
+      color: #334155;
+      /* xám đậm */
+      transition: transform .25s ease;
+    }
+
+
+    .dropdown.open .arrow {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-header:hover {
+      background: #bae6fd;
+    }
+  </style>
+</head>
+
+<body>
+  <h3>📊 MENU QUẢN LÝ</h3>
+
+  <!-- ===== QUẢN LÝ KHO ===== -->
+  <div class="dropdown open">
+    <div class="dropdown-header" onclick="toggleDropdown(this)">
+      📦 QUẢN LÝ KHO
+      <span class="arrow">▼</span>
+    </div>
+
+    <div class="dropdown-body">
+      <!-- 🔴 GIỮ NGUYÊN CÁC NÚT -->
+      <button id="btn-tk" class="secondary" onclick="runTonKho()">
+      📦 Cập nhật Tồn kho
+    </button>
+
+      <button id="btn-nx" class="primary" onclick="runBQGQ()">
+      🔁 Cập nhật Nhập/Xuất
+    </button>
+
+      <button class="ghost" onclick="lockPeriod()">
+      🔒 Chốt kỳ (demo)
+    </button>
+
+      <button class="danger" onclick="clearLog()">
+      🧹 Xóa FileLog
+    </button>
+    </div>
+  </div>
+
+  <!-- ===== QUẢN LÝ HÓA ĐƠN ===== -->
+  <div class="dropdown">
+    <div class="dropdown-header" onclick="toggleDropdown(this)">
+      🧾 QUẢN LÝ HÓA ĐƠN
+      <span class="arrow">▼</span>
+    </div>
+
+    <div class="dropdown-body">
+      <button class="primary" onclick="hoaDonNhap()">
+      📥 Hóa đơn Nhập
+    </button>
+
+      <button class="secondary" onclick="hoaDonXuat()">
+      📤 Hóa đơn Xuất
+    </button>
+    </div>
+  </div>
+
+  <!-- ⛔ GIỮ NGUYÊN TOÀN BỘ PHẦN NÀY -->
+  <!-- ===== PROGRESS NHẬP / XUẤT ===== -->
+  <div id="wrap-nx" style="display:none">
+    <div class="progress-text" id="text-nx"></div>
+    <div class="progress">
+      <div class="progress-bar" id="bar-nx"></div>
+    </div>
+  </div>
+
+  <!-- ===== PROGRESS TỒN KHO ===== -->
+  <div id="wrap-tk" style="display:none; margin-top:10px">
+    <div class="progress-text" id="text-tk"></div>
+    <div class="progress">
+      <div class="progress-bar" id="bar-tk"></div>
+    </div>
+  </div>
+  <div id="status" class="status"></div>
+
+
+  <script>
+    let timer = null;
+
+  let runMode = null;   // "TK" | "NX"
+  let tkStarted = false;
+
+  let nxDone = false;
+  let tkDone = false;
+
+  /* ================= BUTTON ================= */
+  function lockButtons(activeBtnId) {
+    const btnTK = document.getElementById("btn-tk");
+    const btnNX = document.getElementById("btn-nx");
+
+    btnTK.disabled = true;
+    btnNX.disabled = true;
+
+    const activeBtn = document.getElementById(activeBtnId);
+    activeBtn.dataset.text = activeBtn.innerText;
+    activeBtn.innerText = "⏳ Đang xử lý...";
+  }
+
+  function unlockButtons() {
+    const btnTK = document.getElementById("btn-tk");
+    const btnNX = document.getElementById("btn-nx");
+
+    btnTK.disabled = false;
+    btnNX.disabled = false;
+
+    if (btnTK.dataset.text) {
+      btnTK.innerText = btnTK.dataset.text;
+      delete btnTK.dataset.text;
+    }
+    if (btnNX.dataset.text) {
+      btnNX.innerText = btnNX.dataset.text;
+      delete btnNX.dataset.text;
+    }
+  }
+
+  /* ================= RUN ================= */
+  function runTonKho() {
+    resetState("⏳ Đang cập nhật Tồn kho...");
+    runMode = "TK";
+
+    lockButtons("btn-tk"); // 👈 chỉ TK đổi text
+
+    google.script.run
+      .withFailureHandler(handleError)
+      .capNhatTonKho();
+
+    timer = setInterval(fetchProgress, 400);
+  }
+
+  function runBQGQ() {
+    resetState("⏳ Đang cập nhật Nhập/Xuất...");
+    runMode = "NX";
+    tkStarted = false;
+
+    lockButtons("btn-nx"); // 👈 chỉ NX đổi text
+
+    google.script.run
+      .withFailureHandler(handleError)
+      .capNhatNhapXuatBQGQ();
+
+    timer = setInterval(fetchProgress, 400);
+  }
+
+  /* ================= PROGRESS ================= */
+  function fetchProgress() {
+
+    /* ===== NHẬP / XUẤT ===== */
+    if (runMode === "NX" && !nxDone) {
+      google.script.run.withSuccessHandler(p => {
+        if (!p || typeof p.value !== "number") return;
+
+        document.getElementById("wrap-nx").style.display = "block";
+        bar("nx", p);
+
+        if (p.value >= 100) {
+          nxDone = true;
+
+          if (!tkStarted) {
+            tkStarted = true;
+            google.script.run
+              .withFailureHandler(handleError)
+              .capNhatTonKho();
+          }
+        }
+      }).getProgressNX();
+
+      return;
+    }
+
+    /* ===== TỒN KHO ===== */
+    if (
+      (
+        runMode === "TK" ||
+        (runMode === "NX" && nxDone)
+      )
+      && !tkDone
+    ) {
+      google.script.run.withSuccessHandler(p => {
+        if (!p || typeof p.value !== "number") return;
+
+        document.getElementById("wrap-tk").style.display = "block";
+        bar("tk", p);
+
+        if (p.value >= 100) {
+          tkDone = true;
+          checkAllDone();
+        }
+      }).getProgressTK();
+    }
+  }
+
+  /* ================= BAR ================= */
+  function bar(type, p) {
+    document.getElementById("bar-" + type).style.width = p.value + "%";
+    document.getElementById("text-" + type).innerText =
+      (type === "nx" ? "Nhập/Xuất" : "Tồn kho")
+      + ": " + p.message + " (" + p.value + "%)";
+  }
+
+  /* ================= ALL DONE ================= */
+  function checkAllDone() {
+    if (
+      (runMode === "TK" && tkDone) ||
+      (runMode === "NX" && nxDone && tkDone)
+    ) {
+      clearInterval(timer);
+      unlockButtons();
+      setStatus("✅ Hoàn tất");
+    }
+  }
+
+  /* ================= UI ================= */
+  function resetState(msg) {
+    nxDone = false;
+    tkDone = false;
+    tkStarted = false;
+
+    document.getElementById("wrap-nx").style.display = "none";
+    document.getElementById("wrap-tk").style.display = "none";
+
+    setStatus(msg);
+    if (timer) clearInterval(timer);
+  }
+
+  function setStatus(msg) {
+    document.getElementById("status").innerText = msg;
+  }
+
+  function handleError(err) {
+    if (timer) clearInterval(timer);
+    unlockButtons();
+    setStatus("❌ Lỗi: " + (err.message || err));
+  }
+
+  function clearLog() {
+    google.script.run.clearLog();
+    setStatus("🗑️ Đã xóa FileLog");
+  }
+
+  function lockPeriod() {
+    alert("Chức năng chốt kỳ – sẽ triển khai sau 😉");
+  }
+
+  function toggleDropdown(header) {
+  header.parentElement.classList.toggle("open");
+  }
+
+  /* demo – chưa gắn backend */
+  function hoaDonNhap() {
+    setStatus("📥 Hóa đơn Nhập – đang chuẩn bị...");
+  }
+
+  function hoaDonXuat() {
+    setStatus("📤 Hóa đơn Xuất – đang chuẩn bị...");
+  }
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,27 @@
+﻿{
+    "generated_at":  "2026-07-14T12:24:31",
+    "workbook_expected":  "ton kho - DATABASE.xlsx",
+    "workbook_path":  "D:\\CODE\\SyncGmailDriveSheet\\ton kho - DATABASE.xlsx",
+    "workbook_found":  false,
+    "status":  "MISSING_LOCAL_WORKBOOK_BLOCKS_A01_GATE",
+    "source_expected_sheets":  [
+                                   "FileLog",
+                                   "Hoa-Don",
+                                   "MaHangHoa",
+                                   "Nhap-Xuat",
+                                   "PhanLoai",
+                                   "TonKho",
+                                   "VietHoaDon",
+                                   "VietTat"
+                               ],
+    "as_is_snapshot_claims_used_as_unverified_reference":  {
+                                                               "source":  "D:\\SyncGmailDriveSheet\\HE_THONG_SYNC_GMAIL_DRIVE_SHEET_AS_IS.md",
+                                                               "TonKho":  "A1:H10 per AS-IS external copy",
+                                                               "Nhap_Xuat":  "A1:P1333 per AS-IS external copy",
+                                                               "Hoa_Don":  "A1:F24 per AS-IS external copy",
+                                                               "MaHangHoa":  "A1:C10 per AS-IS external copy",
+                                                               "PhanLoai":  "A1:A3 per AS-IS external copy",
+                                                               "VietHoaDon":  "A1:S9 per AS-IS external copy"
+                                                           },
+    "sensitive_data_exported":  "NO"
+}

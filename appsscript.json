@@ -1,0 +1,52 @@
+{
+  "timeZone": "Etc/GMT-7",
+  "dependencies": {
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "Gmail",
+        "serviceId": "gmail",
+        "version": "v1"
+      },
+      {
+        "userSymbol": "Drive",
+        "version": "v2",
+        "serviceId": "drive"
+      },
+      {
+        "userSymbol": "Slides",
+        "version": "v1",
+        "serviceId": "slides"
+      },
+      {
+        "userSymbol": "Sheets",
+        "version": "v4",
+        "serviceId": "sheets"
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://mail.google.com/",
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/documents",
+    "https://www.googleapis.com/auth/presentations",
+    "https://www.googleapis.com/auth/script.container.ui",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/userinfo.email"
+  ],
+  "sheets": {
+    "macros": [
+      {
+        "menuName": "onEdit",
+        "functionName": "onEdit"
+      }
+    ]
+  },
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "MYSELF"
+  }
+}

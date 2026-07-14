@@ -1,0 +1,67 @@
+[14-Jul-26 10:45:23.13] START_TIME=14-Jul-26 10:45:23.13
+[14-Jul-26 10:45:23.13] BAT_FILE=D:\CODE\SyncGmailDriveSheet\PULL_GAS_CODE.bat
+[14-Jul-26 10:45:23.13] TARGET_DIR=D:\CODE\SyncGmailDriveSheet
+[14-Jul-26 10:45:23.13] SCRIPT_ID=19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+[14-Jul-26 10:45:23.13] EXPECTED_GOOGLE_ACCOUNT=hungdiepcompany@gmail.com
+[14-Jul-26 10:45:23.14] [1/8] Kiem tra PowerShell va winget
+[14-Jul-26 10:45:23.74] WINDOWS_VERSION=Microsoft Windows 11 Pro N for Workstations 10.0.26100
+[14-Jul-26 10:45:23.78] WINGET_STATUS=FOUND
+[14-Jul-26 10:45:23.78] [2/8] Kiem tra Node.js, npm va npx
+[14-Jul-26 10:45:24.91] NODE_STATUS=OK
+[14-Jul-26 10:45:24.91] NODE_VERSION=v22.12.0
+[14-Jul-26 10:45:24.92] NPM_STATUS=OK
+[14-Jul-26 10:45:24.92] NPM_VERSION=10.9.0
+[14-Jul-26 10:45:24.92] NPX_STATUS=OK
+[14-Jul-26 10:45:24.92] NPX_VERSION=10.9.0
+[14-Jul-26 10:45:24.92] [3/8] Kiem tra hoac cai clasp
+[14-Jul-26 10:45:33.47] CLASP_STATUS=OK
+[14-Jul-26 10:45:33.47] CLASP_VERSION=3.3.0
+[14-Jul-26 10:45:33.48] [4/8] Kiem tra tai khoan Google
+[14-Jul-26 10:45:35.30] AUTHORIZED_EMAIL=hungdiepcompany@gmail.com
+[14-Jul-26 10:45:35.30] [5/8] Kiem tra .clasp.json
+[14-Jul-26 10:45:35.50] CLASP_JSON_STATUS=OK
+[14-Jul-26 10:45:35.53] [6/8] Sao luu code cuc bo
+[14-Jul-26 10:45:35.77] BACKUP_STATUS=BACKUP_CREATED=D:\CODE\SyncGmailDriveSheet\_backup_before_pull\20260714_104535
+[14-Jul-26 10:45:35.78] [7/8] Pull code tu GAS
+[14-Jul-26 10:45:38.87] CLASP_PULL_EXIT=0
+[14-Jul-26 10:45:38.87] [8/8] Xac minh ket qua
+[14-Jul-26 10:45:39.31] CODE_FILE_COUNT=33
+[14-Jul-26 10:45:39.54] FILES_AFTER_PULL_BEGIN
+_debugMain.js
+_triggerDriveScanner.js
+_triggerMarkInvoiceEmails.js
+appsscript.json
+config.js
+driveUtils.js
+EmailDedupService.js
+gmailCollection.js
+gmailDetector.js
+gmailLabels.js
+gmailProcessInvoiceLINK.js
+gmailProcessInvoiceXML.js
+gmailScanner.js
+gmailSearch.js
+gmailValidate.js
+hashUtils.js
+main.js
+normalization.js
+pdfParser.js
+sercurity.js
+sheetFileLog.js
+sheetHoaDon.js
+sheetMenu.js
+sheetNhapXuat.js
+sheetSidebar.html
+sheetTonKho.js
+sheetUtils.js
+sheetWriter.js
+stats.js
+triggers.js
+utils.js
+VietHoaDon_GAS.js
+VietHoaDon_UI.html
+xmlParser.js
+[14-Jul-26 10:45:39.54] FILES_AFTER_PULL_END
+[14-Jul-26 10:45:41.46] POST_CHECK_AUTHORIZED_EMAIL=OK_hungdiepcompany@gmail.com
+[14-Jul-26 10:45:41.46] POST_PULL_VALIDATION=PASS
+[14-Jul-26 10:45:41.46] FINAL_STATUS=PASS
