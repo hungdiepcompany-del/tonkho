@@ -26,3 +26,51 @@ REASON=The requested gate requires workbook schema and data integrity evidence. 
 - Firestore is not the main ledger in this phase.
 - Firebase Storage is not used.
 - Remote GAS is not run in Bundle A.
+
+
+## BUNDLE-B-DEC-001
+
+DECISION=Use Node built-in test runner and standard library only.
+REASON=Bundle B can be completed without npm dependencies or network access.
+
+## BUNDLE-B-DEC-002
+
+DECISION=Load GAS source in Node VM rather than modifying runtime files.
+REASON=Runtime source is immutable in Bundle B.
+
+## BUNDLE-B-DEC-003
+
+DECISION=Bug reproduction tests pass when they prove the current bug exists.
+REASON=Bundle B is a baseline before Bundle C fixes.
+
+
+## BUNDLE-B-DEC-001
+
+DECISION=Use Node built-in test runner and standard library only.
+REASON=Bundle B can be completed without npm dependencies or network access.
+
+## BUNDLE-B-DEC-002
+
+DECISION=Load GAS source in Node VM rather than modifying runtime files.
+REASON=Runtime source is immutable in Bundle B.
+
+## BUNDLE-B-DEC-003
+
+DECISION=Bug reproduction tests pass when they prove the current bug exists.
+REASON=Bundle B is a baseline before Bundle C fixes.
+
+
+## BUNDLE-B-DEC-001
+
+DECISION=Use Node built-in test runner and standard library only.
+REASON=Bundle B can be completed without npm dependencies or network access.
+
+## BUNDLE-B-DEC-002
+
+DECISION=Load GAS source in Node VM rather than modifying runtime files.
+REASON=Runtime source is immutable in Bundle B.
+
+## BUNDLE-B-DEC-003
+
+DECISION=Bug reproduction tests pass when they prove the current bug exists.
+REASON=Bundle B is a baseline before Bundle C fixes.

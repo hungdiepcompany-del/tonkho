@@ -1,0 +1,169 @@
+[
+  {
+    "testId": "SGDS-BUG-001",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/batch-state.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-002",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/body-dedup-attachment.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-003",
+    "class": "POLICY_PENDING",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": true,
+    "path": "tests/bugs/bqgq-ordering.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-004",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/dead-code.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-005",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/drive-dedup-bypass.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-006",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/filelog-competition.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-007",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": true,
+    "path": "tests/bugs/hash-identity.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-008",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/implicit-row-delete.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-009",
+    "class": "POLICY_PENDING",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": true,
+    "path": "tests/bugs/oversell-display.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-010",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/progress-state.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-011",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/regex-escape.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-012",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": false,
+    "path": "tests/bugs/vhd-config.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-BUG-013",
+    "class": "CONFIRMED_BUG_REPRODUCTION",
+    "sourceFiles": [],
+    "fixtureFiles": [],
+    "ownerPolicyRequired": true,
+    "path": "tests/bugs/xml-first-only.test.mjs",
+    "result": "PASS",
+    "meaning": "BUG_REPRODUCED",
+    "futureAction": "Bundle C after owner review"
+  },
+  {
+    "testId": "SGDS-UNIT-001",
+    "class": "CURRENT_BEHAVIOR",
+    "path": "tests/unit",
+    "result": "PASS",
+    "meaning": "CURRENT_BEHAVIOR_LOCKED",
+    "futureAction": "Update only when runtime intentionally changes"
+  },
+  {
+    "testId": "SGDS-SCHEMA-001",
+    "class": "SCHEMA_CONTRACT",
+    "path": "tests/schema",
+    "result": "PASS",
+    "meaning": "SCHEMA_BASELINE_LOCKED",
+    "futureAction": "Bundle C/Beyond"
+  },
+  {
+    "testId": "SGDS-POLICY-001",
+    "class": "TARGET_INVARIANT_DRAFT",
+    "path": "tests/policy-pending/invariants.test.mjs",
+    "result": "SKIP",
+    "meaning": "SKIPPED_RUNTIME_NOT_FIXED",
+    "futureAction": "Owner review before Bundle C"
+  }
+]

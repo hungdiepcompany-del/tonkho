@@ -1,0 +1,18 @@
+{
+  "namedRanges": [
+    "VHD_SL1_BE",
+    "VHD_SL1_TO",
+    "VHD_DG1_BE",
+    "VHD_DG1_TO",
+    "VHD_GIA_TRI_MUC_TIEU",
+    "VHD_TRUOC_THUE",
+    "VHD_UU_TIEN_SL",
+    "VHD_UU_TIEN_DG"
+  ],
+  "workbookOnlyRanges": [
+    "VHD_SL2_BE",
+    "VHD_SL2_TO",
+    "VHD_DG2_BE",
+    "VHD_DG2_TO"
+  ]
+}

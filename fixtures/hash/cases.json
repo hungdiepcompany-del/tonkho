@@ -1,0 +1,16 @@
+[
+  {
+    "name": "same-input-same-hash"
+  },
+  {
+    "name": "whitespace-canonical"
+  },
+  {
+    "name": "different-unit-price-same-current-hash",
+    "testClass": "CONFIRMED_BUG_REPRODUCTION_OR_DESIGN_RISK"
+  },
+  {
+    "name": "different-invoice-key-same-seven-fields",
+    "testClass": "CONFIRMED_BUG_REPRODUCTION_OR_DESIGN_RISK"
+  }
+]

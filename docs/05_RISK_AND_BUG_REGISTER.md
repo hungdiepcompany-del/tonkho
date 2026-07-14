@@ -443,3 +443,35 @@ PROPOSED_INVARIANT=Production logs avoid raw invoice/body content.
 PROPOSED_DIRECTION=Sanitize debug logs in runtime-fix phase.
 TEST_REQUIRED=Logging fixture.
 OWNER_DECISION_REQUIRED=NO
+
+## Bundle B Local Test Coverage
+
+BUNDLE_B_COVERAGE_STATUS=PASS
+TEST_COVERAGE=YES_FOR_MANDATED_B05_REPRODUCTION_GROUPS
+RUNTIME_FIX_STATUS=NOT_STARTED
+
+| Bug or policy area | Test path | Test result |
+| --- | --- | --- |
+| SGDS-CRIT-001 batch-level saved label state | `tests/bugs/batch-state.test.mjs` | BUG_REPRODUCED |
+| SGDS-CRIT-002 implicit blank-hash row delete | `tests/bugs/implicit-row-delete.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-001 XML first-only incoming attachment processing | `tests/bugs/xml-first-only.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-002 Drive scanner dedup bypass | `tests/bugs/drive-dedup-bypass.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-003 hash identity omits economic fields | `tests/bugs/hash-identity.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-005 BQGQ row-order item matching | `tests/bugs/bqgq-ordering.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-006 over-sell BQGQ display policy gap | `tests/bugs/oversell-display.test.mjs` | BUG_REPRODUCED_POLICY_PENDING |
+| SGDS-HIGH-007 TonKho over-sell reset policy gap | `tests/bugs/oversell-display.test.mjs` | BUG_REPRODUCED_POLICY_PENDING |
+| SGDS-HIGH-008 and SGDS-LOW-001 FileLog competition and clear scope | `tests/bugs/filelog-competition.test.mjs` | BUG_REPRODUCED |
+| SGDS-HIGH-009 running/progress cache and early exit state | `tests/bugs/progress-state.test.mjs` | BUG_REPRODUCED |
+| SGDS-MEDIUM-001 PDF VAT first-50-character detection | `tests/unit/pdf-link.test.mjs` | CURRENT_BEHAVIOR_CAPTURED |
+| SGDS-MEDIUM-002 XML namespace fragility | `tests/unit/xml-parser.test.mjs` | CURRENT_BEHAVIOR_CAPTURED |
+| SGDS-MEDIUM-003 VHD undefined sheet config | `tests/bugs/vhd-config.test.mjs` | BUG_REPRODUCED |
+| SGDS-MEDIUM-004 workbook named-range contract mismatch | `tests/schema/sheet-contract.test.mjs` | SCHEMA_CONTRACT_CAPTURED |
+| SGDS-MEDIUM-007 early returns can leave progress incomplete | `tests/bugs/progress-state.test.mjs` | BUG_REPRODUCED |
+| Customer abbreviation regex escape bug | `tests/bugs/regex-escape.test.mjs` | BUG_REPRODUCED |
+| Dead code after writer return | `tests/bugs/dead-code.test.mjs` | BUG_REPRODUCED |
+| Body duplicate branch skips attachment collection | `tests/bugs/body-dedup-attachment.test.mjs` | BUG_REPRODUCED |
+
+CONFIRMED_BUGS_WITH_TESTS=13
+CONFIRMED_BUGS_NOT_LOCALLY_TESTABLE=0_FOR_MANDATED_B05_GROUPS
+POLICY_PENDING_TEST_COUNT=1
+SKIPPED_TEST_COUNT=1_TARGET_INVARIANT_DRAFT

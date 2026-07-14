@@ -1,0 +1,19 @@
+{
+  "threadId": "synthetic-thread-001",
+  "messages": [
+    {
+      "messageId": "synthetic-message-001",
+      "bodyHash": "same-body",
+      "attachments": [
+        "invoice-a.xml"
+      ]
+    },
+    {
+      "messageId": "synthetic-message-002",
+      "bodyHash": "same-body",
+      "attachments": [
+        "invoice-b.xml"
+      ]
+    }
+  ]
+}

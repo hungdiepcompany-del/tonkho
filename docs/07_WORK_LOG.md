@@ -123,3 +123,39 @@ COMMANDS_RUN=contract synthesis from source/workbook/audit.
 RESULT=PASS_DRAFT_READY_FOR_OWNER_REVIEW
 RISKS=Draft is not owner-approved.
 NEXT_SUBPHASE_ALLOWED=BUNDLE_B_LOCAL_TEST_FOUNDATION
+
+
+DATE=2026-07-14
+BUNDLE=BUNDLE_B
+SUBPHASE=B01-B06
+START_STATE=WORKTREE_CLEAN; BRANCH=main; START_COMMIT=dd07a0e; NODE=v22.12.0; NPM_CMD=10.9.0
+FILES_ALLOWED=package.json,tests/**,fixtures/**,scripts/test/**,scripts/checkers/**,artifacts/test/**,docs/**,.gitignore,README.md
+FILES_CHANGED=package.json,tests/**,fixtures/**,scripts/test/**,scripts/checkers/**,artifacts/test/**,docs/**,README.md
+COMMANDS_RUN=node/npm preflight; local source reads; read-only workbook schema reuse; npm test; npm run check; PowerShell checkers; git diff --check
+RESULT=PASS_LOCAL_TEST_FOUNDATION_PENDING_FINAL_VALIDATION
+RISKS=Bug reproduction PASS means bugs are still present, not fixed.
+NEXT_SUBPHASE_ALLOWED=OWNER_REVIEW_BEFORE_BUNDLE_C
+
+
+DATE=2026-07-14
+BUNDLE=BUNDLE_B
+SUBPHASE=B01-B06
+START_STATE=WORKTREE_CLEAN; BRANCH=main; START_COMMIT=dd07a0e; NODE=v22.12.0; NPM_CMD=10.9.0
+FILES_ALLOWED=package.json,tests/**,fixtures/**,scripts/test/**,scripts/checkers/**,artifacts/test/**,docs/**,.gitignore,README.md
+FILES_CHANGED=package.json,tests/**,fixtures/**,scripts/test/**,scripts/checkers/**,artifacts/test/**,docs/**,README.md
+COMMANDS_RUN=node/npm preflight; local source reads; read-only workbook schema reuse; npm test; npm run check; PowerShell checkers; git diff --check
+RESULT=PASS_LOCAL_TEST_FOUNDATION_PENDING_FINAL_VALIDATION
+RISKS=Bug reproduction PASS means bugs are still present, not fixed.
+NEXT_SUBPHASE_ALLOWED=OWNER_REVIEW_BEFORE_BUNDLE_C
+
+
+DATE=2026-07-14
+BUNDLE=BUNDLE_B
+SUBPHASE=B01-B06
+START_STATE=WORKTREE_CLEAN; BRANCH=main; START_COMMIT=dd07a0e; NODE=v22.12.0; NPM_CMD=10.9.0
+FILES_ALLOWED=package.json,tests/**,fixtures/**,scripts/test/**,scripts/checkers/**,artifacts/test/**,docs/**,.gitignore,README.md
+FILES_CHANGED=package.json,tests/**,fixtures/**,scripts/test/**,scripts/checkers/**,artifacts/test/**,docs/**,README.md
+COMMANDS_RUN=node/npm preflight; local source reads; read-only workbook schema reuse; npm test; npm run check; PowerShell checkers; git diff --check
+RESULT=PASS_LOCAL_TEST_FOUNDATION_PENDING_FINAL_VALIDATION
+RISKS=Bug reproduction PASS means bugs are still present, not fixed.
+NEXT_SUBPHASE_ALLOWED=OWNER_REVIEW_BEFORE_BUNDLE_C

@@ -1,0 +1,242 @@
+[
+  {
+    "function": "normalizeTextForCompare_",
+    "sourceFile": "normalization.js",
+    "category": "PURE",
+    "dependencies": [],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": false,
+    "notes": "Text canonicalization."
+  },
+  {
+    "function": "normalizeHashText_",
+    "sourceFile": "normalization.js",
+    "category": "MOSTLY_PURE",
+    "dependencies": [
+      "Utilities.formatDate"
+    ],
+    "testStrategy": "VM_WITH_STUBS",
+    "ownerPolicyRequired": false,
+    "notes": "Hash text canonicalization."
+  },
+  {
+    "function": "normalizeInvoiceNo_",
+    "sourceFile": "normalization.js",
+    "category": "PURE",
+    "dependencies": [],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": false,
+    "notes": "Invoice number trimming/current numeric conversion."
+  },
+  {
+    "function": "parseInvoiceDateValue_",
+    "sourceFile": "normalization.js",
+    "category": "PURE",
+    "dependencies": [],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": false,
+    "notes": "Date parser."
+  },
+  {
+    "function": "normalizeCustomerName_",
+    "sourceFile": "normalization.js",
+    "category": "PURE",
+    "dependencies": [],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": false,
+    "notes": "Regex abbreviation replacement has known metacharacter risk."
+  },
+  {
+    "function": "buildHashFromText_",
+    "sourceFile": "hashUtils.js",
+    "category": "MOSTLY_PURE",
+    "dependencies": [
+      "Utilities.computeDigest"
+    ],
+    "testStrategy": "VM_WITH_STUBS",
+    "ownerPolicyRequired": false,
+    "notes": "SHA-256 builder."
+  },
+  {
+    "function": "buildInvoiceItemHash_",
+    "sourceFile": "hashUtils.js",
+    "category": "MOSTLY_PURE",
+    "dependencies": [
+      "normalizeHashText_",
+      "buildHashFromText_"
+    ],
+    "testStrategy": "VM_WITH_STUBS",
+    "ownerPolicyRequired": true,
+    "notes": "Current 7-field line hash omits price."
+  },
+  {
+    "function": "buildInvoiceKey_",
+    "sourceFile": "sheetHoaDon.js",
+    "category": "MOSTLY_PURE",
+    "dependencies": [
+      "parseInvoiceDateValue_",
+      "Utilities.formatDate",
+      "Session"
+    ],
+    "testStrategy": "VM_WITH_STUBS",
+    "ownerPolicyRequired": true,
+    "notes": "Current invoiceKey helper."
+  },
+  {
+    "function": "parseInvoiceXML_",
+    "sourceFile": "xmlParser.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "XmlService",
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "VM_WITH_STUBS",
+    "ownerPolicyRequired": false,
+    "notes": "Needs item-code sheet stub for line mapping."
+  },
+  {
+    "function": "isVatInvoiceXML_",
+    "sourceFile": "xmlParser.js",
+    "category": "PURE",
+    "dependencies": [
+      "normalizeTextForCompare_"
+    ],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": false,
+    "notes": "VAT XML recognition."
+  },
+  {
+    "function": "extractVatMetaFromPDFText_",
+    "sourceFile": "pdfParser.js",
+    "category": "PURE",
+    "dependencies": [
+      "CONFIG"
+    ],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": false,
+    "notes": "PDF text metadata regex."
+  },
+  {
+    "function": "isVatInvoicePDF_",
+    "sourceFile": "pdfParser.js",
+    "category": "PURE",
+    "dependencies": [],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": false,
+    "notes": "Current first-50-char detector."
+  },
+  {
+    "function": "extractAllLinksFromMessage_",
+    "sourceFile": "gmailProcessInvoiceLINK.js",
+    "category": "PURE",
+    "dependencies": [
+      "message body stub"
+    ],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": false,
+    "notes": "URL extraction from synthetic message."
+  },
+  {
+    "function": "getItemCodeFromSheet_",
+    "sourceFile": "xmlParser.js",
+    "category": "PURE",
+    "dependencies": [
+      "normalizeTextForCompare_"
+    ],
+    "testStrategy": "DIRECT_VM",
+    "ownerPolicyRequired": true,
+    "notes": "Ordered includes matching."
+  },
+  {
+    "function": "scanInvoiceInEmails_",
+    "sourceFile": "gmailScanner.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "GmailApp",
+      "DriveApp",
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "STATIC_CHECK",
+    "ownerPolicyRequired": false,
+    "notes": "Production scanner; no local execution."
+  },
+  {
+    "function": "triggerScanInvoiceDriveFolder",
+    "sourceFile": "_triggerDriveScanner.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "DriveApp",
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "STATIC_CHECK",
+    "ownerPolicyRequired": false,
+    "notes": "Production scanner; no local execution."
+  },
+  {
+    "function": "_mainInternal_",
+    "sourceFile": "main.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "GmailApp",
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "STATIC_CHECK",
+    "ownerPolicyRequired": false,
+    "notes": "Production orchestration; no local execution."
+  },
+  {
+    "function": "writeInvoicesToSheet_",
+    "sourceFile": "sheetWriter.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "STATIC_CHECK",
+    "ownerPolicyRequired": false,
+    "notes": "Writer mutates sheet in production; static/mock only."
+  },
+  {
+    "function": "filterRowsByHashIndex_",
+    "sourceFile": "hashUtils.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "VM_WITH_STUBS",
+    "ownerPolicyRequired": false,
+    "notes": "Dedup logic can use in-memory sheet stub."
+  },
+  {
+    "function": "capNhatNhapXuatBQGQ",
+    "sourceFile": "sheetNhapXuat.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "MODEL_ONLY",
+    "ownerPolicyRequired": true,
+    "notes": "No production execution; model current row-order behavior."
+  },
+  {
+    "function": "capNhatTonKho",
+    "sourceFile": "sheetTonKho.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "MODEL_ONLY",
+    "ownerPolicyRequired": true,
+    "notes": "No production execution; model oversell behavior."
+  },
+  {
+    "function": "vhdGetInitialData",
+    "sourceFile": "VietHoaDon_GAS.js",
+    "category": "GAS_DEPENDENT",
+    "dependencies": [
+      "SpreadsheetApp"
+    ],
+    "testStrategy": "STATIC_CHECK",
+    "ownerPolicyRequired": false,
+    "notes": "VHD.SHEET_NAME config bug."
+  }
+]

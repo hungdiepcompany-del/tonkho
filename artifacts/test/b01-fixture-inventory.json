@@ -1,0 +1,62 @@
+[
+  {
+    "type": "XML",
+    "path": "fixtures/xml",
+    "status": "READY_SYNTHETIC"
+  },
+  {
+    "type": "PDF_TEXT",
+    "path": "fixtures/pdf-text",
+    "status": "READY_SYNTHETIC"
+  },
+  {
+    "type": "EMAIL_METADATA",
+    "path": "fixtures/gmail",
+    "status": "READY_SYNTHETIC"
+  },
+  {
+    "type": "NORMALIZATION",
+    "path": "fixtures/normalization",
+    "status": "READY_SYNTHETIC"
+  },
+  {
+    "type": "HASH",
+    "path": "fixtures/hash",
+    "status": "READY_SYNTHETIC"
+  },
+  {
+    "type": "INVOICE_KEY",
+    "path": "fixtures/invoice-key",
+    "status": "READY_SYNTHETIC"
+  },
+  {
+    "type": "SHEET_SCHEMA",
+    "path": "fixtures/sheets/workbook-schema-snapshot.json",
+    "status": "READY_FROM_READ_ONLY_SCHEMA"
+  },
+  {
+    "type": "GMAIL_THREAD_MODEL",
+    "path": "fixtures/gmail/thread-model.json",
+    "status": "READY_SYNTHETIC"
+  },
+  {
+    "type": "DRIVE_FILE_MODEL",
+    "path": "fixtures/drive/file-model.json",
+    "status": "READY_SYNTHETIC"
+  },
+  {
+    "type": "BQGQ",
+    "path": "fixtures/inventory/transactions.json",
+    "status": "READY_SYNTHETIC_POLICY_PENDING"
+  },
+  {
+    "type": "INVENTORY",
+    "path": "fixtures/inventory/transactions.json",
+    "status": "READY_SYNTHETIC_POLICY_PENDING"
+  },
+  {
+    "type": "VHD_INPUT",
+    "path": "fixtures/vhd/input.json",
+    "status": "READY_SYNTHETIC"
+  }
+]

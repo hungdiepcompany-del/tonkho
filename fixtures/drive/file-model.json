@@ -1,0 +1,14 @@
+{
+  "files": [
+    {
+      "name": "20260115_0100000001_SYNTHETIC_000123.xml",
+      "type": "XML",
+      "id": "synthetic-drive-file-xml"
+    },
+    {
+      "name": "20260115_0100000001_SYNTHETIC_000123.pdf",
+      "type": "PDF",
+      "id": "synthetic-drive-file-pdf"
+    }
+  ]
+}

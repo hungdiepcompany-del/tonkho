@@ -1,0 +1,15 @@
+{
+  "name": "sync-gmail-drive-sheet-local-tests",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Local-only regression and safety tests for SyncGmailDriveSheet",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "test:unit": "node --test \"tests/unit/*.test.mjs\"",
+    "test:bugs": "node --test \"tests/bugs/*.test.mjs\"",
+    "test:static": "node --test \"tests/static/*.test.mjs\"",
+    "test:schemas": "node --test \"tests/schema/*.test.mjs\"",
+    "check": "node scripts/test/run-all-checks.mjs"
+  }
+}

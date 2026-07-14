@@ -1,0 +1,14 @@
+[
+  {
+    "issueDate": "2026-01-15",
+    "taxCode": "0100000001",
+    "invoiceNo": "000123",
+    "currentExpected": "20260115_0100000001_000123"
+  },
+  {
+    "issueDate": "15/01/2026",
+    "taxCode": "MST:0100000001",
+    "invoiceNo": "123",
+    "currentExpected": "20260115_0100000001_123"
+  }
+]

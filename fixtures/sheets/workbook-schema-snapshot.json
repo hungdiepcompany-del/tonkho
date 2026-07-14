@@ -1,0 +1,247 @@
+{
+  "source": "ton kho - DATABASE.xlsx",
+  "workbookSha256": "EF44EC11949969E81953C27848C3BDF1886BB647547DE4A70EF05D4BF8FDB267",
+  "sheetNames": [
+    "TonKho",
+    "Nhap-Xuat",
+    "Hoa-Don",
+    "MaHangHoa",
+    "PhanLoai",
+    "VietTat",
+    "FileLog",
+    "VietHoaDon"
+  ],
+  "sheets": [
+    {
+      "name": "TonKho",
+      "usedRange": "A1:H10",
+      "rowCount": 10,
+      "columnCount": 8,
+      "headers": [
+        "Mã hàng",
+        "Tên hàng",
+        "ĐVT",
+        "Số lượng",
+        "Giá trị",
+        "Đơn giá BQ",
+        "",
+        ""
+      ],
+      "formulaCount": 2,
+      "formulaCells": [
+        {
+          "cell": "D10",
+          "formula": "=SUM(tblTonKho[Số lượng])"
+        },
+        {
+          "cell": "E10",
+          "formula": "=SUM(tblTonKho[Giá trị])"
+        }
+      ]
+    },
+    {
+      "name": "Nhap-Xuat",
+      "usedRange": "A1:P1333",
+      "rowCount": 1333,
+      "columnCount": 16,
+      "headers": [
+        "STT",
+        "Ngày",
+        "Hóa đơn số",
+        "Tên khách hàng",
+        "Mã hàng",
+        "Tên hàng",
+        "Phân loại",
+        "Số lượng",
+        "Đơn giá",
+        "Thành tiền",
+        "Đơn giá BQ",
+        "Số lượng tồn",
+        "Giá trị tồn",
+        "HashIndex",
+        "InvoiceKey",
+        "HĐ"
+      ],
+      "formulaCount": 0,
+      "formulaCells": []
+    },
+    {
+      "name": "Hoa-Don",
+      "usedRange": "A1:F24",
+      "rowCount": 24,
+      "columnCount": 6,
+      "headers": [
+        "invoiceKey",
+        "XML_id",
+        "XML_status",
+        "PDF_id",
+        "PDF_status",
+        "View"
+      ],
+      "formulaCount": 0,
+      "formulaCells": []
+    },
+    {
+      "name": "MaHangHoa",
+      "usedRange": "A1:C10",
+      "rowCount": 10,
+      "columnCount": 3,
+      "headers": [
+        "Mã hàng",
+        "Tên hàng",
+        "ĐVT"
+      ],
+      "formulaCount": 0,
+      "formulaCells": []
+    },
+    {
+      "name": "PhanLoai",
+      "usedRange": "A1:A3",
+      "rowCount": 3,
+      "columnCount": 1,
+      "headers": [
+        "P.loại"
+      ],
+      "formulaCount": 0,
+      "formulaCells": []
+    },
+    {
+      "name": "VietTat",
+      "usedRange": "A1:B28",
+      "rowCount": 28,
+      "columnCount": 2,
+      "headers": [
+        "Tên đầy đủ",
+        "Tên viết tắt"
+      ],
+      "formulaCount": 0,
+      "formulaCells": []
+    },
+    {
+      "name": "FileLog",
+      "usedRange": "A1:D5",
+      "rowCount": 5,
+      "columnCount": 4,
+      "headers": [
+        "Dòng NX",
+        "Ngày",
+        "Mã hàng",
+        "Diễn giải"
+      ],
+      "formulaCount": 0,
+      "formulaCells": []
+    },
+    {
+      "name": "VietHoaDon",
+      "usedRange": "A1:S9",
+      "rowCount": 9,
+      "columnCount": 19,
+      "headers": [
+        "Trường",
+        "Giá trị / Từ",
+        "Đến",
+        "Ghi chú",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "SL1",
+        "ĐG1",
+        "SL2",
+        "ĐG2",
+        "Giá trị"
+      ],
+      "formulaCount": 0,
+      "formulaCells": []
+    }
+  ],
+  "namedRanges": [
+    {
+      "name": "VHD_TRUOC_THUE",
+      "destinations": [
+        "VietHoaDon!$B$7"
+      ]
+    },
+    {
+      "name": "VHD_UU_TIEN_DG",
+      "destinations": [
+        "VietHoaDon!$B$9"
+      ]
+    },
+    {
+      "name": "VHD_SL1_TO",
+      "destinations": [
+        "VietHoaDon!$C$2"
+      ]
+    },
+    {
+      "name": "VHD_DG1_BE",
+      "destinations": [
+        "VietHoaDon!$B$3"
+      ]
+    },
+    {
+      "name": "VHD_UU_TIEN_SL",
+      "destinations": [
+        "VietHoaDon!$B$8"
+      ]
+    },
+    {
+      "name": "VHD_DG1_TO",
+      "destinations": [
+        "VietHoaDon!$C$3"
+      ]
+    },
+    {
+      "name": "VHD_DG2_TO",
+      "destinations": [
+        "VietHoaDon!$C$5"
+      ]
+    },
+    {
+      "name": "VHD_SL1_BE",
+      "destinations": [
+        "VietHoaDon!$B$2"
+      ]
+    },
+    {
+      "name": "VHD_GIA_TRI_MUC_TIEU",
+      "destinations": [
+        "VietHoaDon!$B$6"
+      ]
+    },
+    {
+      "name": "VHD_DG2_BE",
+      "destinations": [
+        "VietHoaDon!$B$5"
+      ]
+    },
+    {
+      "name": "VHD_SL2_TO",
+      "destinations": [
+        "VietHoaDon!$C$4"
+      ]
+    },
+    {
+      "name": "VHD_SL2_BE",
+      "destinations": [
+        "VietHoaDon!$B$4"
+      ]
+    }
+  ],
+  "aggregateIntegrity": {
+    "data_rows": 1332,
+    "blank_hash_count": 0,
+    "duplicate_hash_count": 10,
+    "duplicate_hash_groups": 10,
+    "duplicate_invoiceKey_count": 2,
+    "duplicate_invoiceKey_groups": 1,
+    "rows_missing_any_J_to_M": 23
+  }
+}
