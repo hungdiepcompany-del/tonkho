@@ -195,3 +195,15 @@ COMMANDS_RUN=git preflight; required docs read; Bundle C diff inventory/stat/che
 RESULT=PASS_BUNDLE_C_DIFF_APPROVED_FOR_DEPLOY_READINESS
 RISKS=SGDS-CRIT-003 durable transaction remains not fixed; no production smoke or GAS push performed.
 NEXT_SUBPHASE_ALLOWED=BUNDLE_C_GAS_PUSH_OWNER_APPROVAL_GATE
+
+
+DATE=2026-07-14
+BUNDLE=BUNDLE_C_GAS_PUSH
+SUBPHASE=CONTROLLED_PUSH_ONLY
+START_STATE=WORKTREE_CLEAN; BRANCH=main; START_COMMIT=9ea3f4bcb47ff4ac83e63743a2e9f7fc57659cd7; OWNER_MARKER=OWNER_APPROVE_BUNDLE_C_GAS_PUSH
+FILES_ALLOWED=docs/releases/BUNDLE_C_GAS_PUSH.md,docs/00_INDEX.md,docs/07_WORK_LOG.md,docs/09_VALIDATION_LOG.md,docs/99_NEXT_AI_HANDOFF.md,artifacts/releases/bundle-c-clasp-push-sanitized.txt
+FILES_CHANGED=evidence and handoff docs only after push
+COMMANDS_RUN=git preflight; .clasp.json scriptId check; clasp account check; npm.cmd test twice; npm.cmd run check; npm.cmd run check:bundle-c; doc/security/workbook/link checkers; clasp status; one clasp push; post-push clasp status/versions/deployments read-only
+RESULT=PASS_PUSHED_NOT_SMOKE_VERIFIED
+RISKS=SGDS-CRIT-003 durable transaction remains not fixed; production smoke not run.
+NEXT_SUBPHASE_ALLOWED=OWNER_REVIEW_POST_PUSH_AND_SMOKE_SCOPE

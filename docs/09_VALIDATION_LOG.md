@@ -68,3 +68,49 @@ GIT_PUSH=NOT_RUN
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ALLOWED_PHASE=BUNDLE_C_GAS_PUSH_OWNER_APPROVAL_GATE
 OWNER_MARKERS_REQUIRED=OWNER_APPROVE_BUNDLE_C_GAS_PUSH
+
+
+## Bundle C Controlled GAS Push Validation
+
+BUNDLE_C_GAS_PUSH_STATUS=PASS_PUSHED_NOT_SMOKE_VERIFIED
+VALIDATED_AT=2026-07-14
+OWNER_MARKER=OWNER_APPROVE_BUNDLE_C_GAS_PUSH
+RUNTIME_FIX_COMMIT=37c351221b3b3ffc490fefcb74bde9bb7964dd9f
+OWNER_REVIEW_COMMIT=9ea3f4bcb47ff4ac83e63743a2e9f7fc57659cd7
+PUSH_SOURCE_HEAD=9ea3f4bcb47ff4ac83e63743a2e9f7fc57659cd7
+GAS_SCRIPT_ID=19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+AUTHORIZED_ACCOUNT=hungdiepcompany@gmail.com
+ACCOUNT_MATCH=YES
+SCRIPT_ID_MATCH=YES
+
+| Check | Result |
+| --- | --- |
+| Git preflight | PASS: main, clean, HEAD=9ea3f4bcb47ff4ac83e63743a2e9f7fc57659cd7 |
+| `.clasp.json` script ID | PASS |
+| clasp authorized account | PASS: hungdiepcompany@gmail.com |
+| `npm.cmd test` first pass | PASS: 48 tests, 47 pass, 1 skipped |
+| `npm.cmd test` second pass | PASS: 48 tests, 47 pass, 1 skipped |
+| `npm.cmd run check` | PASS: `BUNDLE_C_AGGREGATE_CHECK=PASS` |
+| `npm.cmd run check:bundle-c` | PASS: `BUNDLE_C_CHECK=PASS` |
+| doc/security/workbook/link checkers | PASS |
+| pre-push `clasp status` | PASS: tracked runtime set only |
+| `clasp push` | PASS: one attempt, exit code 0, 34 files pushed |
+| post-push `clasp status` | PASS |
+| post-push `clasp versions` | PASS_READ_ONLY |
+| post-push `clasp deployments` | PASS_READ_ONLY |
+
+CLASP_PUSH_ATTEMPT_COUNT=1
+CLASP_PUSH_EXIT_CODE=0
+CLASP_PUSH_RESULT=PASS
+GAS_PUSH=PASS
+GAS_DEPLOY=NOT_RUN
+GAS_FUNCTION_RUN=NOT_RUN
+PRODUCTION_SMOKE=NOT_RUN
+GMAIL_MUTATION=NONE_BY_PHASE
+DRIVE_MUTATION=NONE_BY_PHASE
+SHEETS_MUTATION=NONE_BY_PHASE
+SCRIPT_PROPERTIES_MUTATION=NONE_BY_PHASE
+TRIGGER_MUTATION=NONE_BY_PHASE
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ALLOWED_PHASE=OWNER_REVIEW_POST_PUSH_AND_SMOKE_SCOPE
+OWNER_MARKERS_REQUIRED=OWNER_APPROVE_BUNDLE_C_PRODUCTION_SMOKE
