@@ -615,7 +615,7 @@ NEXT_ACTION=Superseded after manual Apps Script editor visibility proved the fun
 
 ## SGDS C-S3 Pre-Execution Evidence Blocker
 
-STATUS=OPEN_BLOCKER
+STATUS=SUPERSEDED_BY_OWNER_INTERNAL_PRECHECK_APPROVAL
 SEVERITY=HIGH
 PHASE=BUNDLE_C_S3_EXACT_THREAD_ONE_INVOICE_SMOKE
 EVIDENCE=Manual Apps Script editor resume verified the expected Google account, script ID, exact Gmail sample, executor source file, and `runApprovedBundleCSingleThreadSmoke` function selector. The run was not started because independent parse-only XML evidence and pre-execution Sheet/Drive counts were not available from the approved browser surfaces without reading sensitive invoice payloads into evidence or relying on the executor itself as the first checker.
@@ -624,4 +624,18 @@ PRODUCTION_MUTATION=NONE
 SCRIPT_PROPERTIES_MUTATION=NONE
 MANUAL_FUNCTION_EXECUTION_ATTEMPT_COUNT=0
 SGDS_CRIT_003_STATUS=NOT_FIXED
-NEXT_ACTION=Resume only with owner-provided precheck evidence or an explicit owner marker accepting the executor's internal prechecks as the bounded pre-mutation gate.
+NEXT_ACTION=Superseded after owner marker `OWNER_APPROVE_C_S3_EXECUTOR_INTERNAL_PRECHECK_AND_RUN_ONCE` accepted executor internal prechecks for the one allowed run.
+
+## SGDS C-S3 Post-Execution Verification Blocker
+
+STATUS=OPEN_BLOCKER
+SEVERITY=HIGH
+PHASE=BUNDLE_C_S3_EXACT_THREAD_ONE_INVOICE_SMOKE
+EVIDENCE=The owner-approved Apps Script editor execution started and safe result properties report `SUCCEEDED`, `COMMITTED`, expected line count `2`, and committed line count `2`. Gmail saved-label verification passed by exact label search. Direct Sheet/Hoa-Don and Drive postchecks remain incomplete because the available browser/tool surfaces could not provide readable Sheet export or generated Drive file visibility.
+IMPACT=The executor result indicates limited one-thread production mutation occurred, but the phase cannot be marked PASS until Sheet and Drive postcheck evidence is completed.
+PRODUCTION_MUTATION=LIMITED_EXECUTOR_COMMITTED_ONE_THREAD_BY_RESULT_PROPERTIES
+SCRIPT_PROPERTIES_MUTATION=TEMP_INPUT_KEYS_SET_THEN_REMOVED_SAFE_RESULT_KEYS_RETAINED
+MANUAL_FUNCTION_EXECUTION_ATTEMPT_COUNT=1
+FUNCTION_EXECUTION_STARTED=YES
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ACTION=Resume only for bounded post-execution Sheet/Drive verification; do not rerun the executor.
