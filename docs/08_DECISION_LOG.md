@@ -160,3 +160,13 @@ REASON=The system must first prove divergence safely and sanitize evidence. Dele
 
 DECISION=Keep legacy `HashIndex` and persisted `InvoiceKey` compatibility during the durable-state implementation slices.
 REASON=Bundle C explicitly avoided identity migration. V2 identity can be stored in durable state, but Sheet dedup compatibility remains required until a separate migration plan is approved.
+
+## SGDS-CRIT-003-D1-DEC-001
+
+DECISION=Implement D1 as inert local GAS-compatible primitives plus VM-loaded unit tests before scanner integration.
+REASON=The owner approved local implementation only. Keeping the primitives unwired avoids production behavior changes while proving the durable state machine and commit-plan contract locally.
+
+## SGDS-CRIT-003-D1-DEC-002
+
+DECISION=Reject changed commit plans once saved in the local durable store.
+REASON=The design requires commit plans to be append-only after creation so retries cannot silently mutate the expected ledger write set.
