@@ -10,6 +10,7 @@
     "test:bugs": "node --test \"tests/bugs/*.test.mjs\"",
     "test:static": "node --test \"tests/static/*.test.mjs\"",
     "test:schemas": "node --test \"tests/schema/*.test.mjs\"",
+    "test:firestore-emulator": "node scripts/test/run-firestore-emulator-tests.mjs",
     "check": "node scripts/test/run-all-checks.mjs",
     "check:bundle-c": "node scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs",
     "check:sgds-crit-003-d3": "node scripts/checkers/check-sgds-crit-003-d3-report-only-reconciliation.mjs",
@@ -19,6 +20,10 @@
     "check:sgds-crit-003-d5b": "node scripts/checkers/check-sgds-crit-003-d5b-shadow-runner.mjs",
     "check:sgds-crit-003-d5c": "node scripts/checkers/check-sgds-crit-003-d5c-read-only-snapshot-adapters.mjs",
     "check:sgds-crit-003-d5d": "node scripts/checkers/check-sgds-crit-003-d5d-production-read-only-smoke.mjs",
-    "check:sgds-crit-003-d5e": "node scripts/checkers/check-sgds-crit-003-d5e-shadow-durable-state-integration.mjs"
+    "check:sgds-crit-003-d5e": "node scripts/checkers/check-sgds-crit-003-d5e-shadow-durable-state-integration.mjs",
+    "check:sgds-crit-003-d5f": "node scripts/checkers/check-sgds-crit-003-d5f-production-firestore-review.mjs",
+    "check:sgds-crit-003-d5g": "node scripts/checkers/check-sgds-crit-003-d5g-firestore-schema-rules.mjs",
+    "check:sgds-crit-003-d5h": "node scripts/checkers/check-sgds-crit-003-d5h-firestore-emulator.mjs",
+    "check:sgds-crit-003-d5i": "node scripts/checkers/check-sgds-crit-003-d5i-rollout-readiness.mjs"
   }
 }
