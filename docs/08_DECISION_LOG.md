@@ -125,3 +125,13 @@ SCRIPT_PROPERTIES_MUTATION=NONE
 GAS_PUSH=BLOCKED_BEFORE_UPLOAD
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ALLOWED_PHASE=RESUME_SINGLE_THREAD_EXECUTOR_GAS_PUSH_AFTER_CLASP_REAUTH
+
+## BUNDLE-C-S4-DEC-001
+
+DECISION=Remove the temporary single-thread smoke executor after the exact-thread production smoke passed.
+REASON=The executor was approved only as a bounded one-thread smoke tool. Keeping it after PASS would preserve an unnecessary production execution surface.
+
+## BUNDLE-C-S4-DEC-002
+
+DECISION=Preserve Bundle C production smoke evidence while removing local executor code, executor-specific tests, executor-specific checker, and package command.
+REASON=The evidence remains part of the production verification record, while the temporary tool itself is no longer required.
