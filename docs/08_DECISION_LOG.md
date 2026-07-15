@@ -180,3 +180,13 @@ REASON=The owner approved report-only reconciliation before any Firestore adapte
 
 DECISION=Keep all D3 findings sanitized and owner-review/report-only, with no automatic repair functions or production entrypoint wiring.
 REASON=SGDS-CRIT-003 remains open until durable persistence and approved production reconciliation/repair phases exist.
+
+## SGDS-CRIT-003-D2-DEC-001
+
+DECISION=Implement the Firestore durable job adapter as a local-only store over an injected transport and injected clock.
+REASON=The owner approved adapter contract and fake/emulator-compatible boundary only; production Firestore access and scanner wiring remain separate phases.
+
+## SGDS-CRIT-003-D2-DEC-002
+
+DECISION=Use expected-version optimistic concurrency and idempotency keys instead of last-write-wins.
+REASON=Durable invoice processing must distinguish confirmed not-written, confirmed written, and unknown write outcome without silently overwriting job state.
