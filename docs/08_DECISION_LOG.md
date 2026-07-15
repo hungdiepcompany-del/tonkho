@@ -170,3 +170,13 @@ REASON=The owner approved local implementation only. Keeping the primitives unwi
 
 DECISION=Reject changed commit plans once saved in the local durable store.
 REASON=The design requires commit plans to be append-only after creation so retries cannot silently mutate the expected ledger write set.
+
+## SGDS-CRIT-003-D3-DEC-001
+
+DECISION=Implement D3 as a local-only report reconciler over supplied durable job, commit-plan, Drive, Hoa-Don, ledger, and Gmail-label snapshots.
+REASON=The owner approved report-only reconciliation before any Firestore adapter, scanner wiring, production read, or repair action.
+
+## SGDS-CRIT-003-D3-DEC-002
+
+DECISION=Keep all D3 findings sanitized and owner-review/report-only, with no automatic repair functions or production entrypoint wiring.
+REASON=SGDS-CRIT-003 remains open until durable persistence and approved production reconciliation/repair phases exist.
