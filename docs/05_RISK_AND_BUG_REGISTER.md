@@ -572,3 +572,18 @@ PRODUCTION_MUTATION=NONE
 RUNTIME_FILES_CHANGED=NO
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ACTION=Resume only after the controllable browser or execution context is verified as the expected account and scanner candidate count is proven exactly 1.
+
+
+## Bundle C Resumed Single-Invoice Smoke Scope Risk
+
+BUNDLE_C_SINGLE_INVOICE_SMOKE_STATUS=BLOCKED_SCANNER_SCOPE_NOT_SINGLE
+RISK_ID=SGDS-SMOKE-GATE-002
+TITLE=Production main scanner queue is not limited to one approved invoice
+SEVERITY=HIGH
+STATUS=BLOCKED_BEFORE_MUTATION
+EVIDENCE=Owner-confirmed Gmail account passed, but Gmail UI searches matching production scanner queries showed OUT=8 and IN=2 candidates. The production `main()` entrypoint scans both queues.
+PRODUCTION_MUTATION=NONE
+EXECUTION_ATTEMPT_COUNT=0
+RUNTIME_FILES_CHANGED=NO
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ACTION=Do not run `main()` for one-invoice smoke until the production candidate queue is exactly one or a separately approved scoped production mechanism exists.
