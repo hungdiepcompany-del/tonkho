@@ -200,3 +200,16 @@ REASON=This order best matches current production behavior, preserves evidence b
 
 DECISION=Treat unknown external write outcomes and partial multi-line ledger commits as reconciliation-required states, not automatic retry or repair.
 REASON=The system must distinguish confirmed not-written from unknown or conflicting external state before any future scanner integration.
+## 2026-07-15 - SGDS-CRIT-003 D5A Local Orchestration Boundary
+
+DECISION=Implement local durable orchestration with injected fake adapters only.
+RATIONALE=D5A proves stepwise idempotency, immutable commit-plan use, unknown-outcome handoff, and saved-label-last behavior without touching production scanners or production Firestore.
+D4_GITHUB_PUSH=PASS
+PRODUCTION_FIRESTORE_ACCESS=NONE
+SCANNER_RUNTIME_WIRING=NOT_STARTED
+MAIN_RUNTIME_WIRING=NOT_STARTED
+AUTOMATIC_REPAIR=DISABLED
+BATCH_SCANNER_ACTIVATION=NOT_APPROVED
+HISTORICAL_BACKFILL=NOT_APPROVED
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_PHASE=SGDS_CRIT_003_D5B_SHADOW_MODE_DESIGN_OR_LOCAL_ADAPTERS
