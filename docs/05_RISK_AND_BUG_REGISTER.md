@@ -76,7 +76,7 @@ REPRODUCTION_CONDITION=Any failure between artifact save, row write, registry up
 DATA_IMPACT=Partial commits cannot be reliably reconciled from canonical job state.
 RUNTIME_IMPACT=Retries can duplicate, miss, or falsely complete invoices.
 PROPOSED_INVARIANT=Every invoice/job has durable state and idempotent commit core.
-PROPOSED_DIRECTION=Create job state and reconciliation before expanding automation.
+PROPOSED_DIRECTION=Create durable per-invoice job state, idempotent commit plan, report-only reconciliation, and owner-gated repair before expanding automation.
 TEST_REQUIRED=Failure-injection fixtures across every boundary.
 OWNER_DECISION_REQUIRED=NO
 
@@ -691,3 +691,15 @@ ADDITIONAL_INVOICE_EXECUTION=NO
 BUNDLE_C_PRODUCTION_VERIFICATION_STATUS=PASS_LIMITED_ONE_INVOICE
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ACTION=BUNDLE_C_CLOSEOUT_AND_NEXT_PRODUCTION_PRIORITY_REVIEW
+
+## SGDS-CRIT-003 Durable Commit Design Evidence
+
+OWNER_MARKER=OWNER_APPROVE_SGDS_CRIT_003_DURABLE_COMMIT_AND_RECONCILIATION_DESIGN
+DESIGN_STATUS=READY_FOR_OWNER_REVIEW
+DESIGN_DOC=docs/phases/SGDS_CRIT_003_DURABLE_COMMIT_AND_RECONCILIATION_DESIGN.md
+RUNTIME_FILES_CHANGED=NO
+PRODUCTION_MUTATION=NONE
+GAS_PUSH=NOT_RUN
+FIREBASE_DEPLOY=NOT_RUN
+SGDS_CRIT_003_STATUS=NOT_FIXED_DESIGN_READY
+NEXT_ACTION=Owner review before `OWNER_APPROVE_SGDS_CRIT_003_D1_LOCAL_IMPLEMENTATION`.

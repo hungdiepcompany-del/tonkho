@@ -1,4 +1,4 @@
-﻿# 08 Decision Log
+# 08 Decision Log
 
 ## A00-DEC-001
 
@@ -145,3 +145,18 @@ REASON=The previous phase allowed exactly one normal clasp push attempt and forb
 
 DECISION=Clean only Bundle C smoke result Script Properties after remote executor removal was independently verified by a second read-only clone.
 REASON=Result keys were safe cleanup residue from the completed one-thread smoke; input keys remained absent, and unrelated Script Properties were out of scope.
+
+## SGDS-CRIT-003-DEC-001
+
+DECISION=Use durable per-invoice job state and append-only audit as the workflow source of truth, while keeping Google Sheets as the current business ledger.
+REASON=SGDS-CRIT-003 is caused by cross-service partial failure. Durable workflow state is needed to resume safely without replacing the Sheet ledger in this phase.
+
+## SGDS-CRIT-003-DEC-002
+
+DECISION=Make reconciliation report-only before any repair write is implemented.
+REASON=The system must first prove divergence safely and sanitize evidence. Deleting, overwriting, or repairing production ledger data requires separate owner approval.
+
+## SGDS-CRIT-003-DEC-003
+
+DECISION=Keep legacy `HashIndex` and persisted `InvoiceKey` compatibility during the durable-state implementation slices.
+REASON=Bundle C explicitly avoided identity migration. V2 identity can be stored in durable state, but Sheet dedup compatibility remains required until a separate migration plan is approved.
