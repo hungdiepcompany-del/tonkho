@@ -315,3 +315,28 @@ SCRIPT_PROPERTIES_MUTATION=NONE
 SGDS_CRIT_003_STATUS=NOT_FIXED
 RISKS=Apps Script production runtime does not yet include the single-thread executor until clasp reauthentication and a successful controlled push.
 NEXT_SUBPHASE_ALLOWED=RESUME_SINGLE_THREAD_EXECUTOR_GAS_PUSH_AFTER_CLASP_REAUTH
+
+## Bundle C-S2 Single-Thread Executor GAS Push Resume
+
+DATE=2026-07-15
+BUNDLE=BUNDLE_C_S2_REVIEW_AND_PUSH_SINGLE_THREAD_EXECUTOR
+SUBPHASE=RESUME_AFTER_DOCS_ONLY_HEAD_ADVANCE
+START_STATE=TRACKED_WORKTREE_CLEAN; BRANCH=main; START_COMMIT=c7bcedf10538fa704e2bd261951eb0628e7e5342; OWNER_MARKER=OWNER_APPROVE_SINGLE_THREAD_EXECUTOR_GAS_PUSH
+FILES_CHANGED=push success evidence docs and sanitized artifact only
+COMMANDS_RUN=git/GitHub preflight; runtime diff review; docs-only head review; npm.cmd test twice; npm.cmd run check; npm.cmd run check:bundle-c; npm.cmd run check:bundle-c-single-thread-executor; git diff --check; clasp account/script checks; clasp status; one clasp push; post-push clasp status/versions/deployments read-only
+RESULT=PASS_SINGLE_THREAD_EXECUTOR_PUSHED
+GITHUB_PUSH=PASS
+GITHUB_SYNC=0/0
+HEAD_ADVANCE_DOCS_ONLY=YES
+LOCAL_EXECUTOR_COMMIT=3fce0f0533fbdd64b73d3fca578e17892ac9e444
+CLASP_PUSH_ATTEMPT_COUNT=1
+CLASP_PUSH_EXIT_CODE=0
+CLASP_PUSH_RESULT=PASS
+GAS_PUSH=PASS
+GAS_RUN=NOT_RUN
+GAS_DEPLOY=NOT_RUN
+PRODUCTION_MUTATION=NONE
+SCRIPT_PROPERTIES_MUTATION=NONE
+SGDS_CRIT_003_STATUS=NOT_FIXED
+RISKS=Executor is now present in GAS source but smoke Script Properties are not set and exact-thread executor has not been run.
+NEXT_SUBPHASE_ALLOWED=SET_SMOKE_PROPERTIES_AND_RUN_EXACT_THREAD_ONCE

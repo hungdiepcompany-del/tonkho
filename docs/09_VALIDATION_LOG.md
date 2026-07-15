@@ -319,6 +319,56 @@ GAS_PUSH=BLOCKED_BEFORE_UPLOAD
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ALLOWED_PHASE=RESUME_SINGLE_THREAD_EXECUTOR_GAS_PUSH_AFTER_CLASP_REAUTH
 
+## Bundle C-S2 Single-Thread Executor GAS Push Resume Validation
+
+BUNDLE_C_S2_STATUS=PASS_SINGLE_THREAD_EXECUTOR_PUSHED
+VALIDATED_AT=2026-07-15
+OWNER_MARKER=OWNER_APPROVE_SINGLE_THREAD_EXECUTOR_GAS_PUSH
+START_HEAD=c7bcedf10538fa704e2bd261951eb0628e7e5342
+LOCAL_EXECUTOR_COMMIT=3fce0f0533fbdd64b73d3fca578e17892ac9e444
+HEAD_ADVANCE_DOCS_ONLY=YES
+HEAD_ADVANCE_COMMIT=c7bcedf10538fa704e2bd261951eb0628e7e5342
+GITHUB_PUSH=PASS
+GITHUB_SYNC=0/0
+EXECUTOR_COMMIT_IS_ANCESTOR=YES
+EXECUTOR_ANCESTOR_EXIT_CODE=0
+ORIGIN_MAIN_CONTAINS_EXECUTOR_COMMIT=YES
+ORIGIN_MAIN_CONTAINS_CURRENT_HEAD=YES
+GAS_SCRIPT_ID_MATCH=YES
+CLASP_PROFILE=hungdiepcompany-gas
+AUTHORIZED_ACCOUNT=hungdiepcompany@gmail.com
+ACCOUNT_MATCH=YES
+
+| Check | Result |
+| --- | --- |
+| Git/GitHub preflight | PASS: main, clean, HEAD=c7bcedf, sync 0/0 |
+| Executor diff review | PASS |
+| Docs-only head review | PASS |
+| `npm.cmd test` first run | PASS: 79 tests, 78 passed, 1 skipped |
+| `npm.cmd test` second run | PASS: 79 tests, 78 passed, 1 skipped |
+| `npm.cmd run check` | PASS |
+| `npm.cmd run check:bundle-c` | PASS: `BUNDLE_C_CHECK=PASS` |
+| `npm.cmd run check:bundle-c-single-thread-executor` | PASS: `BUNDLE_C_SINGLE_THREAD_EXECUTOR_CHECK=PASS` |
+| `git diff --check` | PASS |
+| `clasp status` before push | PASS: `bundleCSingleThreadSmoke.js` tracked, repository-only files untracked |
+| `clasp push` | PASS: pushed 35 files |
+| `clasp status` after push | PASS |
+| `clasp versions` | PASS_READ_ONLY |
+| `clasp deployments` | PASS_READ_ONLY: no new deployment created |
+
+CLASP_PUSH_ATTEMPT_COUNT=1
+CLASP_PUSH_EXIT_CODE=0
+CLASP_PUSH_RESULT=PASS
+GAS_PUSH=PASS
+GAS_RUN=NOT_RUN
+GAS_DEPLOY=NOT_RUN
+SCRIPT_PROPERTIES_MUTATION=NONE
+GAS_FUNCTION_RUN=NO
+PRODUCTION_MUTATION=NONE
+GIT_PUSH_AFTER_EVIDENCE_COMMIT=NOT_RUN
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ALLOWED_PHASE=SET_SMOKE_PROPERTIES_AND_RUN_EXACT_THREAD_ONCE
+
 ## Bundle C-S1 Single-Thread Executor GAS Push Validation
 
 BUNDLE_C_S1_GAS_PUSH_STATUS=BLOCKED_CLASP_REAUTH_REQUIRED
