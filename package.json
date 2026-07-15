@@ -13,6 +13,7 @@
     "check": "node scripts/test/run-all-checks.mjs",
     "check:bundle-c": "node scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs",
     "check:sgds-crit-003-d3": "node scripts/checkers/check-sgds-crit-003-d3-report-only-reconciliation.mjs",
-    "check:sgds-crit-003-d2": "node scripts/checkers/check-sgds-crit-003-d2-firestore-adapter.mjs"
+    "check:sgds-crit-003-d2": "node scripts/checkers/check-sgds-crit-003-d2-firestore-adapter.mjs",
+    "check:sgds-crit-003-d4": "node scripts/checkers/check-sgds-crit-003-d4-scanner-integration-design.mjs"
   }
 }

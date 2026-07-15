@@ -190,3 +190,13 @@ REASON=The owner approved adapter contract and fake/emulator-compatible boundary
 
 DECISION=Use expected-version optimistic concurrency and idempotency keys instead of last-write-wins.
 REASON=Durable invoice processing must distinguish confirmed not-written, confirmed written, and unknown write outcome without silently overwriting job state.
+
+## SGDS-CRIT-003-D4-DEC-001
+
+DECISION=Select Drive -> Hoa-Don -> Nhap-Xuat -> Gmail saved-label projection as the durable mutation order.
+REASON=This order best matches current production behavior, preserves evidence before ledger mutation, and keeps Gmail saved label as the final projection after verified ledger commit.
+
+## SGDS-CRIT-003-D4-DEC-002
+
+DECISION=Treat unknown external write outcomes and partial multi-line ledger commits as reconciliation-required states, not automatic retry or repair.
+REASON=The system must distinguish confirmed not-written from unknown or conflicting external state before any future scanner integration.
