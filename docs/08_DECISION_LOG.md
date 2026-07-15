@@ -271,3 +271,18 @@ MAIN_RUNTIME_WIRING=NOT_STARTED
 AUTOMATIC_REPAIR=DISABLED
 PRODUCTION_MUTATION=NONE
 NEXT_ALLOWED_PHASE=GAS_SOURCE_PUSH_AND_OWNER_MANUAL_D5D_READ_ONLY_SMOKE
+
+## 2026-07-15 - SGDS-CRIT-003 D5D-R Simplified Input Boundary
+
+DECISION=Simplify the D5D read-only smoke to require only `SGDS_D5D_GMAIL_THREAD_ID` and derive XML/PDF file IDs, invoice identity hash, expected line count, line hashes, invoice key hash, and commit plan hash in memory.
+RATIONALE=The owner should not supply derived hashes or Drive IDs. The smoke can derive them from the exact Gmail thread, parsed XML, Hoa-Don, Nhap-Xuat, and runtime helper contracts while preserving a read-only mutation boundary.
+REQUIRED_PROPERTY_COUNT=1
+DERIVED_PROPERTY_COUNT=7
+OLD_DERIVED_PROPERTIES_REQUIRED=NO
+FIRST_20_50_ROW_LIMIT_REMOVED=YES
+PRODUCTION_WRITE=NONE
+PRODUCTION_FIRESTORE_ACCESS=NONE
+SCANNER_RUNTIME_WIRING=NOT_STARTED
+MAIN_RUNTIME_WIRING=NOT_STARTED
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_PHASE=GAS_SOURCE_PUSH_AND_D5D_R_EXACT_THREAD_READ_ONLY_SMOKE

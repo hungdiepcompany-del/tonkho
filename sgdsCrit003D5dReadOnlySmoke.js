@@ -1,14 +1,17 @@
-const SGDS_CRIT_003_D5D_MODE_ = 'EXACT_REFERENCE_PRODUCTION_READ_ONLY';
-const SGDS_CRIT_003_D5D_PROPERTY_KEYS_ = Object.freeze({
-  GMAIL_THREAD_ID: 'SGDS_D5D_GMAIL_THREAD_ID',
-  XML_FILE_ID: 'SGDS_D5D_XML_FILE_ID',
-  PDF_FILE_ID: 'SGDS_D5D_PDF_FILE_ID',
-  INVOICE_IDENTITY_HASH: 'SGDS_D5D_INVOICE_IDENTITY_HASH',
-  EXPECTED_LINE_COUNT: 'SGDS_D5D_EXPECTED_LINE_COUNT',
-  EXPECTED_LINE_HASHES_JSON: 'SGDS_D5D_EXPECTED_LINE_HASHES_JSON',
-  EXPECTED_INVOICE_KEY_HASH: 'SGDS_D5D_EXPECTED_INVOICE_KEY_HASH',
-  EXPECTED_COMMIT_PLAN_HASH: 'SGDS_D5D_EXPECTED_COMMIT_PLAN_HASH'
+const SGDS_CRIT_003_D5D_MODE_ = 'EXACT_THREAD_PRODUCTION_READ_ONLY';
+const SGDS_CRIT_003_D5D_REQUIRED_PROPERTY_KEYS_ = Object.freeze({
+  GMAIL_THREAD_ID: 'SGDS_D5D_GMAIL_THREAD_ID'
 });
+const SGDS_CRIT_003_D5D_DERIVED_PROPERTY_KEYS_ = Object.freeze([
+  'SGDS_D5D_XML_FILE_ID',
+  'SGDS_D5D_PDF_FILE_ID',
+  'SGDS_D5D_INVOICE_IDENTITY_HASH',
+  'SGDS_D5D_EXPECTED_LINE_COUNT',
+  'SGDS_D5D_EXPECTED_LINE_HASHES_JSON',
+  'SGDS_D5D_EXPECTED_INVOICE_KEY_HASH',
+  'SGDS_D5D_EXPECTED_COMMIT_PLAN_HASH'
+]);
+const SGDS_CRIT_003_D5D_PROPERTY_KEYS_ = SGDS_CRIT_003_D5D_REQUIRED_PROPERTY_KEYS_;
 
 async function runSgdsCrit003D5dProductionReadOnlyShadowSmoke() {
   const props = PropertiesService.getScriptProperties();
@@ -18,6 +21,7 @@ async function runSgdsCrit003D5dProductionReadOnlyShadowSmoke() {
     driveReader: createGasDriveReadOnlyReader({ hasher: { hash: hashD5DString_ } }),
     sheetsReader: createGasSheetsReadOnlyReader(),
     identityHasher: { hash: hashD5DString_ },
+    invoiceDeriver: createSgdsCrit003D5dRuntimeInvoiceDeriver_(),
     clock: { now: () => new Date().toISOString() },
     logger: { log: message => Logger.log(message) },
     reconciliationService: { reconcileDurableInvoiceJobReportOnly }
@@ -25,31 +29,83 @@ async function runSgdsCrit003D5dProductionReadOnlyShadowSmoke() {
   return await executor.run();
 }
 
+async function inspectSgdsCrit003D5dExactThreadReadOnly() {
+  const props = PropertiesService.getScriptProperties();
+  const executor = createSgdsCrit003D5dReadOnlySmokeExecutor({
+    propertyReader: { getProperty: key => props.getProperty(key) },
+    gmailReader: createGasGmailReadOnlyReader(),
+    driveReader: createGasDriveReadOnlyReader({ hasher: { hash: hashD5DString_ } }),
+    sheetsReader: createGasSheetsReadOnlyReader(),
+    identityHasher: { hash: hashD5DString_ },
+    invoiceDeriver: createSgdsCrit003D5dRuntimeInvoiceDeriver_(),
+    clock: { now: () => new Date().toISOString() },
+    logger: { log: message => Logger.log(message) },
+    reconciliationService: { reconcileDurableInvoiceJobReportOnly }
+  });
+  return await executor.inspect();
+}
+
 function createSgdsCrit003D5dReadOnlySmokeExecutor(options) {
   const opts = options || {};
   const propertyReader = requireD5DAdapter_(opts.propertyReader, 'propertyReader', ['getProperty']);
+  const gmailReader = requireD5DAdapter_(opts.gmailReader, 'gmailReader', ['readThread']);
+  const sheetsReader = requireD5DAdapter_(opts.sheetsReader, 'sheetsReader', ['readHoaDonRows', 'readLedgerRows']);
   const logger = opts.logger || { log: function () {} };
-  const clock = opts.clock || { now: () => 'D5D_LOCAL_READ_ONLY' };
+  const clock = opts.clock || { now: () => 'D5D_R_LOCAL_READ_ONLY' };
   const identityHasher = opts.identityHasher || { hash: hashD5DString_ };
   const reconciliationService = opts.reconciliationService || { reconcileDurableInvoiceJobReportOnly };
   const adapterFactory = opts.adapterFactory || createProductionReadOnlySnapshotAdapters;
+  const invoiceDeriver = opts.invoiceDeriver || createSgdsCrit003D5dRuntimeInvoiceDeriver_();
   const mutationCounter = { count: 0 };
 
   async function run() {
     safeLogD5D_(logger, 'SGDS_CRIT_003_D5D_SMOKE_START=YES');
-    safeLogD5D_(logger, 'SMOKE_MODE=PRODUCTION_READ_ONLY');
+    safeLogD5D_(logger, 'SMOKE_MODE=EXACT_THREAD_PRODUCTION_READ_ONLY');
+    safeLogD5D_(logger, 'REQUIRED_PROPERTY_COUNT=1');
+    safeLogD5D_(logger, 'REQUIRED_PROPERTY_NAMES=SGDS_D5D_GMAIL_THREAD_ID');
+    safeLogD5D_(logger, 'DERIVED_PROPERTY_COUNT=7');
     safeLogD5D_(logger, 'EXACT_REFERENCE_POLICY=YES');
 
     const config = readD5DConfig_(propertyReader, identityHasher);
     if (!config.ok) {
       return finalizeD5DResult_(logger, {
-        status: 'BLOCKED_EXACT_REFERENCE_CONFIG_MISSING',
-        exactReferenceConfig: 'MISSING',
+        status: 'BLOCKED_EXACT_THREAD_ID_MISSING',
+        exactReferenceConfig: 'MISSING_THREAD_ID',
         productionApiReadStarted: 'NO',
+        requiredPropertyCount: 1,
+        requiredPropertyNames: 'SGDS_D5D_GMAIL_THREAD_ID',
+        derivedPropertyCount: 7,
         mutationAttemptCount: 0,
         productionWrite: 'NONE',
+        productionFirestoreAccess: 'NONE',
         blockerCount: 1,
         findingCodes: config.errors
+      });
+    }
+
+    const derived = await deriveD5DReadOnlyInput_(opts, gmailReader, sheetsReader, invoiceDeriver, identityHasher, config.gmailThreadId);
+    if (!derived.ok) {
+      return finalizeD5DResult_(logger, {
+        status: derived.status || 'BLOCKED_EXACT_THREAD_DERIVATION_FAILED',
+        exactReferenceConfig: 'THREAD_ID_PRESENT',
+        productionApiReadStarted: derived.productionApiReadStarted || 'YES',
+        requiredPropertyCount: 1,
+        requiredPropertyNames: 'SGDS_D5D_GMAIL_THREAD_ID',
+        derivedPropertyCount: 7,
+        threadFound: derived.threadFound ? 'YES' : 'NO',
+        xmlAttachmentCount: derived.xmlAttachmentCount,
+        pdfAttachmentCount: derived.pdfAttachmentCount,
+        pdfSource: derived.pdfSource,
+        gmailReadStatus: derived.gmailReadStatus || 'NOT_RUN',
+        hoaDonReadStatus: derived.hoaDonReadStatus || 'NOT_RUN',
+        ledgerReadStatus: derived.ledgerReadStatus || 'NOT_RUN',
+        hoaDonMatchCount: derived.hoaDonMatchCount,
+        ledgerMatchCount: derived.ledgerMatchCount,
+        mutationAttemptCount: 0,
+        productionWrite: 'NONE',
+        productionFirestoreAccess: 'NONE',
+        blockerCount: 1,
+        findingCodes: derived.findingCodes || []
       });
     }
 
@@ -62,8 +118,8 @@ function createSgdsCrit003D5dReadOnlySmokeExecutor(options) {
       limits: opts.limits || {}
     });
 
-    const before = await collectD5DReadOnlySnapshot_(adapters, reconciliationService, config.input, clock);
-    const after = await collectD5DReadOnlySnapshot_(adapters, reconciliationService, config.input, clock);
+    const before = await collectD5DReadOnlySnapshot_(adapters, reconciliationService, derived.input, clock);
+    const after = await collectD5DReadOnlySnapshot_(adapters, reconciliationService, derived.input, clock);
     const beforeSummary = summarizeD5DReadOnlySnapshot_(before, identityHasher);
     const afterSummary = summarizeD5DReadOnlySnapshot_(after, identityHasher);
     const beforeAfterMatch = stableD5DJson_(beforeSummary) === stableD5DJson_(afterSummary);
@@ -71,7 +127,8 @@ function createSgdsCrit003D5dReadOnlySmokeExecutor(options) {
     const findingCodes = Array.isArray(report.findings)
       ? report.findings.map(finding => safeD5DCode_(finding && finding.code)).filter(Boolean).sort()
       : [];
-    deriveD5DReadFindingCodes_(before, config.input).forEach(code => findingCodes.push(code));
+    deriveD5DReadFindingCodes_(before, derived.input).forEach(code => findingCodes.push(code));
+    derived.findingCodes.forEach(code => findingCodes.push(code));
     const allFindingCodes = Array.from(new Set(findingCodes)).sort();
     const blockerCount = Array.isArray(report.findings)
       ? report.findings.filter(finding => safeD5DString_(finding && finding.repairPolicy) === 'OWNER_REVIEW_REQUIRED').length
@@ -84,8 +141,27 @@ function createSgdsCrit003D5dReadOnlySmokeExecutor(options) {
 
     return finalizeD5DResult_(logger, {
       status: smokeStatus,
-      exactReferenceConfig: 'PRESENT',
+      exactReferenceConfig: 'THREAD_ID_ONLY',
       productionApiReadStarted: 'YES',
+      requiredPropertyCount: 1,
+      requiredPropertyNames: 'SGDS_D5D_GMAIL_THREAD_ID',
+      derivedPropertyCount: 7,
+      threadFound: 'YES',
+      xmlAttachmentCount: derived.xmlAttachmentCount,
+      pdfAttachmentCount: derived.pdfAttachmentCount,
+      pdfSource: derived.pdfSource,
+      invoiceKeyDerived: 'YES',
+      invoiceIdentityHashDerived: 'YES',
+      expectedLineCountDerived: 'YES',
+      expectedLineHashesDerived: 'YES',
+      xmlFileIdAutoResolved: derived.xmlFileIdAutoResolved ? 'YES' : 'NO',
+      pdfFileIdAutoResolved: derived.pdfFileIdAutoResolved ? 'YES' : 'NO',
+      invoiceKeyHashDerived: 'YES',
+      commitPlanHashDerived: 'YES',
+      hoaDonFullUsedRangeSearch: 'YES',
+      ledgerFullUsedRangeSearch: 'YES',
+      chunkedRead: 'YES',
+      first2050RowLimitRemoved: 'YES',
       gmailReadStatus: before.gmail.readStatus,
       driveXmlReadStatus: before.drive.xml.readStatus,
       drivePdfReadStatus: before.drive.pdf.readStatus,
@@ -95,25 +171,277 @@ function createSgdsCrit003D5dReadOnlySmokeExecutor(options) {
       driveArtifactCount: beforeSummary.driveArtifactCount,
       hoaDonMatchCount: beforeSummary.hoaDonMatchCount,
       ledgerMatchCount: beforeSummary.ledgerMatchCount,
-      expectedLedgerLineCount: config.input.expected.lineCount,
+      expectedLedgerLineCount: derived.input.expected.lineCount,
       reconciliationStatus: safeD5DString_(report.status || 'NOT_RUN'),
       findingCount: Math.max(Number(report.findingCount || 0), allFindingCodes.length),
       blockerCount,
       findingCodes: allFindingCodes,
       beforeAfterSnapshotMatch: beforeAfterMatch ? 'YES' : 'NO',
       mutationAttemptCount: mutationCounter.count,
-      productionWrite: 'NONE'
+      productionWrite: 'NONE',
+      productionFirestoreAccess: 'NONE'
     });
   }
 
-  return Object.freeze({ run });
+  async function inspect() {
+    const config = readD5DConfig_(propertyReader, identityHasher);
+    if (!config.ok) {
+      return finalizeD5DResult_(logger, {
+        status: 'BLOCKED_EXACT_THREAD_ID_MISSING',
+        exactReferenceConfig: 'MISSING_THREAD_ID',
+        productionApiReadStarted: 'NO',
+        requiredPropertyCount: 1,
+        requiredPropertyNames: 'SGDS_D5D_GMAIL_THREAD_ID',
+        derivedPropertyCount: 7,
+        mutationAttemptCount: 0,
+        productionWrite: 'NONE',
+        productionFirestoreAccess: 'NONE',
+        blockerCount: 1,
+        findingCodes: config.errors
+      });
+    }
+    const derived = await deriveD5DReadOnlyInput_(opts, gmailReader, sheetsReader, invoiceDeriver, identityHasher, config.gmailThreadId);
+    return finalizeD5DResult_(logger, {
+      status: derived.ok ? 'READY_FOR_D5D_SMOKE' : (derived.status || 'BLOCKED_EXACT_THREAD_DERIVATION_FAILED'),
+      exactReferenceConfig: 'THREAD_ID_ONLY',
+      productionApiReadStarted: derived.productionApiReadStarted || 'YES',
+      requiredPropertyCount: 1,
+      requiredPropertyNames: 'SGDS_D5D_GMAIL_THREAD_ID',
+      derivedPropertyCount: 7,
+      threadFound: derived.threadFound ? 'YES' : 'NO',
+      xmlAttachmentCount: derived.xmlAttachmentCount,
+      pdfAttachmentCount: derived.pdfAttachmentCount,
+      pdfSource: derived.pdfSource,
+      invoiceKeyDerived: derived.ok ? 'YES' : 'NO',
+      invoiceIdentityHashDerived: derived.ok ? 'YES' : 'NO',
+      expectedLineCountDerived: derived.ok ? 'YES' : 'NO',
+      expectedLineHashesDerived: derived.ok ? 'YES' : 'NO',
+      xmlFileIdAutoResolved: derived.xmlFileIdAutoResolved ? 'YES' : 'NO',
+      pdfFileIdAutoResolved: derived.pdfFileIdAutoResolved ? 'YES' : 'NO',
+      invoiceKeyHashDerived: derived.ok ? 'YES' : 'NO',
+      commitPlanHashDerived: derived.ok ? 'YES' : 'NO',
+      hoaDonMatchCount: derived.hoaDonMatchCount,
+      ledgerMatchCount: derived.ledgerMatchCount,
+      expectedLedgerLineCount: derived.input && derived.input.expected && derived.input.expected.lineCount,
+      mutationAttemptCount: 0,
+      productionWrite: 'NONE',
+      productionFirestoreAccess: 'NONE',
+      findingCodes: derived.findingCodes || []
+    });
+  }
+
+  return Object.freeze({ run, inspect });
+}
+
+async function deriveD5DReadOnlyInput_(opts, gmailReader, sheetsReader, invoiceDeriver, hasher, gmailThreadId) {
+  const gmailEvidence = await readD5DGmailEvidence_(gmailReader, gmailThreadId, opts.limits || {});
+  const findingCodes = [];
+  if (!gmailEvidence.exists) {
+    return {
+      ok: false,
+      status: 'BLOCKED_EXACT_THREAD_NOT_FOUND',
+      productionApiReadStarted: 'YES',
+      threadFound: false,
+      gmailReadStatus: gmailEvidence.readStatus || 'NOT_FOUND',
+      xmlAttachmentCount: 0,
+      pdfAttachmentCount: 0,
+      findingCodes: ['EXACT_THREAD_NOT_FOUND']
+    };
+  }
+  if (gmailEvidence.pdfSource === 'LINK_ONLY') findingCodes.push('PDF_EXTERNAL_ACQUISITION_REQUIRED');
+  const xmlAttachments = Array.isArray(gmailEvidence.xmlAttachments) ? gmailEvidence.xmlAttachments : [];
+  if (xmlAttachments.length !== 1) {
+    return {
+      ok: false,
+      status: 'BLOCKED_EXACT_THREAD_XML_AMBIGUOUS',
+      productionApiReadStarted: 'YES',
+      threadFound: true,
+      gmailReadStatus: gmailEvidence.readStatus || 'READ_OK',
+      xmlAttachmentCount: xmlAttachments.length,
+      pdfAttachmentCount: Number(gmailEvidence.pdfAttachmentCount || 0),
+      pdfSource: gmailEvidence.pdfSource || 'ATTACHMENT',
+      findingCodes: ['XML_ATTACHMENT_COUNT_NOT_ONE'].concat(findingCodes)
+    };
+  }
+
+  const derivedInvoice = invoiceDeriver.deriveFromXml({
+    xmlText: xmlAttachments[0].xmlText,
+    invoiceType: opts.invoiceType || 'NHAP',
+    identityHasher: hasher
+  });
+  const baseInput = buildD5DInputFromDerivedInvoice_(derivedInvoice, gmailThreadId, '', '', hasher);
+  const hoaDonRows = await sheetsReader.readHoaDonRows({
+    legacyInvoiceKey: baseInput.commitPlan.legacyInvoiceKey,
+    invoiceKeyV2: baseInput.commitPlan.invoiceKeyV2,
+    maxRows: (opts.limits && opts.limits.MAX_HOA_DON_MATCHES) || 20,
+    fullUsedRangeSearch: true
+  });
+  const hoaDonMatchCount = Array.isArray(hoaDonRows) ? hoaDonRows.length : 0;
+  if (hoaDonMatchCount === 0) findingCodes.push('HOA_DON_ROW_MISSING');
+  if (hoaDonMatchCount > 1) findingCodes.push('HOA_DON_ROW_DUPLICATE');
+  const hoaDonRow = hoaDonMatchCount === 1 ? hoaDonRows[0] : {};
+  const xmlFileId = safeD5DString_(hoaDonRow && hoaDonRow.xmlFileId);
+  const pdfFileId = safeD5DString_(hoaDonRow && hoaDonRow.pdfFileId);
+  const finalInput = buildD5DInputFromDerivedInvoice_(derivedInvoice, gmailThreadId, xmlFileId, pdfFileId, hasher);
+  const ledgerRows = await sheetsReader.readLedgerRows({
+    legacyInvoiceKey: finalInput.commitPlan.legacyInvoiceKey,
+    invoiceKeyV2: finalInput.commitPlan.invoiceKeyV2,
+    lineHashes: finalInput.expected.lineHashes,
+    lineIdentities: finalInput.commitPlan.lineIdentityV2s,
+    maxRows: (opts.limits && opts.limits.MAX_LEDGER_MATCHES) || 50,
+    fullUsedRangeSearch: true
+  });
+  const ledgerMatchCount = Array.isArray(ledgerRows) ? ledgerRows.length : 0;
+  return {
+    ok: true,
+    input: finalInput,
+    threadFound: true,
+    gmailReadStatus: gmailEvidence.readStatus || 'READ_OK',
+    xmlAttachmentCount: xmlAttachments.length,
+    pdfAttachmentCount: Number(gmailEvidence.pdfAttachmentCount || 0),
+    pdfSource: gmailEvidence.pdfSource || (Number(gmailEvidence.pdfAttachmentCount || 0) > 0 ? 'ATTACHMENT' : 'NONE'),
+    hoaDonReadStatus: hoaDonMatchCount === 0 ? 'NOT_FOUND' : hoaDonMatchCount > 1 ? 'MULTIPLE_MATCHES' : 'READ_OK',
+    ledgerReadStatus: ledgerMatchCount === 0 ? 'NOT_FOUND' : 'READ_OK',
+    hoaDonMatchCount,
+    ledgerMatchCount,
+    xmlFileIdAutoResolved: Boolean(xmlFileId),
+    pdfFileIdAutoResolved: Boolean(pdfFileId),
+    findingCodes
+  };
+}
+
+function readD5DGmailEvidence_(gmailReader, gmailThreadId, limits) {
+  if (typeof gmailReader.readThreadEvidence === 'function') {
+    return gmailReader.readThreadEvidence({
+      threadReference: gmailThreadId,
+      maxMessages: Number(limits && limits.MAX_GMAIL_MESSAGES_PER_THREAD || 10),
+      includeXmlText: true
+    });
+  }
+  return gmailReader.readThread({
+    threadReference: gmailThreadId,
+    maxMessages: Number(limits && limits.MAX_GMAIL_MESSAGES_PER_THREAD || 10),
+    includeXmlText: true
+  });
+}
+
+function createSgdsCrit003D5dRuntimeInvoiceDeriver_() {
+  return Object.freeze({
+    deriveFromXml(request) {
+      const invoiceType = request.invoiceType || 'NHAP';
+      const parsed = parseInvoiceXML_(request.xmlText, { type: invoiceType });
+      if (!isVatInvoiceXML_(parsed.meta)) throw new Error('D5D_XML_NOT_VAT_INVOICE');
+      const counterparty = invoiceType === 'XUAT' ? parsed.buyer : parsed.seller;
+      const taxCode = counterparty && counterparty.taxCode || 'UNKNOWNTAXCODE';
+      const invoiceNo = normalizeInvoiceNo_(parsed.meta && parsed.meta.invoiceNo);
+      const invoiceDate = parsed.meta && parsed.meta.invoiceDate || '';
+      const invoiceKey = buildInvoiceKey_(invoiceDate, taxCode, invoiceNo);
+      const identityTuple = [
+        safeD5DString_(parsed.seller && parsed.seller.taxCode),
+        safeD5DString_(parsed.meta && parsed.meta.invoiceSymbol),
+        safeD5DString_(invoiceNo),
+        safeD5DString_(invoiceDate)
+      ].join('|');
+      const dictionary = loadVietTatDictionary_();
+      const rows = (parsed.items || []).map((item, index) => {
+        const customerName = normalizeCustomerName_(counterparty && counterparty.name, dictionary.dic, dictionary.dicVietTat);
+        const values = {
+          invoiceDate,
+          invoiceNo,
+          customerName,
+          itemCode: item.code,
+          itemName: item.name,
+          invoiceType,
+          qty: item.qty
+        };
+        const legacyHashIndex = buildInvoiceItemHash_(values, 'D5D_R_READ_ONLY_XML_DERIVE');
+        return {
+          sourceLineNo: index + 1,
+          legacyHashIndex,
+          lineIdentityV2: legacyHashIndex,
+          immutableFields: {
+            invoiceDate,
+            invoiceNo,
+            customerName,
+            itemCode: item.code,
+            itemName: item.name,
+            invoiceType,
+            qty: item.qty
+          }
+        };
+      });
+      return {
+        invoiceType,
+        invoiceDate,
+        invoiceNo,
+        invoiceSymbol: parsed.meta && parsed.meta.invoiceSymbol,
+        sellerTaxCode: parsed.seller && parsed.seller.taxCode,
+        legacyInvoiceKey: invoiceKey,
+        invoiceKeyV2: invoiceKey,
+        invoiceIdentityHash: hashD5DValue_(identityTuple, request.identityHasher),
+        expectedLineCount: rows.length,
+        lines: rows
+      };
+    }
+  });
+}
+
+function buildD5DInputFromDerivedInvoice_(derived, gmailThreadId, xmlFileId, pdfFileId, hasher) {
+  const legacyHashIndexes = derived.lines.map(line => safeD5DHash_(line.legacyHashIndex));
+  const lineIdentityV2s = derived.lines.map(line => safeD5DHash_(line.lineIdentityV2));
+  const commitPlanSeed = {
+    version: 'DURABLE_COMMIT_PLAN_V1',
+    jobId: 'd5d_' + safeD5DHash_(derived.invoiceIdentityHash).slice(0, 24),
+    legacyInvoiceKey: safeD5DString_(derived.legacyInvoiceKey),
+    invoiceKeyV2: safeD5DString_(derived.invoiceKeyV2 || derived.legacyInvoiceKey),
+    expectedLineCount: Number(derived.expectedLineCount || legacyHashIndexes.length),
+    legacyHashIndexes,
+    lineIdentityV2s,
+    lines: derived.lines.map(line => ({
+      sourceLineNo: Number(line.sourceLineNo || 0),
+      legacyHashIndex: safeD5DHash_(line.legacyHashIndex),
+      lineIdentityV2: safeD5DHash_(line.lineIdentityV2),
+      immutableFields: cloneD5DJson_(line.immutableFields || {})
+    })),
+    hoaDonRegistryTarget: {
+      legacyInvoiceKey: safeD5DString_(derived.legacyInvoiceKey),
+      xmlFileId: safeD5DString_(xmlFileId),
+      pdfFileId: safeD5DString_(pdfFileId)
+    },
+    driveEvidenceTargets: {},
+    invoiceKeyHash: hashD5DValue_(derived.legacyInvoiceKey, hasher),
+    projectionState: 'EXPECT_SAVED_LABEL'
+  };
+  commitPlanSeed.commitPlanHash = hashD5DValue_(stableD5DJson_(commitPlanSeed), hasher);
+  return {
+    jobId: commitPlanSeed.jobId,
+    invoiceIdentityHash: safeD5DHash_(derived.invoiceIdentityHash),
+    job: { jobId: commitPlanSeed.jobId, status: 'COMPLETED', state: 'COMPLETED', commitPlan: cloneD5DJson_(commitPlanSeed) },
+    commitPlan: commitPlanSeed,
+    sourceReferences: {
+      gmailThreadReference: safeD5DString_(gmailThreadId),
+      xmlFileReference: safeD5DString_(xmlFileId),
+      pdfFileReference: safeD5DString_(pdfFileId)
+    },
+    expected: {
+      lineCount: commitPlanSeed.expectedLineCount,
+      lineHashes: legacyHashIndexes,
+      invoiceKeyHash: commitPlanSeed.invoiceKeyHash,
+      commitPlanHash: commitPlanSeed.commitPlanHash
+    },
+    safeReferenceHashes: {
+      gmailThreadHashPrefix: hashPrefixD5D_(gmailThreadId, hasher),
+      xmlFileHashPrefix: hashPrefixD5D_(xmlFileId, hasher),
+      pdfFileHashPrefix: hashPrefixD5D_(pdfFileId, hasher)
+    }
+  };
 }
 
 function deriveD5DReadFindingCodes_(snapshot, input) {
   const codes = [];
-  if (snapshot.drive && Number(snapshot.drive.duplicateCandidateCount || 0) > 0) {
-    codes.push('DRIVE_XML_DUPLICATE', 'DRIVE_PDF_DUPLICATE');
-  }
+  if (snapshot.drive && Number(snapshot.drive.duplicateCandidateCount || 0) > 0) codes.push('DRIVE_XML_DUPLICATE', 'DRIVE_PDF_DUPLICATE');
+  if (snapshot.drive && snapshot.drive.xml && snapshot.drive.xml.readStatus === 'NOT_FOUND') codes.push('DRIVE_XML_MISSING');
+  if (snapshot.drive && snapshot.drive.pdf && snapshot.drive.pdf.readStatus === 'NOT_FOUND') codes.push('DRIVE_PDF_MISSING');
   if (snapshot.drive && snapshot.drive.xml && snapshot.drive.xml.readStatus === 'CONTENT_HASH_MISMATCH') codes.push('DRIVE_CONTENT_HASH_MISMATCH');
   if (snapshot.drive && snapshot.drive.pdf && snapshot.drive.pdf.readStatus === 'CONTENT_HASH_MISMATCH') codes.push('DRIVE_CONTENT_HASH_MISMATCH');
   if (snapshot.hoaDon && snapshot.hoaDon.readStatus === 'NOT_FOUND') codes.push('HOA_DON_ROW_MISSING');
@@ -135,7 +463,7 @@ async function collectD5DReadOnlySnapshot_(adapters, reconciliationService, inpu
   const drive = await adapters.readDriveEvidenceSnapshot(input);
   const hoaDon = await adapters.readHoaDonSnapshot(input);
   const ledger = await adapters.readLedgerSnapshot(input);
-  const reconciliationSnapshot = adaptD5DReconciliationSnapshot_(await adapters.buildDurableReconciliationSnapshot(input), input);
+  const reconciliationSnapshot = await adapters.buildDurableReconciliationSnapshot(input);
   const reconciliationReport = reconciliationService.reconcileDurableInvoiceJobReportOnly(reconciliationSnapshot);
   return {
     gmail: cloneD5DJson_(gmail),
@@ -147,121 +475,10 @@ async function collectD5DReadOnlySnapshot_(adapters, reconciliationService, inpu
   };
 }
 
-function adaptD5DReconciliationSnapshot_(snapshot, input) {
-  const safe = cloneD5DJson_(snapshot || {});
-  const syntheticKey = 'D5D_INVOICE_HASH_' + safeD5DHash_(input && input.expected && input.expected.invoiceKeyHash);
-  const observed = safe.observed || {};
-  const observedHoaDonRow = Array.isArray(observed.hoaDonRows) && observed.hoaDonRows.length === 1 ? observed.hoaDonRows[0] : {};
-
-  function adaptPlan(plan) {
-    if (!plan) return plan;
-    const next = cloneD5DJson_(plan);
-    next.legacyInvoiceKey = syntheticKey;
-    next.invoiceKeyV2 = syntheticKey;
-    if (next.hoaDonRegistryTarget) {
-      next.hoaDonRegistryTarget.legacyInvoiceKey = syntheticKey;
-      if (observedHoaDonRow && observedHoaDonRow.xmlFileId) next.hoaDonRegistryTarget.xmlFileId = observedHoaDonRow.xmlFileId;
-      if (observedHoaDonRow && observedHoaDonRow.pdfFileId) next.hoaDonRegistryTarget.pdfFileId = observedHoaDonRow.pdfFileId;
-      if (observedHoaDonRow && observedHoaDonRow.xmlContentHash) next.hoaDonRegistryTarget.xmlContentHash = observedHoaDonRow.xmlContentHash;
-      if (observedHoaDonRow && observedHoaDonRow.pdfContentHash) next.hoaDonRegistryTarget.pdfContentHash = observedHoaDonRow.pdfContentHash;
-    }
-    return next;
-  }
-
-  safe.commitPlan = adaptPlan(safe.commitPlan);
-  if (safe.job && safe.job.commitPlan) safe.job.commitPlan = adaptPlan(safe.job.commitPlan);
-  if (Array.isArray(observed.hoaDonRows)) {
-    observed.hoaDonRows = observed.hoaDonRows.map(row => ({
-      ...row,
-      legacyInvoiceKey: syntheticKey,
-      invoiceKeyV2: syntheticKey
-    }));
-  }
-  if (Array.isArray(observed.ledgerRows)) {
-    observed.ledgerRows = observed.ledgerRows.map(row => ({
-      ...row,
-      legacyInvoiceKey: syntheticKey,
-      invoiceKeyV2: syntheticKey,
-      lineIdentityV2: safeD5DHash_(row && row.legacyHashIndex) || safeD5DString_(row && row.lineIdentityV2)
-    }));
-  }
-  safe.observed = observed;
-  return safe;
-}
-
-function readD5DConfig_(propertyReader, hasher) {
-  const values = {};
-  Object.keys(SGDS_CRIT_003_D5D_PROPERTY_KEYS_).forEach(name => {
-    const key = SGDS_CRIT_003_D5D_PROPERTY_KEYS_[name];
-    values[name] = safeD5DString_(propertyReader.getProperty(key));
-  });
-  const missing = Object.keys(values).filter(name => !values[name]).map(name => 'MISSING_' + name);
-  if (missing.length > 0) return { ok: false, errors: missing };
-
-  const expectedLineCount = Number(values.EXPECTED_LINE_COUNT);
-  if (!Number.isInteger(expectedLineCount) || expectedLineCount <= 0) {
-    return { ok: false, errors: ['INVALID_EXPECTED_LINE_COUNT'] };
-  }
-  let expectedLineHashes;
-  try {
-    expectedLineHashes = JSON.parse(values.EXPECTED_LINE_HASHES_JSON);
-  } catch (_error) {
-    return { ok: false, errors: ['INVALID_EXPECTED_LINE_HASHES_JSON'] };
-  }
-  if (!Array.isArray(expectedLineHashes) || expectedLineHashes.length !== expectedLineCount || expectedLineHashes.some(hash => !safeD5DHash_(hash))) {
-    return { ok: false, errors: ['INVALID_EXPECTED_LINE_HASHES_JSON'] };
-  }
-
-  const lineHashes = expectedLineHashes.map(safeD5DHash_);
-  const commitPlan = {
-    version: 'DURABLE_COMMIT_PLAN_V1',
-    jobId: 'd5d_' + safeD5DHash_(values.INVOICE_IDENTITY_HASH).slice(0, 24),
-    legacyInvoiceKey: '',
-    invoiceKeyV2: '',
-    expectedLineCount,
-    legacyHashIndexes: lineHashes,
-    lineIdentityV2s: lineHashes,
-    lines: lineHashes.map((hash, index) => ({
-      sourceLineNo: index + 1,
-      legacyHashIndex: hash,
-      lineIdentityV2: hash,
-      immutableFields: { d5dReadOnly: true }
-    })),
-    hoaDonRegistryTarget: {
-      xmlFileId: values.XML_FILE_ID,
-      pdfFileId: values.PDF_FILE_ID
-    },
-    driveEvidenceTargets: {},
-    commitPlanHash: safeD5DHash_(values.EXPECTED_COMMIT_PLAN_HASH),
-    invoiceKeyHash: safeD5DHash_(values.EXPECTED_INVOICE_KEY_HASH),
-    projectionState: 'EXPECT_SAVED_LABEL'
-  };
-
-  return {
-    ok: true,
-    input: {
-      jobId: commitPlan.jobId,
-      invoiceIdentityHash: safeD5DHash_(values.INVOICE_IDENTITY_HASH),
-      job: { jobId: commitPlan.jobId, status: 'COMPLETED', state: 'COMPLETED', commitPlan },
-      commitPlan,
-      sourceReferences: {
-        gmailThreadReference: values.GMAIL_THREAD_ID,
-        xmlFileReference: values.XML_FILE_ID,
-        pdfFileReference: values.PDF_FILE_ID
-      },
-      expected: {
-        lineCount: expectedLineCount,
-        lineHashes,
-        invoiceKeyHash: safeD5DHash_(values.EXPECTED_INVOICE_KEY_HASH),
-        commitPlanHash: safeD5DHash_(values.EXPECTED_COMMIT_PLAN_HASH)
-      },
-      safeReferenceHashes: {
-        gmailThreadHashPrefix: hashPrefixD5D_(values.GMAIL_THREAD_ID, hasher),
-        xmlFileHashPrefix: hashPrefixD5D_(values.XML_FILE_ID, hasher),
-        pdfFileHashPrefix: hashPrefixD5D_(values.PDF_FILE_ID, hasher)
-      }
-    }
-  };
+function readD5DConfig_(propertyReader) {
+  const gmailThreadId = safeD5DString_(propertyReader.getProperty(SGDS_CRIT_003_D5D_REQUIRED_PROPERTY_KEYS_.GMAIL_THREAD_ID)).trim();
+  if (!gmailThreadId) return { ok: false, errors: ['MISSING_GMAIL_THREAD_ID'] };
+  return { ok: true, gmailThreadId };
 }
 
 function summarizeD5DReadOnlySnapshot_(snapshot, hasher) {
@@ -291,7 +508,26 @@ function finalizeD5DResult_(logger, result) {
   const safe = {
     SGDS_CRIT_003_D5D_SMOKE_STATUS: safeD5DCode_(result.status),
     EXACT_REFERENCE_CONFIG: safeD5DCode_(result.exactReferenceConfig || ''),
+    REQUIRED_PROPERTY_COUNT: Number(result.requiredPropertyCount || 1),
+    REQUIRED_PROPERTY_NAMES: safeD5DCode_(result.requiredPropertyNames || 'SGDS_D5D_GMAIL_THREAD_ID'),
+    DERIVED_PROPERTY_COUNT: Number(result.derivedPropertyCount || 7),
     PRODUCTION_API_READ_STARTED: safeD5DCode_(result.productionApiReadStarted || ''),
+    THREAD_FOUND: safeD5DCode_(result.threadFound || ''),
+    XML_ATTACHMENT_COUNT: Number(result.xmlAttachmentCount || 0),
+    PDF_ATTACHMENT_COUNT: Number(result.pdfAttachmentCount || 0),
+    PDF_SOURCE: safeD5DCode_(result.pdfSource || ''),
+    INVOICE_KEY_DERIVED: safeD5DCode_(result.invoiceKeyDerived || ''),
+    INVOICE_IDENTITY_HASH_DERIVED: safeD5DCode_(result.invoiceIdentityHashDerived || ''),
+    EXPECTED_LINE_COUNT_DERIVED: safeD5DCode_(result.expectedLineCountDerived || ''),
+    EXPECTED_LINE_HASHES_DERIVED: safeD5DCode_(result.expectedLineHashesDerived || ''),
+    XML_FILE_ID_AUTO_RESOLVED: safeD5DCode_(result.xmlFileIdAutoResolved || ''),
+    PDF_FILE_ID_AUTO_RESOLVED: safeD5DCode_(result.pdfFileIdAutoResolved || ''),
+    INVOICE_KEY_HASH_DERIVED: safeD5DCode_(result.invoiceKeyHashDerived || ''),
+    COMMIT_PLAN_HASH_DERIVED: safeD5DCode_(result.commitPlanHashDerived || ''),
+    HOA_DON_FULL_USED_RANGE_SEARCH: safeD5DCode_(result.hoaDonFullUsedRangeSearch || ''),
+    LEDGER_FULL_USED_RANGE_SEARCH: safeD5DCode_(result.ledgerFullUsedRangeSearch || ''),
+    CHUNKED_READ: safeD5DCode_(result.chunkedRead || ''),
+    FIRST_20_50_ROW_LIMIT_REMOVED: safeD5DCode_(result.first2050RowLimitRemoved || ''),
     GMAIL_READ_STATUS: safeD5DCode_(result.gmailReadStatus || 'NOT_RUN'),
     DRIVE_XML_READ_STATUS: safeD5DCode_(result.driveXmlReadStatus || 'NOT_RUN'),
     DRIVE_PDF_READ_STATUS: safeD5DCode_(result.drivePdfReadStatus || 'NOT_RUN'),
@@ -308,7 +544,8 @@ function finalizeD5DResult_(logger, result) {
     FINDING_CODES: (Array.isArray(result.findingCodes) ? result.findingCodes : []).map(safeD5DCode_).filter(Boolean).sort().join(';'),
     BEFORE_AFTER_SNAPSHOT_MATCH: safeD5DCode_(result.beforeAfterSnapshotMatch || ''),
     MUTATION_ATTEMPT_COUNT: Number(result.mutationAttemptCount || 0),
-    PRODUCTION_WRITE: 'NONE'
+    PRODUCTION_WRITE: 'NONE',
+    PRODUCTION_FIRESTORE_ACCESS: 'NONE'
   };
   Object.keys(safe).forEach(key => safeLogD5D_(logger, key + '=' + safe[key]));
   return safe;
@@ -330,8 +567,12 @@ function requireD5DAdapter_(adapter, name, methods) {
   return adapter;
 }
 
+function hashD5DValue_(value, hasher) {
+  return safeD5DHash_((hasher || { hash: hashD5DString_ }).hash(safeD5DString_(value)));
+}
+
 function hashPrefixD5D_(value, hasher) {
-  return safeD5DHash_(hasher.hash(safeD5DString_(value))).slice(0, 12);
+  return hashD5DValue_(value, hasher).slice(0, 12);
 }
 
 function hashD5DString_(value) {

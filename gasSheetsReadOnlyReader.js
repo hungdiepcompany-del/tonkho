@@ -1,5 +1,8 @@
 function createGasSheetsReadOnlyReader(options) {
   const spreadsheetId = options && options.spreadsheetId || '';
+  const defaultChunkRows = Number(options && options.chunkRows || 500);
+  const defaultMaxUsedRows = Number(options && options.maxUsedRows || 20000);
+  const defaultMaxChunks = Number(options && options.maxChunks || 60);
 
   function spreadsheet_() {
     return spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.getActive();
@@ -9,10 +12,11 @@ function createGasSheetsReadOnlyReader(options) {
     const sheet = spreadsheet_().getSheetByName(CONFIG.SHEET_FILES);
     if (!sheet) return [];
     const maxRows = Number(request && request.maxRows || 20);
-    const lastRow = Math.min(sheet.getLastRow(), maxRows + 1);
+    const lastRow = sheet.getLastRow();
     if (lastRow < 2) return [];
-    const values = sheet.getRange(1, 1, lastRow, Math.min(sheet.getLastColumn(), 6)).getValues();
-    const header = values[0].map(String);
+    if (lastRow - 1 > Number(request && request.maxUsedRows || defaultMaxUsedRows)) return limitExceededRowsD5D_(maxRows);
+    const width = Math.min(sheet.getLastColumn(), 6);
+    const header = sheet.getRange(1, 1, 1, width).getValues()[0].map(String);
     const keyCol = header.indexOf('invoiceKey');
     const xmlCol = header.indexOf('XML_id');
     const xmlStatusCol = header.indexOf('XML_status');
@@ -23,47 +27,73 @@ function createGasSheetsReadOnlyReader(options) {
     const invoiceKeyV2 = String(request && request.invoiceKeyV2 || '');
     const xmlFileReference = String(request && request.xmlFileReference || '');
     const pdfFileReference = String(request && request.pdfFileReference || '');
-    return values.slice(1).filter(row => {
+    const matches = [];
+    scanSheetRowsD5D_(sheet, 2, lastRow, width, request, row => {
       const key = keyCol >= 0 ? String(row[keyCol] || '') : '';
       const xml = xmlCol >= 0 ? String(row[xmlCol] || '') : '';
       const pdf = pdfCol >= 0 ? String(row[pdfCol] || '') : '';
-      return Boolean(key && (key === legacyInvoiceKey || key === invoiceKeyV2)) ||
+      const matched = Boolean(key && (key === legacyInvoiceKey || key === invoiceKeyV2)) ||
         Boolean(xmlFileReference && xml === xmlFileReference) ||
         Boolean(pdfFileReference && pdf === pdfFileReference);
-    }).map(row => ({
-      legacyInvoiceKey: keyCol >= 0 ? String(row[keyCol] || '') : legacyInvoiceKey,
-      invoiceKeyV2,
-      xmlFileId: xmlCol >= 0 ? String(row[xmlCol] || '') : '',
-      pdfFileId: pdfCol >= 0 ? String(row[pdfCol] || '') : '',
-      xmlStatus: xmlStatusCol >= 0 ? String(row[xmlStatusCol] || '') : '',
-      pdfStatus: pdfStatusCol >= 0 ? String(row[pdfStatusCol] || '') : '',
-      viewLinkPresent: viewCol >= 0 && Boolean(row[viewCol])
-    }));
+      if (!matched) return;
+      matches.push({
+        legacyInvoiceKey: keyCol >= 0 ? String(row[keyCol] || '') : legacyInvoiceKey,
+        invoiceKeyV2,
+        xmlFileId: xmlCol >= 0 ? String(row[xmlCol] || '') : '',
+        pdfFileId: pdfCol >= 0 ? String(row[pdfCol] || '') : '',
+        xmlStatus: xmlStatusCol >= 0 ? String(row[xmlStatusCol] || '') : '',
+        pdfStatus: pdfStatusCol >= 0 ? String(row[pdfStatusCol] || '') : '',
+        viewLinkPresent: viewCol >= 0 && Boolean(row[viewCol])
+      });
+    });
+    return matches.slice(0, maxRows + 1);
   }
 
   function readLedgerRows(request) {
     const sheet = spreadsheet_().getSheetByName(CONFIG.SHEET_INVOICE);
     if (!sheet) return [];
     const maxRows = Number(request && request.maxRows || 50);
-    const lastRow = Math.min(sheet.getLastRow(), maxRows + 1);
+    const lastRow = sheet.getLastRow();
     if (lastRow < 2) return [];
-    const values = sheet.getRange(2, 1, lastRow - 1, Math.min(sheet.getLastColumn(), 16)).getValues();
+    if (lastRow - 1 > Number(request && request.maxUsedRows || defaultMaxUsedRows)) return limitExceededRowsD5D_(maxRows);
+    const width = Math.min(sheet.getLastColumn(), 16);
     const legacyInvoiceKey = String(request && request.legacyInvoiceKey || '');
     const invoiceKeyV2 = String(request && request.invoiceKeyV2 || '');
     const lineHashes = {};
     (request && request.lineHashes || []).forEach(hash => {
       lineHashes[String(hash || '')] = true;
     });
-    return values.filter(row => {
+    const matches = [];
+    scanSheetRowsD5D_(sheet, 2, lastRow, width, request, row => {
       const hash = String(row[CONFIG.NHAPXUAT_INDEX.hash] || '');
       const key = String(row[CONFIG.NHAPXUAT_INDEX.invoiceKey] || '');
-      return key === legacyInvoiceKey || key === invoiceKeyV2 || Boolean(lineHashes[hash]);
-    }).map(row => ({
-      legacyInvoiceKey: String(row[CONFIG.NHAPXUAT_INDEX.invoiceKey] || ''),
-      invoiceKeyV2,
-      legacyHashIndex: String(row[CONFIG.NHAPXUAT_INDEX.hash] || ''),
-      lineIdentityV2: String(row[CONFIG.NHAPXUAT_INDEX.hash] || '')
-    }));
+      if (!(key === legacyInvoiceKey || key === invoiceKeyV2 || Boolean(lineHashes[hash]))) return;
+      matches.push({
+        legacyInvoiceKey: String(row[CONFIG.NHAPXUAT_INDEX.invoiceKey] || ''),
+        invoiceKeyV2,
+        legacyHashIndex: String(row[CONFIG.NHAPXUAT_INDEX.hash] || ''),
+        lineIdentityV2: String(row[CONFIG.NHAPXUAT_INDEX.hash] || '')
+      });
+    });
+    return matches.slice(0, maxRows + 1);
+  }
+
+  function scanSheetRowsD5D_(sheet, startRow, lastRow, width, request, onRow) {
+    const chunkRows = Number(request && request.chunkRows || defaultChunkRows);
+    const maxChunks = Number(request && request.maxChunks || defaultMaxChunks);
+    let row = startRow;
+    let chunks = 0;
+    while (row <= lastRow && chunks < maxChunks) {
+      const count = Math.min(chunkRows, lastRow - row + 1);
+      const values = sheet.getRange(row, 1, count, width).getValues();
+      values.forEach(onRow);
+      row += count;
+      chunks += 1;
+    }
+  }
+
+  function limitExceededRowsD5D_(maxRows) {
+    return Array.from({ length: Number(maxRows || 0) + 1 }, () => ({ readLimitExceeded: true }));
   }
 
   return Object.freeze({ readHoaDonRows, readLedgerRows });
