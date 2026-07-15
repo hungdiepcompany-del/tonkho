@@ -628,14 +628,32 @@ NEXT_ACTION=Superseded after owner marker `OWNER_APPROVE_C_S3_EXECUTOR_INTERNAL_
 
 ## SGDS C-S3 Post-Execution Verification Blocker
 
-STATUS=OPEN_BLOCKER
+STATUS=RESOLVED_PASS_POSTCHECK
 SEVERITY=HIGH
 PHASE=BUNDLE_C_S3_EXACT_THREAD_ONE_INVOICE_SMOKE
-EVIDENCE=The owner-approved Apps Script editor execution started and safe result properties report `SUCCEEDED`, `COMMITTED`, expected line count `2`, and committed line count `2`. Gmail saved-label verification passed by exact label search. Direct Sheet/Hoa-Don and Drive postchecks remain incomplete because the available browser/tool surfaces could not provide readable Sheet export or generated Drive file visibility.
-IMPACT=The executor result indicates limited one-thread production mutation occurred, but the phase cannot be marked PASS until Sheet and Drive postcheck evidence is completed.
-PRODUCTION_MUTATION=LIMITED_EXECUTOR_COMMITTED_ONE_THREAD_BY_RESULT_PROPERTIES
+EVIDENCE=The owner-approved Apps Script editor execution started once and safe result properties report `SUCCEEDED`, `COMMITTED`, expected line count `2`, and committed line count `2`. The resumed read-only postcheck verified exactly two `Nhap-Xuat` rows, present `HashIndex`, present shared `InvoiceKey`, exactly one `Hoa-Don` row, row-linked XML/PDF Drive artifacts, and the saved Gmail label.
+IMPACT=The limited one-invoice happy path is production-verified for the approved exact thread, but this does not prove durable global rollback across Gmail, Drive, and Sheets if a mid-transaction boundary fails.
+PRODUCTION_MUTATION=LIMITED_EXECUTOR_COMMITTED_ONE_THREAD_VERIFIED
 SCRIPT_PROPERTIES_MUTATION=TEMP_INPUT_KEYS_SET_THEN_REMOVED_SAFE_RESULT_KEYS_RETAINED
 MANUAL_FUNCTION_EXECUTION_ATTEMPT_COUNT=1
 FUNCTION_EXECUTION_STARTED=YES
 SGDS_CRIT_003_STATUS=NOT_FIXED
-NEXT_ACTION=Resume only for bounded post-execution Sheet/Drive verification; do not rerun the executor.
+NEXT_ACTION=Proceed only to owner-approved single-thread executor source cleanup; do not rerun the executor.
+
+## Bundle C Exact-Thread One-Invoice Production Smoke Result
+
+BUNDLE_C_EXACT_THREAD_ONE_INVOICE_SMOKE=PASS_LIMITED_ONE_INVOICE
+EXACT_GMAIL_THREAD_PROCESSED_ONCE=YES
+EXECUTOR_RESULT=COMMITTED
+EXPECTED_LINE_COUNT=2
+COMMITTED_LINE_COUNT=2
+TWO_NHAP_XUAT_ROWS_VERIFIED=YES
+HASHINDEX_PRESENT=YES
+INVOICEKEY_PRESENT=YES
+ONE_HOA_DON_ROW_VERIFIED=YES
+XML_AND_PDF_DRIVE_ARTIFACTS_VERIFIED=YES
+SAVED_GMAIL_LABEL_VERIFIED=YES
+EXECUTOR_RERUN=NO
+BQGQ_RUN=NO
+TONKHO_RUN=NO
+SGDS_CRIT_003=OPEN_NOT_FIXED
