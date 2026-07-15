@@ -558,3 +558,17 @@ SGDS_CRIT_003_STATUS=NOT_FIXED_DESIGN_RISK_REMAINS
 | Stats initialization | `tests/bugs/config-stats.test.mjs` | BUG_BLOCKED_LOCAL_NOT_DEPLOYED |
 
 Bundle C does not mark any fix as deployed or production-verified.
+
+
+## Bundle C Single-Invoice Smoke Gate Risk
+
+BUNDLE_C_SINGLE_INVOICE_SMOKE_STATUS=BLOCKED_LOCAL_PREFLIGHT
+RISK_ID=SGDS-SMOKE-GATE-001
+TITLE=One-invoice production smoke requires verified expected account before mutation
+SEVERITY=HIGH
+STATUS=BLOCKED_BEFORE_MUTATION
+EVIDENCE=Local checks passed, script ID matched, but clasp did not expose authorized email and browser Gmail session was not verified as the expected account.
+PRODUCTION_MUTATION=NONE
+RUNTIME_FILES_CHANGED=NO
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ACTION=Resume only after the controllable browser or execution context is verified as the expected account and scanner candidate count is proven exactly 1.
