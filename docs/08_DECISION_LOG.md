@@ -135,3 +135,13 @@ REASON=The executor was approved only as a bounded one-thread smoke tool. Keepin
 
 DECISION=Preserve Bundle C production smoke evidence while removing local executor code, executor-specific tests, executor-specific checker, and package command.
 REASON=The evidence remains part of the production verification record, while the temporary tool itself is no longer required.
+
+## BUNDLE-C-S4R-DEC-001
+
+DECISION=Use owner-approved Apps Script editor exact-file deletion to remove the remote temporary executor after normal clasp push left it present.
+REASON=The previous phase allowed exactly one normal clasp push attempt and forbade retry or force push. Owner approved manual exact-file deletion for `bundleCSingleThreadSmoke.gs` only.
+
+## BUNDLE-C-S4R-DEC-002
+
+DECISION=Clean only Bundle C smoke result Script Properties after remote executor removal was independently verified by a second read-only clone.
+REASON=Result keys were safe cleanup residue from the completed one-thread smoke; input keys remained absent, and unrelated Script Properties were out of scope.

@@ -664,3 +664,49 @@ SCRIPT_PROPERTIES_MUTATION=NONE
 GIT_PUSH=NOT_RUN
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ALLOWED_PHASE=RESUME_SINGLE_THREAD_EXECUTOR_GAS_PUSH_AFTER_CLASP_REAUTH
+
+## Bundle C-S4R Remote Executor Manual Delete And Property Cleanup Validation
+
+BUNDLE_C_S4R_STATUS=PASS_REMOTE_EXECUTOR_REMOVED_AND_PROPERTIES_CLEANED
+VALIDATED_AT=2026-07-15
+OWNER_MARKER=OWNER_APPROVE_REMOTE_EXECUTOR_MANUAL_FILE_DELETE_AND_PROPERTY_CLEANUP
+START_HEAD=bbabb3a440fa39a3bfa51f68e7e716170c9893cf
+BUNDLE_C_PRODUCTION_VERIFICATION_STATUS=PASS_LIMITED_ONE_INVOICE
+
+| Check | Result |
+| --- | --- |
+| Git preflight | PASS: main, clean, sync 0/0 |
+| Script ID match | PASS |
+| Authorized account | PASS: hungdiepcompany@gmail.com |
+| Remote read-only clone before delete | PASS: exactly one executor match |
+| Remote executor file safety check | PASS: temporary executor only |
+| Apps Script editor exact-file delete | PASS: one attempt |
+| Editor refresh verification | PASS: executor file/function absent |
+| Remote read-only clone after delete | PASS: zero executor matches |
+| Temporary clone folders removed | PASS |
+| Smoke input Script Properties | PASS: absent |
+| Smoke result Script Properties | PASS: removed |
+| Unrelated Script Properties | PASS: not mutated |
+| GAS function run | PASS: NO |
+| Additional invoice execution | PASS: NO |
+| Production data mutation | PASS: NONE |
+| `npm.cmd test` | PASS: 48 tests, 47 pass, 1 skipped |
+| `npm.cmd run check` | PASS: `BUNDLE_C_AGGREGATE_CHECK=PASS` |
+| `npm.cmd run check:bundle-c` | PASS: `BUNDLE_C_CHECK=PASS` |
+| `git diff --check` | PASS after whitespace cleanup |
+
+CLASP_PUSH_RETRY=NO
+CLASP_FORCE_USED=NO
+CLASP_RUN=NO
+GAS_DEPLOY=NO
+GAS_FUNCTION_RUN=NO
+ADDITIONAL_INVOICE_EXECUTION=NO
+REMOTE_SOURCE_MUTATION=EXACT_TEMPORARY_EXECUTOR_FILE_DELETE_ONLY
+SCRIPT_PROPERTY_MUTATION=SMOKE_RESULT_PROPERTY_CLEANUP_ONLY
+PRODUCTION_DATA_MUTATION=NONE
+SHARED_COMMIT_CORE_CHANGED=NO
+HASH_V1_CHANGED=NO
+INVOICE_KEY_CHANGED=NO
+WORKBOOK_CHANGED=NO
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ALLOWED_PHASE=BUNDLE_C_CLOSEOUT_AND_NEXT_PRODUCTION_PRIORITY_REVIEW
