@@ -340,3 +340,26 @@ SCRIPT_PROPERTIES_MUTATION=NONE
 SGDS_CRIT_003_STATUS=NOT_FIXED
 RISKS=Executor is now present in GAS source but smoke Script Properties are not set and exact-thread executor has not been run.
 NEXT_SUBPHASE_ALLOWED=SET_SMOKE_PROPERTIES_AND_RUN_EXACT_THREAD_ONCE
+
+## Bundle C-S3 Exact-Thread One-Invoice Smoke
+
+DATE=2026-07-15
+BUNDLE=BUNDLE_C_S3_EXACT_THREAD_ONE_INVOICE_SMOKE
+SUBPHASE=RESUME_WITH_EXACT_GMAIL_THREAD_ID
+START_STATE=TRACKED_WORKTREE_CLEAN; BRANCH=main; START_COMMIT=c572ee681ae33bf8105c0aaf1b582ad0be1d64e0; OWNER_MARKER=OWNER_APPROVE_RESUME_C_S3_WITH_EXACT_SMOKE_SAMPLE_LOCATOR
+FILES_CHANGED=blocked smoke evidence docs and sanitized artifact only
+COMMANDS_RUN=git/GitHub preflight; npm.cmd run check; npm.cmd run check:bundle-c; npm.cmd run check:bundle-c-single-thread-executor; git diff --check; clasp account/script checks; Chrome exact Gmail thread verification; Apps Script UI temporary smoke property setup; one clasp run attempt; Apps Script UI cleanup
+RESULT=BLOCKED_SINGLE_EXECUTION_NOT_STARTED_API_EXECUTABLE
+SMOKE_SAMPLE_LOCATOR_RESOLVED=true
+SMOKE_THREAD_MATCH=true
+EXPECTED_XML_ATTACHMENT_PRESENT=true
+EXPECTED_PDF_ATTACHMENT_PRESENT=true
+SMOKE_PROPERTY_KEYS_SET=4
+EXECUTION_ATTEMPT_COUNT=1
+GAS_FUNCTION_RUN=NO
+TEMP_PROPERTIES_CLEANED=YES
+PRODUCTION_MUTATION=NONE
+SCRIPT_PROPERTIES_MUTATION=TEMP_KEYS_SET_AND_CLEANED_ONLY
+SGDS_CRIT_003_STATUS=NOT_FIXED
+RISKS=Exact-thread smoke still lacks a working Apps Script execution surface for the pushed executor.
+NEXT_SUBPHASE_ALLOWED=RESUME_C_S3_WITH_EXECUTION_SURFACE_READY
