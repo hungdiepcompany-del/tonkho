@@ -604,11 +604,24 @@ NEXT_ALLOWED_PHASE=RESUME_SINGLE_THREAD_EXECUTOR_GAS_PUSH_AFTER_CLASP_REAUTH
 
 ## SGDS C-S3 Execution Surface Blocker
 
-STATUS=OPEN_BLOCKER
+STATUS=SUPERSEDED_BY_PRE_EXECUTION_EVIDENCE_BLOCKER
 SEVERITY=HIGH
 PHASE=BUNDLE_C_S3_EXACT_THREAD_ONE_INVOICE_SMOKE
 EVIDENCE=The exact Gmail thread locator resolved and temporary smoke properties were set, but the single `clasp run runApprovedBundleCSingleThreadSmoke` invocation returned `Script function not found. Please make sure script is deployed as API executable.` The executor did not start.
 IMPACT=The limited production smoke cannot prove ledger, Drive, and label behavior until the execution surface can invoke the pushed function exactly once.
 PRODUCTION_MUTATION=NONE
 SCRIPT_PROPERTIES_MUTATION=TEMP_KEYS_SET_AND_CLEANED_ONLY
-NEXT_ACTION=Resume only after the Apps Script execution surface is ready for the single-thread executor, using owner marker `OWNER_APPROVE_RESUME_C_S3_AFTER_API_EXECUTABLE_READY`.
+NEXT_ACTION=Superseded after manual Apps Script editor visibility proved the function selector can select the pushed executor.
+
+## SGDS C-S3 Pre-Execution Evidence Blocker
+
+STATUS=OPEN_BLOCKER
+SEVERITY=HIGH
+PHASE=BUNDLE_C_S3_EXACT_THREAD_ONE_INVOICE_SMOKE
+EVIDENCE=Manual Apps Script editor resume verified the expected Google account, script ID, exact Gmail sample, executor source file, and `runApprovedBundleCSingleThreadSmoke` function selector. The run was not started because independent parse-only XML evidence and pre-execution Sheet/Drive counts were not available from the approved browser surfaces without reading sensitive invoice payloads into evidence or relying on the executor itself as the first checker.
+IMPACT=The one-invoice smoke remains unproven. No temporary Script Properties were set in this resume, and no production function execution occurred.
+PRODUCTION_MUTATION=NONE
+SCRIPT_PROPERTIES_MUTATION=NONE
+MANUAL_FUNCTION_EXECUTION_ATTEMPT_COUNT=0
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ACTION=Resume only with owner-provided precheck evidence or an explicit owner marker accepting the executor's internal prechecks as the bounded pre-mutation gate.

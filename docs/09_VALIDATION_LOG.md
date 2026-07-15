@@ -319,6 +319,53 @@ GAS_PUSH=BLOCKED_BEFORE_UPLOAD
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ALLOWED_PHASE=RESUME_SINGLE_THREAD_EXECUTOR_GAS_PUSH_AFTER_CLASP_REAUTH
 
+## Bundle C-S3 Manual Apps Script Editor Resume Validation
+
+BUNDLE_C_S3_STATUS=BLOCKED_PRE_EXECUTION_EVIDENCE_NOT_AVAILABLE
+VALIDATED_AT=2026-07-15
+OWNER_MARKER=OWNER_APPROVE_RESUME_C_S3_MANUAL_EDITOR_RUN
+START_HEAD=6155106fc9b44e08e261204795d6e94fa8cdc3c7
+GITHUB_PRE_RUN_SYNC=PASS
+SCRIPT_ID_MATCH=YES
+VISIBLE_GMAIL_ACCOUNT=hungdiepcompany@gmail.com
+VISIBLE_APPS_SCRIPT_ACCOUNT=hungdiepcompany@gmail.com
+ACCOUNT_MATCH=YES
+
+| Check | Result |
+| --- | --- |
+| Git/GitHub preflight | PASS: main, clean, sync 0/0 |
+| `npm.cmd run check` | PASS |
+| `npm.cmd run check:bundle-c` | PASS: `BUNDLE_C_CHECK=PASS` |
+| `npm.cmd run check:bundle-c-single-thread-executor` | PASS: `BUNDLE_C_SINGLE_THREAD_EXECUTOR_CHECK=PASS` |
+| Exact Gmail thread locator | PASS: resolved expected thread and expected attachment names visible |
+| Apps Script editor project/account | PASS |
+| Executor source file | PASS: `bundleCSingleThreadSmoke.gs` visible |
+| Executor function selector | PASS: `runApprovedBundleCSingleThreadSmoke` selected after opening source file |
+| Independent parse-only XML evidence | BLOCKED: not available without reading attachment payload |
+| Pre-execution Sheet/Drive counts | BLOCKED: not available from approved browser surfaces |
+| Temporary smoke properties | NOT_RUN |
+| Manual executor run attempt | NOT_RUN |
+
+SMOKE_SAMPLE_LOCATOR_HASH_PREFIX=5c6cd326d73f
+SMOKE_SAMPLE_LOCATOR_RESOLVED=true
+SMOKE_THREAD_MATCH=true
+EXPECTED_XML_ATTACHMENT_PRESENT=true
+EXPECTED_PDF_ATTACHMENT_PRESENT=true
+RESUME_EXECUTION_SURFACE=APPS_SCRIPT_EDITOR
+API_EXECUTABLE_CREATED=NO
+EXECUTOR_SOURCE_VISIBLE=YES
+EXECUTOR_FUNCTION_VISIBLE_IN_EDITOR=YES
+SMOKE_PROPERTY_KEYS_SET=0
+MANUAL_FUNCTION_EXECUTION_ATTEMPT_COUNT=0
+FUNCTION_EXECUTION_STARTED=NO
+GAS_FUNCTION_RUN=NO
+SINGLE_THREAD_LIMIT_RESPECTED=YES_NO_THREAD_PROCESSED
+ROLLBACK_EXECUTED=NO
+PRODUCTION_MUTATION=NONE
+SCRIPT_PROPERTIES_MUTATION=NONE
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ALLOWED_PHASE=RESUME_C_S3_WITH_OWNER_PROVIDED_PRECHECK_EVIDENCE_OR_APPROVED_EXECUTOR_INTERNAL_PRECHECK
+
 ## Bundle C-S2 Single-Thread Executor GAS Push Resume Validation
 
 BUNDLE_C_S2_STATUS=PASS_SINGLE_THREAD_EXECUTOR_PUSHED

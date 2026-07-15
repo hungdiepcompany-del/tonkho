@@ -363,3 +363,28 @@ SCRIPT_PROPERTIES_MUTATION=TEMP_KEYS_SET_AND_CLEANED_ONLY
 SGDS_CRIT_003_STATUS=NOT_FIXED
 RISKS=Exact-thread smoke still lacks a working Apps Script execution surface for the pushed executor.
 NEXT_SUBPHASE_ALLOWED=RESUME_C_S3_WITH_EXECUTION_SURFACE_READY
+
+## Bundle C-S3 Manual Apps Script Editor Resume
+
+DATE=2026-07-15
+BUNDLE=BUNDLE_C_S3_EXACT_THREAD_ONE_INVOICE_SMOKE
+SUBPHASE=RESUME_MANUAL_APPS_SCRIPT_EDITOR_RUN
+START_STATE=TRACKED_WORKTREE_CLEAN; BRANCH=main; START_COMMIT=6155106fc9b44e08e261204795d6e94fa8cdc3c7; OWNER_MARKER=OWNER_APPROVE_RESUME_C_S3_MANUAL_EDITOR_RUN
+FILES_CHANGED=blocked manual-editor resume evidence docs and sanitized artifact only
+COMMANDS_RUN=git/GitHub preflight; npm.cmd run check; npm.cmd run check:bundle-c; npm.cmd run check:bundle-c-single-thread-executor; Chrome exact Gmail thread verification; Apps Script editor source and function selector verification
+RESULT=BLOCKED_PRE_EXECUTION_EVIDENCE_NOT_AVAILABLE
+VISIBLE_GMAIL_ACCOUNT=hungdiepcompany@gmail.com
+VISIBLE_APPS_SCRIPT_ACCOUNT=hungdiepcompany@gmail.com
+SCRIPT_ID_MATCH=YES
+EXECUTOR_SOURCE_VISIBLE=YES
+EXECUTOR_FUNCTION_VISIBLE_IN_EDITOR=YES
+RESUME_EXECUTION_SURFACE=APPS_SCRIPT_EDITOR
+API_EXECUTABLE_CREATED=NO
+SMOKE_PROPERTY_KEYS_SET=0
+MANUAL_FUNCTION_EXECUTION_ATTEMPT_COUNT=0
+FUNCTION_EXECUTION_STARTED=NO
+PRODUCTION_MUTATION=NONE
+SCRIPT_PROPERTIES_MUTATION=NONE
+SGDS_CRIT_003_STATUS=NOT_FIXED
+RISKS=The manual run cannot safely start until independent parse-only and pre-execution Sheet/Drive evidence is available, or the owner explicitly accepts the executor internal prechecks as the bounded gate.
+NEXT_SUBPHASE_ALLOWED=RESUME_C_S3_WITH_OWNER_PROVIDED_PRECHECK_EVIDENCE_OR_APPROVED_EXECUTOR_INTERNAL_PRECHECK
