@@ -111,3 +111,16 @@ REASON=The owner-approved invariant says saved-sheet labels must only follow ver
 
 DECISION=Remove Bundle B runtime-immutability checks from the aggregate local check and replace them with the Bundle C runtime-fix checker.
 REASON=Bundle C explicitly permits local runtime edits while still requiring no production mutation, no workbook mutation, and compatibility with existing identity formats.
+
+## Bundle C-S1 Single-Thread Smoke Executor Local Patch
+
+OWNER_MARKER=OWNER_APPROVE_BUNDLE_C_SINGLE_THREAD_EXECUTOR_LOCAL_PATCH
+PREVIOUS_BLOCKER=SCANNER_CANDIDATE_COUNT_NOT_SINGLE
+PREVIOUS_GLOBAL_CANDIDATE_COUNT=10
+SINGLE_THREAD_EXECUTOR_STATUS=READY_LOCAL_NOT_PUSHED
+EXACT_THREAD_SCOPE=1
+PRODUCTION_MUTATION=NONE
+SCRIPT_PROPERTIES_MUTATION=NONE
+GAS_PUSH=NOT_RUN
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ALLOWED_PHASE=OWNER_REVIEW_AND_PUSH_SINGLE_THREAD_EXECUTOR
