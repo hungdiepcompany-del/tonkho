@@ -111,6 +111,8 @@ function createProductionReadOnlySnapshotAdapters(options) {
       const rows = await sheetsReader.readHoaDonRows({
         legacyInvoiceKey: request.commitPlan.legacyInvoiceKey,
         invoiceKeyV2: request.commitPlan.invoiceKeyV2,
+        xmlFileReference: driveReferencesD5C_(request).xml,
+        pdfFileReference: driveReferencesD5C_(request).pdf,
         maxRows: limits.MAX_HOA_DON_ROWS_SCANNED
       });
       const safeRows = Array.isArray(rows) ? rows.slice(0, limits.MAX_HOA_DON_ROWS_SCANNED + 1).map(row => cloneD5CJson_(row)) : [];

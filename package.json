@@ -17,6 +17,7 @@
     "check:sgds-crit-003-d4": "node scripts/checkers/check-sgds-crit-003-d4-scanner-integration-design.mjs",
     "check:sgds-crit-003-d5a": "node scripts/checkers/check-sgds-crit-003-d5a-local-orchestration.mjs",
     "check:sgds-crit-003-d5b": "node scripts/checkers/check-sgds-crit-003-d5b-shadow-runner.mjs",
-    "check:sgds-crit-003-d5c": "node scripts/checkers/check-sgds-crit-003-d5c-read-only-snapshot-adapters.mjs"
+    "check:sgds-crit-003-d5c": "node scripts/checkers/check-sgds-crit-003-d5c-read-only-snapshot-adapters.mjs",
+    "check:sgds-crit-003-d5d": "node scripts/checkers/check-sgds-crit-003-d5d-production-read-only-smoke.mjs"
   }
 }

@@ -21,11 +21,17 @@ function createGasSheetsReadOnlyReader(options) {
     const viewCol = header.indexOf('View');
     const legacyInvoiceKey = String(request && request.legacyInvoiceKey || '');
     const invoiceKeyV2 = String(request && request.invoiceKeyV2 || '');
+    const xmlFileReference = String(request && request.xmlFileReference || '');
+    const pdfFileReference = String(request && request.pdfFileReference || '');
     return values.slice(1).filter(row => {
       const key = keyCol >= 0 ? String(row[keyCol] || '') : '';
-      return key && (key === legacyInvoiceKey || key === invoiceKeyV2);
+      const xml = xmlCol >= 0 ? String(row[xmlCol] || '') : '';
+      const pdf = pdfCol >= 0 ? String(row[pdfCol] || '') : '';
+      return Boolean(key && (key === legacyInvoiceKey || key === invoiceKeyV2)) ||
+        Boolean(xmlFileReference && xml === xmlFileReference) ||
+        Boolean(pdfFileReference && pdf === pdfFileReference);
     }).map(row => ({
-      legacyInvoiceKey,
+      legacyInvoiceKey: keyCol >= 0 ? String(row[keyCol] || '') : legacyInvoiceKey,
       invoiceKeyV2,
       xmlFileId: xmlCol >= 0 ? String(row[xmlCol] || '') : '',
       pdfFileId: pdfCol >= 0 ? String(row[pdfCol] || '') : '',
@@ -53,7 +59,7 @@ function createGasSheetsReadOnlyReader(options) {
       const key = String(row[CONFIG.NHAPXUAT_INDEX.invoiceKey] || '');
       return key === legacyInvoiceKey || key === invoiceKeyV2 || Boolean(lineHashes[hash]);
     }).map(row => ({
-      legacyInvoiceKey,
+      legacyInvoiceKey: String(row[CONFIG.NHAPXUAT_INDEX.invoiceKey] || ''),
       invoiceKeyV2,
       legacyHashIndex: String(row[CONFIG.NHAPXUAT_INDEX.hash] || ''),
       lineIdentityV2: String(row[CONFIG.NHAPXUAT_INDEX.hash] || '')
