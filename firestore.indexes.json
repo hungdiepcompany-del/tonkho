@@ -1,0 +1,44 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "invoiceJobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "invoiceJobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "executionMode", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "invoiceJobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "latestReconciliationStatus", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "invoiceJobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "invoiceIdentityHash", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "invoiceJobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "retentionClass", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
