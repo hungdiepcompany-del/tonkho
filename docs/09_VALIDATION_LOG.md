@@ -509,6 +509,37 @@ DRIVE_BACKFILL_APPROVAL=NOT_GRANTED
 SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_VALIDATION_REQUIRED=npm.cmd test twice; npm.cmd run check; npm.cmd run check:bundle-c; git diff --check
 
+## Bundle C-S4 Remote GAS Cleanup Verification
+
+BUNDLE_C_S4_STATUS=BLOCKED_REMOTE_EXECUTOR_STILL_PRESENT_AFTER_CLASP_PUSH
+VALIDATED_AT=2026-07-15
+SOURCE_CLEANUP_COMMIT=616c12997d209349ab547695f303e6a0814b26d7
+
+| Check | Result |
+| --- | --- |
+| GitHub source cleanup push | PASS |
+| Script ID match | PASS |
+| Authorized account | PASS |
+| `clasp status` push set | PASS: docs/tests/artifacts/package not tracked |
+| `clasp push` attempt count | PASS: 1 |
+| `clasp push` exit code | PASS: 0 |
+| Remote executor source absent | FAIL: still present |
+| Remote executor function selectable/source absent | FAIL: still present |
+| GAS function run | PASS: NO |
+| Additional invoice execution | PASS: NO |
+| Script Property cleanup | NOT_RUN_REMOTE_EXECUTOR_STILL_PRESENT |
+
+CLASP_PUSH_ATTEMPT_COUNT=1
+CLASP_PUSH_EXIT_CODE=0
+CLASP_PUSH_RESULT=REMOTE_EXECUTOR_STILL_PRESENT
+EXECUTOR_REMOTE_SOURCE_PRESENT=YES
+EXECUTOR_REMOTE_FUNCTION_SELECTABLE=YES
+SMOKE_RESULT_PROPERTIES_REMOVED=NO_NOT_ATTEMPTED_AFTER_REMOTE_CLEANUP_BLOCKER
+UNRELATED_SCRIPT_PROPERTY_MUTATION=NO
+PRODUCTION_MUTATION=NONE
+SGDS_CRIT_003_STATUS=NOT_FIXED
+NEXT_ALLOWED_PHASE=OWNER_REVIEW_REMOTE_EXECUTOR_DELETION_METHOD
+
 ## Bundle C-S2 Single-Thread Executor GAS Push Resume Validation
 
 BUNDLE_C_S2_STATUS=PASS_SINGLE_THREAD_EXECUTOR_PUSHED
