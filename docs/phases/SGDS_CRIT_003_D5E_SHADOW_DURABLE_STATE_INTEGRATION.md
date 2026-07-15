@@ -1,0 +1,201 @@
+# SGDS-CRIT-003 D5E Shadow Durable State Integration
+
+SGDS_CRIT_003_D5E_STATUS=PASS_LOCAL_SHADOW_DURABLE_STATE_INTEGRATION
+DATE=2026-07-15
+PROJECT=SyncGmailDriveSheet
+SCOPE=LOCAL_SHADOW_DURABLE_STATE_INTEGRATION_ONLY
+START_HEAD=fb140c59dcd4b9b3fd730ca65a14d876a75378ff
+
+## Boundary
+
+```text
+LOCAL_ONLY=YES
+D5D_R_PRODUCTION_SMOKE=POSTPONED_BY_OWNER
+D5E_DOES_NOT_DEPEND_ON_D5D_R_PRODUCTION_EXECUTION=YES
+D5E_PRODUCTION_WRITE=NONE
+PRODUCTION_FIRESTORE_ACCESS=NONE
+PRODUCTION_FIRESTORE_WRITE=NONE
+GMAIL_API_CALL=NONE
+DRIVE_API_CALL=NONE
+SHEETS_API_CALL=NONE
+GAS_FUNCTION_RUN=NONE
+CLASP_PUSH=NONE
+FIREBASE_DEPLOY=NONE
+FIRESTORE_RULES_DEPLOY=NONE
+SCANNER_RUNTIME_WIRING=NOT_STARTED
+MAIN_RUNTIME_WIRING=NOT_STARTED
+PRODUCTION_MUTATION=NONE
+SGDS_CRIT_003_STATUS=NOT_FIXED
+```
+
+D5E is a local integration slice. It does not run D5D-R production smoke, does not set Script Properties, does not use Chrome automation, and does not add a public Apps Script entrypoint, trigger, menu, or automatic repair path.
+
+## Integration Contract
+
+```text
+INTEGRATION_ENTRYPOINT=createDurableShadowStateIntegration
+D2_STORE_REUSED=YES
+D3_RECONCILER_REUSED=YES
+D5B_RUNNER_REUSED=YES
+RUN_BATCH_API=runShadowBatch
+EVALUATE_CANDIDATE_API=evaluateShadowCandidate
+GET_JOB_API=getDurableJob
+LIST_AUDIT_API=listAuditEvents
+LATEST_REPORT_API=getLatestReconciliationReport
+DEPENDENCY_INJECTION=YES
+PRODUCTION_SDK_INITIALIZATION=NO
+```
+
+The integration wraps `createDurableScannerShadowRunner`, persists state through the injected `createDurableInvoiceJobStore` contract, and records report-only reconciliation with `reconcileDurableInvoiceJobReportOnly`.
+
+## Durable Shadow Flow
+
+```text
+FAKE_GMAIL_DRIVE_DISCOVERY=YES
+SOURCE_CONVERGENCE=YES
+DETERMINISTIC_JOB_ID=YES
+CREATE_JOB_IF_ABSENT=YES
+IMMUTABLE_COMMIT_PLAN=YES
+APPEND_ONLY_AUDIT_EVENTS=YES
+REPORT_ONLY_RECONCILIATION=YES
+DURABLE_SHADOW_RESULT=YES
+```
+
+Shadow jobs advance only through observed non-mutating states:
+
+```text
+DETECTED -> COLLECTED -> PARSED -> VALIDATED
+```
+
+They do not fabricate production commit states:
+
+```text
+FILES_SAVED=NOT_ENTERED
+COMMITTING=NOT_ENTERED
+ROWS_COMMITTED=NOT_ENTERED
+PROJECTIONS_COMMITTED=NOT_ENTERED
+COMPLETED=NOT_ENTERED
+```
+
+## Identity And Commit Plan
+
+```text
+RAW_GMAIL_ID_PERSISTED=NO
+RAW_DRIVE_ID_PERSISTED=NO
+INVOICE_PII_PERSISTED=NO
+SOURCE_PAYLOAD_PERSISTED=NO
+INVOICE_IDENTITY_HASH_ONLY=YES
+SOURCE_REFERENCE_HASH_ONLY=YES
+LEGACY_INVOICE_KEY_SAFE_REFERENCE=HASH_OR_SYNTHETIC_SAFE_VALUE
+INVOICE_KEY_V2_SAFE_REFERENCE=HASH_OR_SYNTHETIC_SAFE_VALUE
+COMMIT_PLAN_VERSION=DURABLE_COMMIT_PLAN_V1
+COMMIT_PLAN_HASH=YES
+COMMIT_PLAN_MISMATCH_STATUS=REVIEW_REQUIRED
+COMMIT_PLAN_MISMATCH_FINDING=COMMIT_PLAN_MISMATCH
+PRODUCTION_MUTATION=NONE
+```
+
+The commit plan is deterministic, versioned, immutable after first save, and enriched with:
+
+```text
+executionMode=SHADOW
+productionMutationAllowed=false
+wouldMutateSteps=DRIVE_XML;DRIVE_PDF;HOA_DON;LEDGER;GMAIL_LABEL
+mutationAttemptCount=0
+```
+
+## Audit And Reconciliation
+
+```text
+AUDIT_EVENT_COUNT=10_TYPES
+AUDIT_APPEND_ONLY=YES
+AUDIT_DEDUPLICATION=DETERMINISTIC_KEY
+DUPLICATE_AUDIT_EVENTS_BOUNDED=YES
+RECONCILIATION_REPORT_SAVED=YES
+REPAIR_POLICY=REPORT_ONLY
+AUTOMATIC_REPAIR=DISABLED
+```
+
+Audit event vocabulary:
+
+```text
+SHADOW_CANDIDATE_DISCOVERED
+SHADOW_SOURCE_NORMALIZED
+SHADOW_IDENTITY_DERIVED
+SHADOW_JOB_CREATED
+SHADOW_JOB_REUSED
+SHADOW_COMMIT_PLAN_SAVED
+SHADOW_COMMIT_PLAN_REUSED
+SHADOW_RECONCILIATION_RECORDED
+SHADOW_REVIEW_REQUIRED
+SHADOW_EVALUATION_COMPLETED
+```
+
+Each report includes:
+
+```text
+jobId
+jobVersion
+status
+findingCount
+findingCodes
+generatedAt
+inputSnapshotVersion=D5E_SHADOW_STATE_SNAPSHOT_V1
+executionMode=SHADOW
+repairPolicy=REPORT_ONLY
+```
+
+## Coverage
+
+```text
+TEST_SCENARIO_COUNT=24
+FAULT_INJECTION_COUNT=6
+OPTIMISTIC_CONCURRENCY=YES
+IDEMPOTENT_RERUN=YES
+BATCH_ISOLATION=YES
+ONE_FAILED_CANDIDATE_DOES_NOT_FAIL_BATCH=YES
+MUTATION_ATTEMPT_COUNT=0
+PRODUCTION_API_CALL_COUNT=0
+PRODUCTION_FIRESTORE_CALL_COUNT=0
+```
+
+Covered scenarios include single Gmail and Drive candidates, Gmail/Drive convergence, idempotent reruns, merged provenance, immutable commit plans, mismatch review, version conflict isolation, append-only bounded audit, report persistence, deterministic findings, no repair, no fabricated completion, raw ID/PII/payload exclusion, and batch isolation.
+
+Fault injection covers job create conflict, commit plan save conflict, audit append failure, report save failure, candidate normalization failure, and identity derivation failure.
+
+## Files
+
+```text
+IMPLEMENTATION_FILE=durableShadowStateIntegration.js
+TEST_FILE=tests/unit/durable-shadow-state-integration.test.mjs
+CHECKER_FILE=scripts/checkers/check-sgds-crit-003-d5e-shadow-durable-state-integration.mjs
+SECURITY_DESIGN_DOC=docs/phases/SGDS_CRIT_003_D5E_FIRESTORE_SHADOW_STATE_SECURITY_DESIGN.md
+PACKAGE_COMMAND=check:sgds-crit-003-d5e
+```
+
+## Validation
+
+```text
+FOCUSED_D5E_TEST=PASS
+FIRST_TEST_RUN=PASS
+SECOND_TEST_RUN=PASS
+CHECK_RESULT=PASS
+BUNDLE_C_CHECK=PASS
+D2_CHECK=PASS
+D3_CHECK=PASS
+D4_CHECK=PASS
+D5A_CHECK=PASS
+D5B_CHECK=PASS
+D5C_CHECK=PASS
+D5D_CHECK=PASS
+D5E_CHECK=PASS
+GIT_DIFF_CHECK=PASS
+```
+
+## Status
+
+```text
+SGDS_CRIT_003_STATUS=NOT_FIXED
+D5D_R_PRODUCTION_SMOKE=POSTPONED_BY_OWNER
+NEXT_ALLOWED_PHASE=SGDS_CRIT_003_D5F_PRODUCTION_FIRESTORE_SHADOW_WRITE_REVIEW
+```

@@ -286,3 +286,17 @@ SCANNER_RUNTIME_WIRING=NOT_STARTED
 MAIN_RUNTIME_WIRING=NOT_STARTED
 PRODUCTION_MUTATION=NONE
 NEXT_ALLOWED_PHASE=GAS_SOURCE_PUSH_AND_D5D_R_EXACT_THREAD_READ_ONLY_SMOKE
+
+## 2026-07-15 - SGDS-CRIT-003 D5E Local Shadow Durable State Boundary
+
+DECISION=Integrate durable shadow state locally by composing the D2 job store, D3 report-only reconciler, and D5B shadow runner.
+RATIONALE=D5E proves durable shadow job persistence, immutable commit-plan reuse, append-only audit, report-only reconciliation, source convergence, and idempotent rerun behavior without production Firestore, scanner wiring, production reads, or repair.
+D5D_R_PRODUCTION_SMOKE=POSTPONED_BY_OWNER
+D5E_DOES_NOT_DEPEND_ON_D5D_R_PRODUCTION_EXECUTION=YES
+PRODUCTION_FIRESTORE_ACCESS=NONE
+PRODUCTION_FIRESTORE_WRITE=NONE
+SCANNER_RUNTIME_WIRING=NOT_STARTED
+MAIN_RUNTIME_WIRING=NOT_STARTED
+AUTOMATIC_REPAIR=DISABLED
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_PHASE=SGDS_CRIT_003_D5F_PRODUCTION_FIRESTORE_SHADOW_WRITE_REVIEW
