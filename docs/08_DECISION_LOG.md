@@ -125,6 +125,16 @@ SCRIPT_PROPERTIES_MUTATION=NONE
 GAS_PUSH=BLOCKED_BEFORE_UPLOAD
 SGDS_CRIT_003_STATUS=NOT_FIXED
 
+## 2026-07-16 - SGDS-CRIT-003 D5J-I to D5L Partial Close Decision
+
+DECISION=Accept the one fixed production synthetic Firestore shadow job and same-case replay as manual-owner smoke evidence, but do not mark SGDS-CRIT-003 fully closed until a dedicated least-privilege automation principal exists.
+RATIONALE=The smoke proved deterministic identity, bounded synthetic Firestore persistence, idempotency, report-only reconciliation, audit markers, and no Gmail, Drive, Sheets, GAS, Hosting, or rules deployment side effects. The write principal is still a user account with roles/owner, so production automation identity remains open.
+MANUAL_OWNER_SMOKE=PASS
+PRODUCTION_AUTOMATION_PRINCIPAL_READY=NO
+LEAST_PRIVILEGE_AUTOMATION=NOT_READY
+SGDS_CRIT_003_STATUS=PARTIALLY_CLOSED_PRODUCTION_AUTOMATION_PRINCIPAL_PENDING
+NEXT_ALLOWED_PHASE=DEDICATED_FIRESTORE_RUNTIME_IDENTITY_AND_LEAST_PRIVILEGE_IAM
+
 ## 2026-07-16 - SGDS-CRIT-003 D5J-P Project Selection Boundary
 
 DECISION=Do not select or configure a Firebase production project for SyncGmailDriveSheet in this phase.
