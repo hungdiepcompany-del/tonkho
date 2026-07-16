@@ -228,3 +228,10 @@ SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ALLOWED_BUNDLE=OWNER_FIREBASE_PROJECT_SELECTION_OR_PROVISIONING_REVIEW
 NEXT_ALLOWED_SUBPHASE=OWNER_FIREBASE_PROJECT_SELECTION_OR_PROVISIONING_REVIEW
 NEXT_AI_FIRST_ACTION=Ask the owner to select an existing Firebase project or approve provisioning review. Do not set .firebaserc, set gcloud project, create Firestore database, deploy rules/indexes, or run D5J production smoke until the production project is confirmed by owner evidence and at least two positive sources.
+
+---
+CURRENT_BUNDLE=PROJECT_GUARD_V2_REPOSITORY_LOCAL_ISOLATION
+GUARD_IS_REPOSITORY_LOCAL=YES
+CROSS_PROJECT_GUARD_EDIT=FORBIDDEN
+SHARED_PROJECT_GUARD_EDIT=FORBIDDEN
+PROJECT_GUARD_V2_SCOPE=GUARD_ONLY_NO_RUNTIME_CHANGE
