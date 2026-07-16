@@ -124,6 +124,20 @@ PRODUCTION_MUTATION=NONE
 SCRIPT_PROPERTIES_MUTATION=NONE
 GAS_PUSH=BLOCKED_BEFORE_UPLOAD
 SGDS_CRIT_003_STATUS=NOT_FIXED
+
+## 2026-07-16 - SGDS-CRIT-003 D5J Production Gate Boundary
+
+DECISION=Do not execute the D5J production Firestore shadow write until the project, database, and deployed rules are confirmed.
+RATIONALE=Firebase CLI is authenticated as the expected account, and gcloud sgds-hungdiep is authenticated as the expected account, but gcloud project is unset and the repository has no Firebase alias. The approved one-job production write requires a uniquely confirmed Firestore target.
+D5J_PRODUCTION_GATE=BLOCKED_PRODUCTION_FIRESTORE_PROJECT_UNCONFIRMED
+PRODUCTION_WRITE_EXECUTED=NO
+DEFAULT_GCLOUD_CONTEXT_TRUSTED=NO
+GCLOUD_CONFIGURATION_REQUIRED=sgds-hungdiep
+D5K_AND_D5L_CONTINUED_LOCAL=YES
+FIREBASE_DEPLOY=NOT_RUN
+FIRESTORE_RULES_DEPLOY=NOT_RUN
+FIRESTORE_INDEX_DEPLOY=NOT_RUN
+SGDS_CRIT_003_STATUS=NOT_FIXED
 NEXT_ALLOWED_PHASE=RESUME_SINGLE_THREAD_EXECUTOR_GAS_PUSH_AFTER_CLASP_REAUTH
 
 ## BUNDLE-C-S4-DEC-001

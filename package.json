@@ -24,6 +24,9 @@
     "check:sgds-crit-003-d5f": "node scripts/checkers/check-sgds-crit-003-d5f-production-firestore-review.mjs",
     "check:sgds-crit-003-d5g": "node scripts/checkers/check-sgds-crit-003-d5g-firestore-schema-rules.mjs",
     "check:sgds-crit-003-d5h": "node scripts/checkers/check-sgds-crit-003-d5h-firestore-emulator.mjs",
-    "check:sgds-crit-003-d5i": "node scripts/checkers/check-sgds-crit-003-d5i-rollout-readiness.mjs"
+    "check:sgds-crit-003-d5i": "node scripts/checkers/check-sgds-crit-003-d5i-rollout-readiness.mjs",
+    "check:sgds-crit-003-d5j": "node scripts/checkers/check-sgds-crit-003-d5j-one-job-production-firestore-shadow.mjs",
+    "check:sgds-crit-003-d5k": "node scripts/checkers/check-sgds-crit-003-d5k-runtime-wiring-design.mjs",
+    "check:sgds-crit-003-d5l": "node scripts/checkers/check-sgds-crit-003-d5l-one-invoice-read-only-convergence.mjs"
   }
 }
