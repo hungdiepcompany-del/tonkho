@@ -125,6 +125,18 @@ SCRIPT_PROPERTIES_MUTATION=NONE
 GAS_PUSH=BLOCKED_BEFORE_UPLOAD
 SGDS_CRIT_003_STATUS=NOT_FIXED
 
+## 2026-07-16 - SGDS-CRIT-003 D5J-P Project Selection Boundary
+
+DECISION=Do not select or configure a Firebase production project for SyncGmailDriveSheet in this phase.
+RATIONALE=The review found expected account context and read-only inventories, but no candidate has two independent positive evidence sources tying it to SyncGmailDriveSheet. The repository has no Firebase alias, Web App config, Hosting URL, or production project number.
+SGDS_CRIT_003_D5J_PROJECT_CONFIRMATION_STATUS=BLOCKED_NO_UNIQUE_PRODUCTION_PROJECT
+D5J_PRODUCTION_EXECUTION=NOT_RUN_BY_SCOPE
+PRODUCTION_WRITE_EXECUTED=NO
+FIREBASE_ALIAS_ADDED=NO
+GCLOUD_CONFIGURATION_PROJECT_SET=NO
+DEFAULT_LONGTHAI_CONFIGURATION_MODIFIED=NO
+NEXT_ALLOWED_PHASE=OWNER_FIREBASE_PROJECT_SELECTION_OR_PROVISIONING_REVIEW
+
 ## 2026-07-16 - SGDS-CRIT-003 D5J Production Gate Boundary
 
 DECISION=Do not execute the D5J production Firestore shadow write until the project, database, and deployed rules are confirmed.
