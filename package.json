@@ -30,6 +30,8 @@
     "check:sgds-crit-003-d5k": "node scripts/checkers/check-sgds-crit-003-d5k-runtime-wiring-design.mjs",
     "check:sgds-crit-003-d5l": "node scripts/checkers/check-sgds-crit-003-d5l-one-invoice-read-only-convergence.mjs",
     "check:sgds-crit-003-d5m-d5r": "node scripts/checkers/check-sgds-crit-003-d5m-d5r-runtime-identity-shadow.mjs",
+    "check:sgds-d5m-d5r": "node scripts/checkers/check-sgds-crit-003-d5m-d5r-runtime-identity-shadow.mjs",
+    "check:sgds-crit-003-d5n": "node scripts/checkers/check-sgds-crit-003-d5n-runtime-identity.mjs",
     "check:sgds-crit-003-d5j-project-confirmation": "node scripts/checkers/check-sgds-crit-003-d5j-production-project-confirmation.mjs"
   }
 }

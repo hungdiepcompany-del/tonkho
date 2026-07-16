@@ -144,6 +144,30 @@ PRODUCTION_MUTATION=NONE
 SGDS_CRIT_003_STATUS=BLOCKED_IDENTITY_OR_IAM
 NEXT_ALLOWED_PHASE=OWNER_APPROVE_D5N_CREATE_SA_sgds-firestore-runtime_PROJECT_tonkhohd_OR_KEEP_LOCAL_ONLY
 
+## 2026-07-16 - SGDS-CRIT-003 D5N Dedicated Runtime Identity Decision
+
+DECISION=Create a dedicated keyless Firestore runtime identity, grant a project custom role with only reviewed Firestore data-plane permissions, and grant owner impersonation only on the service-account resource.
+RATIONALE=D5N removes the owner user account from Firestore data-plane automation while preserving the split between Workspace access and durable Firestore state. The proof is limited to one synthetic identity-smoke job and idempotent replay.
+SGDS_D5N_IDENTITY_STATUS=PASS_DEDICATED_KEYLESS_LEAST_PRIVILEGE_IDENTITY
+SA_ID=sgds-firestore-runtime
+CUSTOM_ROLE_NAME=projects/tonkhohd/roles/sgdsFirestoreRuntime
+CUSTOM_ROLE_PERMISSIONS=datastore.databases.get;datastore.databases.getMetadata;datastore.entities.create;datastore.entities.get;datastore.entities.list;datastore.entities.update;resourcemanager.projects.get
+DELETE_PERMISSION_INCLUDED=NO
+ADMIN_PERMISSION_COUNT=0
+TOKEN_CREATOR_SCOPE=SA_RESOURCE_ONLY
+KEYLESS_AUTH=PASS
+OWNER_USED_AS_DATA_PRINCIPAL=NO
+SYNTHETIC_JOB_ID=sgds-d5n-runtime-identity-smoke-v1
+IDEMPOTENCY=PASS
+PRODUCTION_MUTATION=ONE_SYNTHETIC_FIRESTORE_IDENTITY_JOB_ONLY
+GOOGLE_SHEETS_MUTATION=NONE
+GMAIL_MESSAGE_MUTATION=NONE
+GMAIL_LABEL_MUTATION=NONE
+GOOGLE_DRIVE_MUTATION=NONE
+HOSTED_RUNTIME_READY=NO_NOT_DEPLOYED
+SGDS_CRIT_003_STATUS=PARTIALLY_CLOSED_RUNTIME_HOSTING_PENDING
+NEXT_ALLOWED_PHASE=CLOUD_RUN_DURABLE_ORCHESTRATOR_BUILD_AND_DEPLOY_REVIEW
+
 ## 2026-07-16 - SGDS-CRIT-003 D5J-I to D5L Partial Close Decision
 
 DECISION=Accept the one fixed production synthetic Firestore shadow job and same-case replay as manual-owner smoke evidence, but do not mark SGDS-CRIT-003 fully closed until a dedicated least-privilege automation principal exists.
