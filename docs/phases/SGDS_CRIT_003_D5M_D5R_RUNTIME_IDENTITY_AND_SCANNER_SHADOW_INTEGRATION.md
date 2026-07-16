@@ -1,0 +1,152 @@
+# SGDS-CRIT-003 D5M-D5R Runtime Identity And Scanner Shadow Integration
+
+SGDS_D5M_D5R_STATUS=PARTIAL_PASS_DESIGN_AND_LOCAL_WIRING_COMPLETE
+PHASE_MODE=LOCAL_DESIGN_AND_DEFAULT_DISABLED_RUNTIME_WIRING
+START_HEAD=ba8a1c85809ce192cfd6040cc6c9140b8be3ffd2
+FIREBASE_PROJECT_ID=tonkhohd
+FIRESTORE_DATABASE_ID=(default)
+FIRESTORE_LOCATION=asia-southeast1
+FIRESTORE_TYPE=FIRESTORE_NATIVE
+FIRESTORE_EDITION=STANDARD
+
+## Phase Results
+
+D5M_A_RUNTIME_DISCOVERY=PASS
+D5M_B_ARCHITECTURE_DECISION=PASS
+D5M_C_PERMISSION_DESIGN=PASS
+
+D5N_A_SA=BLOCKED_SA_CREATION_APPROVAL_MISSING
+D5N_B_IAM_BINDINGS=BLOCKED_IAM_APPROVAL_MISSING
+D5N_C_KEYLESS_VALIDATION=NOT_RUN_SA_APPROVAL_MISSING
+
+D5O_A_CREDENTIAL_ABSTRACTION=PASS
+D5O_B_SCANNER_WIRING=PASS_LOCAL
+D5O_C_LOCAL_EMULATOR_VALIDATION=PASS
+
+D5P_A_PRODUCTION_DRY_RUN=NOT_RUN_IDENTITY_PENDING
+D5P_B_ONE_CYCLE_SHADOW_SCAN=NOT_RUN_APPROVAL_MISSING
+D5P_C_REPLAY_IDEMPOTENCY=NOT_RUN_APPROVAL_MISSING
+
+D5Q_A_AUDIT_RECONCILIATION=LOCAL_ONLY
+D5R_A_AUTOMATION_READINESS=BLOCKED_IDENTITY_OR_IAM
+D5R_B_DOCS_COMMIT_PUSH=PASS_VALIDATED_READY_TO_COMMIT_PUSH
+
+## Runtime Map
+
+GMAIL_SCANNER_RUNTIME=Apps Script V8
+DRIVE_READER_RUNTIME=Apps Script V8
+SHEETS_READER_RUNTIME=Apps Script V8
+FIRESTORE_WRITER_RUNTIME=local Node D5J runner for current smoke; future dedicated runtime pending
+TRIGGER_RUNTIME=Apps Script installable/time/manual triggers
+ORCHESTRATOR_RUNTIME=local JavaScript contracts and Firestore emulator today; production hosted orchestrator not deployed
+
+CREDENTIAL_BOUNDARIES=Workspace Gmail/Drive/Sheets authority remains in Apps Script owner context; Firestore durable writer must use a separate dedicated service account before production automation
+NETWORK_BOUNDARIES=No deployed Apps Script to hosted durable-orchestrator bridge exists; appsscript.json has external-request scope but no endpoint, Cloud Run, Cloud Functions, or scheduler was created
+
+WORKSPACE_PRINCIPAL=hungdiepcompany@gmail.com for current Apps Script Gmail, Drive, and Sheets access
+FIRESTORE_RUNTIME_PRINCIPAL=sgds-firestore-runtime@tonkhohd.iam.gserviceaccount.com proposed, not created
+DEPLOYMENT_ADMIN_PRINCIPAL=hungdiepcompany@gmail.com owner/admin context, not approved as automated invoice data-plane writer
+
+## Architecture Decision
+
+SELECTED_PRODUCTION_PATTERN=PATTERN_C_HOSTED_DURABLE_ORCHESTRATOR_WITH_ATTACHED_SA_PENDING_INFRASTRUCTURE_APPROVAL
+SELECTED_LOCAL_VALIDATION_PATTERN=PATTERN_D_GCLOUD_SA_IMPERSONATION_KEYLESS_PENDING_APPROVAL
+WHY_SELECTED=Pattern C preserves the split between Workspace access and Firestore durable state, avoids long-lived keys, and lets a dedicated service account own only Firestore data-plane writes. Pattern D is the safest local validation path once the service account and impersonation permissions are owner-approved.
+WHY_OTHER_PATTERNS_REJECTED=Pattern A uses owner user credential for automated Firestore writes; Pattern B needs GAS impersonation/token flow and new proof before use; any pattern requiring JSON keys, public unauthenticated writers, Owner/Editor automation, or Gmail credentials in Node is rejected.
+
+WORKSPACE_PRINCIPAL_FIRESTORE_AUTOMATION=REJECTED
+LONG_LIVED_SA_KEY=FORBIDDEN
+PUBLIC_UNAUTHENTICATED_WRITER=REJECTED
+FIREBASE_CLIENT_RULES_BYPASS_AS_PRIMARY_CONTROL=REJECTED
+GMAIL_CREDENTIALS_IN_NODE=REJECTED
+
+## Permission Design
+
+SA_ID=sgds-firestore-runtime
+SA_EMAIL=sgds-firestore-runtime@tonkhohd.iam.gserviceaccount.com
+SA_CREATED=NO_APPROVAL_MISSING
+SA_KEY_COUNT=0
+
+RECOMMENDED_ROLE_STRATEGY=custom project role without delete; roles/datastore.user only as broader fallback after owner review
+ROLE_GRANTED=NONE
+REQUIRED_PERMISSIONS=database metadata read; document get; bounded query/list; document create; document update; transaction begin/commit; append event/report documents
+EXCESS_PERMISSIONS=roles/datastore.user includes delete and console/query permissions beyond the custom-role target
+DELETE_PERMISSION_INCLUDED=NO_FOR_CUSTOM_ROLE;YES_IN_roles/datastore.user_FALLBACK
+INDEX_ADMIN_REQUIRED=NO
+DATABASE_ADMIN_REQUIRED=NO
+IAM_ADMIN_REQUIRED=NO
+RULES_ADMIN_REQUIRED=NO
+
+COLLECTION_LEVEL_IAM_ENFORCEMENT=NOT_CLAIMED
+COMPENSATING_CONTROLS=dedicated project/database context, deterministic collection allowlist, no delete in custom role, mutation budget, audit events, report-only reconciliation, scanner feature gate default false
+
+IMPERSONATOR=NOT_GRANTED
+IMPERSONATION_SCOPE=NOT_GRANTED
+KEYLESS_AUTH=NOT_RUN_SA_APPROVAL_MISSING
+ACTUAL_FIRESTORE_PRINCIPAL=NOT_AVAILABLE
+
+## Local Implementation
+
+FIRESTORE_CREDENTIAL_ABSTRACTION=firestoreRuntimeIdentity.js
+FIRESTORE_REQUIRED_ENV_NAMES=SGDS_FIRESTORE_PROJECT_ID;SGDS_FIRESTORE_DATABASE_ID;SGDS_FIRESTORE_RUNTIME_MODE;SGDS_FIRESTORE_EXPECTED_PRINCIPAL
+FIRESTORE_SUPPORTED_RUNTIME_MODES=emulator;manual-owner-smoke;service-account-impersonation;attached-workload-identity;dedicated-service-account
+MANUAL_OWNER_SMOKE_MODE=EXPLICIT_TEST_ONLY_FLAG_REQUIRED
+OWNER_PRINCIPAL_IN_PRODUCTION_AUTOMATION=REJECTED
+KEY_FILE_CREDENTIAL=FORBIDDEN
+RUNTIME_PRINCIPAL_ASSERTION=REQUIRED
+
+SCANNER_SHADOW_BRIDGE=durableScannerShadowBridge.js
+SCANNER_SHADOW_FEATURE_DEFAULT=false
+SCANNER_SHADOW_MAX_CANDIDATES=1
+SCANNER_SHADOW_CANONICAL_WRITES=false
+SCANNER_SHADOW_GMAIL_MUTATIONS=false
+SCANNER_SHADOW_DRIVE_MUTATIONS=false
+SCANNER_WIRING_POINT=AFTER_CANDIDATE_DETECTED_BEFORE_CANONICAL_EFFECTS
+SCANNER_WIRING_FILES=gmailScanner.js;durableScannerShadowBridge.js
+LEGACY_SCANNER_PATH_WHEN_DISABLED=PRESERVED
+ASYNC_PRODUCTION_BRIDGE=NOT_IMPLEMENTED
+ASYNC_PRODUCTION_BRIDGE_POLICY=fail closed in legacy scanner until a hosted/synchronous-safe runtime path is approved
+
+SCANNED_CANDIDATE_COUNT=0
+DURABLE_JOB_ID=NOT_CREATED
+DURABLE_JOB_COUNT_INITIAL=0
+DURABLE_JOB_COUNT_AFTER_REPLAY=0
+DUPLICATE_JOB_COUNT=0
+IDEMPOTENCY=LOCAL_DETERMINISTIC_CANDIDATE_HASH_TESTED
+
+## Mutation Accounting
+
+FIRESTORE_DOCUMENTS_CREATED=0
+FIRESTORE_DOCUMENTS_UPDATED=0
+FIRESTORE_DOCUMENTS_DELETED=0
+REAL_FIRESTORE_DOCUMENTS_MUTATED=0
+
+GOOGLE_SHEETS_MUTATION=NONE
+GMAIL_MESSAGE_MUTATION=NONE
+GMAIL_LABEL_MUTATION=NONE
+GOOGLE_DRIVE_MUTATION=NONE
+
+GAS_DEPLOY=NOT_RUN
+FIREBASE_DEPLOY=NOT_RUN
+CLOUD_RUN_DEPLOY=NOT_RUN
+CLOUD_FUNCTIONS_DEPLOY=NOT_RUN
+FIRESTORE_RULES_DEPLOY=NOT_RUN
+PRODUCTION_TRIGGER_CREATED=NO
+
+## Readiness
+
+DEDICATED_IDENTITY_READY=NO
+LEAST_PRIVILEGE_READY=NO
+KEYLESS_AUTH_READY=NO
+SCANNER_SHADOW_WIRING_READY=YES_LOCAL_DEFAULT_DISABLED
+BOUNDED_PRODUCTION_SCAN_READY=NO_IDENTITY_PENDING
+REPLAY_IDEMPOTENCY_READY=LOCAL_ONLY
+RECONCILIATION_READY=LOCAL_AND_SYNTHETIC_SHADOW_ONLY
+CANONICAL_PIPELINE_READY=NO
+
+SGDS_CRIT_003_STATUS=BLOCKED_IDENTITY_OR_IAM
+SGDS_CRIT_003_LIMITATION=NO_DISTRIBUTED_ACID_TRANSACTION_ACROSS_GMAIL_DRIVE_SHEETS_LABELS
+
+BLOCKERS=BLOCKED_SA_CREATION_APPROVAL_MISSING;BLOCKED_IAM_APPROVAL_MISSING;BLOCKED_PRODUCTION_SCANNER_APPROVAL_MISSING;BLOCKED_RUNTIME_HOSTING_APPROVAL_MISSING
+REMAINING_RISKS=production service account absent; least-privilege IAM not granted; keyless impersonation not validated; hosted durable orchestrator not selected or deployed; production scanner shadow cycle not approved; canonical Gmail/Drive/Sheets pipeline still outside durable atomic transaction boundary
+NEXT_ALLOWED_ACTION=OWNER_APPROVE_D5N_CREATE_SA_sgds-firestore-runtime_PROJECT_tonkhohd_OR_KEEP_LOCAL_ONLY

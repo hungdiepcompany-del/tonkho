@@ -60,6 +60,19 @@ function scanInvoiceOutEmails_() {
 
     if (!attachments.length) continue;
 
+    const durableShadowDecision = maybeEvaluateDurableScannerShadow_({
+      sourceType: "GMAIL",
+      direction: "OUT",
+      thread,
+      attachments,
+      phase: "AFTER_CANDIDATE_DETECTED_BEFORE_CANONICAL_EFFECTS"
+    });
+
+    if (durableShadowDecision && durableShadowDecision.canonicalProcessingAllowed === false) {
+      debugLog_("Durable shadow blocked OUT before canonical effects: " + durableShadowDecision.status);
+      continue;
+    }
+
     // ======================================================
     // XỬ LÝ XML → NHẬN KẾT QUẢ CHI TIẾT
     const {
@@ -316,6 +329,19 @@ function scanInvoiceInEmails_() {
 
     const { attachments, bodies } =
       collectThreadMessagesAndAttachments_(thread, { includeBodies: true });  //gmailCollection.gs
+
+    const durableShadowDecision = maybeEvaluateDurableScannerShadow_({
+      sourceType: "GMAIL",
+      direction: "IN",
+      thread,
+      attachments,
+      phase: "AFTER_CANDIDATE_DETECTED_BEFORE_CANONICAL_EFFECTS"
+    });
+
+    if (durableShadowDecision && durableShadowDecision.canonicalProcessingAllowed === false) {
+      debugLog_("Durable shadow blocked IN before canonical effects: " + durableShadowDecision.status);
+      continue;
+    }
 
     // ======================================================
     // 1️⃣ XML – ƯU TIÊN CAO NHẤT

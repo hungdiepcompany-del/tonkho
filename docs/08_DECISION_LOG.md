@@ -125,6 +125,25 @@ SCRIPT_PROPERTIES_MUTATION=NONE
 GAS_PUSH=BLOCKED_BEFORE_UPLOAD
 SGDS_CRIT_003_STATUS=NOT_FIXED
 
+## 2026-07-16 - SGDS-CRIT-003 D5M-D5R Split Principal And Scanner Shadow Boundary
+
+DECISION=Add an explicit Firestore runtime identity contract and default-disabled scanner shadow bridge, but do not create service accounts, mutate IAM, deploy infrastructure, or run production scanner shadow without new owner markers.
+RATIONALE=The Apps Script scanner owns Workspace access today, while durable Firestore automation needs a separate keyless service-account principal. Local scanner hooks can be prepared safely only when default-disabled and bounded before canonical Gmail, Drive, and Sheets side effects.
+SGDS_D5M_D5R_STATUS=PARTIAL_PASS_DESIGN_AND_LOCAL_WIRING_COMPLETE
+SELECTED_PRODUCTION_PATTERN=PATTERN_C_HOSTED_DURABLE_ORCHESTRATOR_WITH_ATTACHED_SA_PENDING_INFRASTRUCTURE_APPROVAL
+SELECTED_LOCAL_VALIDATION_PATTERN=PATTERN_D_GCLOUD_SA_IMPERSONATION_KEYLESS_PENDING_APPROVAL
+SA_ID=sgds-firestore-runtime
+SA_CREATED=NO_APPROVAL_MISSING
+IAM_BINDINGS_CHANGED=NO_APPROVAL_MISSING
+SA_KEY_CREATION=FORBIDDEN
+OWNER_PRINCIPAL_IN_PRODUCTION_AUTOMATION=REJECTED
+SCANNER_SHADOW_FEATURE_DEFAULT=false
+SCANNER_SHADOW_WIRING=PASS_LOCAL_DEFAULT_DISABLED
+PRODUCTION_SCANNER_SHADOW_RUN=NOT_RUN_APPROVAL_MISSING
+PRODUCTION_MUTATION=NONE
+SGDS_CRIT_003_STATUS=BLOCKED_IDENTITY_OR_IAM
+NEXT_ALLOWED_PHASE=OWNER_APPROVE_D5N_CREATE_SA_sgds-firestore-runtime_PROJECT_tonkhohd_OR_KEEP_LOCAL_ONLY
+
 ## 2026-07-16 - SGDS-CRIT-003 D5J-I to D5L Partial Close Decision
 
 DECISION=Accept the one fixed production synthetic Firestore shadow job and same-case replay as manual-owner smoke evidence, but do not mark SGDS-CRIT-003 fully closed until a dedicated least-privilege automation principal exists.
