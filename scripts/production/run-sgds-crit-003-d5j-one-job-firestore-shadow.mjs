@@ -98,6 +98,11 @@ export function buildD5JSyntheticPayload({ projectId, databaseId, validator }) {
     executionMode: 'SHADOW',
     productionMutationAllowed: false,
     syntheticOnly: true,
+    synthetic: true,
+    environment: 'production-shadow-smoke',
+    caseId: D5J_SYNTHETIC_SEED,
+    businessData: false,
+    canonicalWriteAllowed: false,
     wouldMutateSteps: [],
     expectedLineCount: 0,
     lineIdentityHashes: [lineIdentityHash],
@@ -113,6 +118,11 @@ export function buildD5JSyntheticPayload({ projectId, databaseId, validator }) {
     shadowEvaluationStatus: 'SHADOW_READY',
     executionMode: 'SHADOW',
     productionMutationAllowed: false,
+    synthetic: true,
+    environment: 'production-shadow-smoke',
+    caseId: D5J_SYNTHETIC_SEED,
+    businessData: false,
+    canonicalWriteAllowed: false,
     invoiceIdentityHash,
     sourceReferenceHashes: [sourceReferenceHash],
     sourceTypes: ['SMOKE_SYNTHETIC'],
@@ -140,6 +150,9 @@ export function buildD5JSyntheticPayload({ projectId, databaseId, validator }) {
       code: eventType,
       count: String(index + 1),
       jobHashPrefix: jobHash.slice(0, 12),
+      synthetic: 'true',
+      environment: 'production-shadow-smoke',
+      caseId: D5J_SYNTHETIC_SEED,
       status: 'SHADOW_READY'
     }
   }));
@@ -155,6 +168,11 @@ export function buildD5JSyntheticPayload({ projectId, databaseId, validator }) {
     blockerCount: 0,
     repairPolicy: 'REPORT_ONLY',
     inputSnapshotVersion: D5J_SYNTHETIC_SEED,
+    synthetic: true,
+    environment: 'production-shadow-smoke',
+    caseId: D5J_SYNTHETIC_SEED,
+    businessData: false,
+    canonicalWriteAllowed: false,
     executionMode: 'SHADOW',
     generatedAt: D5J_FIXED_TIME
   };
@@ -187,7 +205,8 @@ export function createD5JFirestoreClient({ projectId, databaseId, fetchImpl = gl
       method,
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-goog-user-project': projectId
       },
       body: body == null ? undefined : JSON.stringify(body)
     });
@@ -221,7 +240,7 @@ export function createD5JFirestoreClient({ projectId, databaseId, fetchImpl = gl
 
 export async function verifyD5JDatabaseAndRules({ projectId, databaseId, fetchImpl = globalThis.fetch, tokenProvider }) {
   const token = await tokenProvider();
-  const headers = { Authorization: `Bearer ${token}` };
+  const headers = { Authorization: `Bearer ${token}`, 'x-goog-user-project': projectId };
   const databaseUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/${encodeURIComponent(databaseId)}`;
   const databaseResponse = await fetchImpl(databaseUrl, { headers });
   if (!databaseResponse.ok) throw d5jError('D5J_DATABASE_UNCONFIRMED');

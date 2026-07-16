@@ -118,7 +118,7 @@ function createFetchForExisting(payload, options = {}) {
   }
   const calls = [];
   const fetchImpl = async (url, request = {}) => {
-    calls.push([request.method || 'GET', url, request.body || '']);
+    calls.push([request.method || 'GET', url, request.body || '', request.headers || {}]);
     if (url.includes('firestore.googleapis.com/v1/projects/hung-diep-prod/databases/(default)') && !url.includes('/documents')) {
       const name = options.databaseName || 'projects/hung-diep-prod/databases/(default)';
       return { ok: true, status: 200, json: async () => ({ name, locationId: 'asia-southeast1' }), text: async () => '{}' };
@@ -198,8 +198,28 @@ test('D5J deterministic synthetic payload is stable, validated, and contains no 
   assert.equal(first.report.reportId, second.report.reportId);
   assert.equal(first.job.executionMode, 'SHADOW');
   assert.equal(first.job.productionMutationAllowed, false);
+  assert.equal(first.job.synthetic, true);
+  assert.equal(first.job.environment, 'production-shadow-smoke');
+  assert.equal(first.job.caseId, D5J_SYNTHETIC_SEED);
+  assert.equal(first.job.businessData, false);
+  assert.equal(first.job.canonicalWriteAllowed, false);
   assert.equal(first.job.commitPlan.productionMutationAllowed, false);
+  assert.equal(first.job.commitPlan.synthetic, true);
+  assert.equal(first.job.commitPlan.environment, 'production-shadow-smoke');
+  assert.equal(first.job.commitPlan.caseId, D5J_SYNTHETIC_SEED);
+  assert.equal(first.job.commitPlan.businessData, false);
+  assert.equal(first.job.commitPlan.canonicalWriteAllowed, false);
   assert.equal(first.job.commitPlan.wouldMutateSteps.length, 0);
+  for (const event of first.events) {
+    assert.equal(event.safeDetails.synthetic, 'true');
+    assert.equal(event.safeDetails.environment, 'production-shadow-smoke');
+    assert.equal(event.safeDetails.caseId, D5J_SYNTHETIC_SEED);
+  }
+  assert.equal(first.report.synthetic, true);
+  assert.equal(first.report.environment, 'production-shadow-smoke');
+  assert.equal(first.report.caseId, D5J_SYNTHETIC_SEED);
+  assert.equal(first.report.businessData, false);
+  assert.equal(first.report.canonicalWriteAllowed, false);
   const serialized = JSON.stringify(first);
   for (const forbidden of ['gmailThreadId', 'driveFileId', '@', 'taxCode', 'invoiceNo', 'companyName', '<xml', 'JVBER']) {
     assert.equal(serialized.includes(forbidden), false, `forbidden value present: ${forbidden}`);
@@ -248,6 +268,9 @@ test('D5J execute creates exact one tree, verify reads it back, and rerun is ide
   assert.equal(first.eventDocumentCount, 4);
   assert.equal(first.reconciliationReportCount, 1);
   assert.equal(first.productionFirestoreWriteCount, 6);
+  const googleApiCalls = fetchImpl.calls.filter(call => call[1].startsWith('https://firestore.googleapis.com/') || call[1].startsWith('https://firebaserules.googleapis.com/'));
+  assert.ok(googleApiCalls.length > 0);
+  assert.ok(googleApiCalls.every(call => call[3]['x-goog-user-project'] === 'hung-diep-prod'));
 
   const verify = await runD5JMode({
     mode: '--verify',
