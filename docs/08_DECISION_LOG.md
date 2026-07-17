@@ -395,3 +395,11 @@ DELETE_EXACT_TEST_JOB_POLICY=OWNER_APPROVAL_REQUIRED
 LONG_LIVED_CREDENTIAL_ARTIFACT_CREATION=NOT_APPROVED
 PRODUCTION_WRITE_EXECUTED=NO
 SGDS_CRIT_003_STATUS=NOT_FIXED
+## 2026-07-17 - SGDS D5S-D5X Cloud Run Orchestrator Review Decision
+
+DECISION=Build and validate the private Cloud Run durable orchestrator locally, but do not deploy in D5S-D5X.
+SELECTED_BUILD_STRATEGY=EXPLICIT_CLOUD_BUILD_TO_ARTIFACT_REGISTRY_THEN_CLOUD_RUN_BY_DIGEST
+AUTH_DECISION=Cloud Run IAM authentication plus application-level Google ID token validation.
+RUNTIME_IDENTITY_DECISION=Use attached service identity sgds-firestore-runtime@tonkhohd.iam.gserviceaccount.com; no runtime gcloud impersonation and no key file mode.
+APPS_SCRIPT_CALLER_DECISION=Feature-gated caller default false using ScriptApp.getIdentityToken and UrlFetchApp after future custom audience configuration.
+DEPLOYMENT_DECISION=BLOCKED until billing and required APIs are enabled, Docker local validation or equivalent build validation is available, and owner provides exact deploy approval marker.

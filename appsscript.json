@@ -27,6 +27,7 @@
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "oauthScopes": [
+    "openid",
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/documents",

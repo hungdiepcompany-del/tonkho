@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-f"
+      - "services/sgds-durable-orchestrator/Dockerfile"
+      - "-t"
+      - "asia-southeast1-docker.pkg.dev/tonkhohd/sgds-runtime/sgds-durable-orchestrator:${SHORT_SHA}"
+      - "."
+images:
+  - "asia-southeast1-docker.pkg.dev/tonkhohd/sgds-runtime/sgds-durable-orchestrator:${SHORT_SHA}"
+options:
+  logging: "CLOUD_LOGGING_ONLY"

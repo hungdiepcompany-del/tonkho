@@ -32,6 +32,9 @@
     "check:sgds-crit-003-d5m-d5r": "node scripts/checkers/check-sgds-crit-003-d5m-d5r-runtime-identity-shadow.mjs",
     "check:sgds-d5m-d5r": "node scripts/checkers/check-sgds-crit-003-d5m-d5r-runtime-identity-shadow.mjs",
     "check:sgds-crit-003-d5n": "node scripts/checkers/check-sgds-crit-003-d5n-runtime-identity.mjs",
+    "test:sgds-cloud-run-service": "node --test \"services/sgds-durable-orchestrator/test/**/*.test.mjs\"",
+    "check:sgds-d5s-d5x": "node scripts/checkers/check-sgds-d5s-d5x-cloud-run-build-deploy-review.mjs",
+    "check:sgds-cloud-run-build-deploy-review": "node scripts/checkers/check-sgds-d5s-d5x-cloud-run-build-deploy-review.mjs",
     "check:sgds-crit-003-d5j-project-confirmation": "node scripts/checkers/check-sgds-crit-003-d5j-production-project-confirmation.mjs"
   }
 }
