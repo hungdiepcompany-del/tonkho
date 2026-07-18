@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "SGDS_D6F_D6G_CHECKPOINT_WORKER_V1",
+  "fixturePolicy": {
+    "realEmailContent": false,
+    "realDriveIds": false,
+    "realSheetData": false,
+    "credentials": false,
+    "productionFirestore": false,
+    "liveTriggers": false
+  },
+  "cases": [
+    { "id": "no_work", "jobs": [], "expectedStoppedReason": "completed_batch" },
+    { "id": "one_valid_invoice_job", "jobs": [{ "jobId": "job-fixture-001", "gmailMessageId": "msg-001", "threadId": "thread-001", "attachmentIds": ["att-001"] }] },
+    { "id": "two_bounded_jobs", "jobs": [{ "jobId": "job-fixture-002a" }, { "jobId": "job-fixture-002b" }] },
+    { "id": "attachment_stage_transient_failure", "jobs": [{ "jobId": "job-fixture-003" }], "failureStage": "attachment_planned", "failureCode": "retryable_transport_error" },
+    { "id": "sheet_stage_transient_failure", "jobs": [{ "jobId": "job-fixture-004" }], "failureStage": "sheet_upsert_planned", "failureCode": "retryable_timeout" },
+    { "id": "terminal_validation_failure", "jobs": [{ "jobId": "job-fixture-005" }], "failureStage": "message_normalized", "failureCode": "terminal_validation_error" },
+    { "id": "terminal_permission_failure", "jobs": [{ "jobId": "job-fixture-006" }], "failureStage": "message_normalized", "failureCode": "terminal_permission_error" },
+    { "id": "expired_lease_recovery", "jobs": [{ "jobId": "job-fixture-007" }], "lease": { "ownerId": "old-worker", "expired": true } },
+    { "id": "active_lease_conflict", "jobs": [{ "jobId": "job-fixture-008" }], "lease": { "ownerId": "other-worker", "expired": false } },
+    { "id": "retry_not_due", "jobs": [{ "jobId": "job-fixture-009", "status": "failed_retryable", "nextRetryAt": "2026-07-18T01:00:00.000Z" }] },
+    { "id": "retry_due", "jobs": [{ "jobId": "job-fixture-010", "status": "failed_retryable", "nextRetryAt": "2026-07-17T23:00:00.000Z" }] },
+    { "id": "retry_exhausted", "jobs": [{ "jobId": "job-fixture-011", "attemptCount": 4 }], "failureStage": "attachment_planned", "failureCode": "retryable_rate_limit" },
+    { "id": "completed_duplicate_job", "jobs": [{ "jobId": "job-fixture-012", "status": "completed" }] },
+    { "id": "conflicting_source_hash", "jobs": [{ "jobId": "job-fixture-013", "lastErrorCode": "idempotency_conflict" }] },
+    { "id": "invalid_checkpoint_sequence", "jobs": [{ "jobId": "job-fixture-014" }], "checkpoints": ["sheet_written", "message_normalized"] },
+    { "id": "runtime_deadline_reached", "jobs": [{ "jobId": "job-fixture-015" }], "softRuntimeDeadlineSeconds": 1 },
+    { "id": "trigger_missing", "triggers": [] },
+    { "id": "exactly_one_valid_trigger", "triggers": [{ "triggerId": "trigger-001", "handlerFunction": "runSgdsWorkerDryRun", "triggerType": "time_based", "intervalMinutes": 10, "timezone": "Asia/Ho_Chi_Minh" }] },
+    { "id": "duplicate_trigger", "triggers": [{ "triggerId": "trigger-002a", "handlerFunction": "runSgdsWorkerDryRun", "triggerType": "time_based", "intervalMinutes": 10 }, { "triggerId": "trigger-002b", "handlerFunction": "runSgdsWorkerDryRun", "triggerType": "time_based", "intervalMinutes": 10 }] },
+    { "id": "unrelated_trigger", "triggers": [{ "triggerId": "trigger-003", "handlerFunction": "legacyUnrelatedFunction", "triggerType": "time_based", "intervalMinutes": 5 }] }
+  ]
+}

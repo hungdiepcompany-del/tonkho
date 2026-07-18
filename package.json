@@ -39,6 +39,7 @@
     "baseline:sgds-read-only": "node scripts/baseline/collect-sgds-read-only-baseline.mjs",
     "check:sgds-apps-script-first-architecture": "node scripts/checkers/check-sgds-apps-script-first-architecture.mjs",
     "check:d5y-d5z-d6a-d6b": "node scripts/checkers/check-d5y-d5z-d6a-d6b-apps-script-first-foundation.mjs",
-    "check:d6c-d6e-apps-script-adapters": "node scripts/checkers/check-d6c-d6e-apps-script-adapters.mjs"
+    "check:d6c-d6e-apps-script-adapters": "node scripts/checkers/check-d6c-d6e-apps-script-adapters.mjs",
+    "check:d6f-d6g-checkpoint-worker-trigger-guards": "node scripts/checkers/check-d6f-d6g-checkpoint-worker-trigger-guards.mjs"
   }
 }
