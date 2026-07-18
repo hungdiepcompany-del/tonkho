@@ -62,7 +62,8 @@ export function createGasStubs(overrides = {}) {
       Charset: { UTF_8: 'UTF-8' },
       computeDigest(algorithm, text) {
         if (algorithm !== 'SHA_256') throw new Error(`GAS_STUB_NOT_CONFIGURED: Utilities.computeDigest.${algorithm}`);
-        return [...createHash('sha256').update(String(text), 'utf8').digest()].map((b) => (b > 127 ? b - 256 : b));
+        const input = Array.isArray(text) ? Buffer.from(text.map((b) => (b < 0 ? b + 256 : b) & 255)) : Buffer.from(String(text), 'utf8');
+        return [...createHash('sha256').update(input).digest()].map((b) => (b > 127 ? b - 256 : b));
       },
       formatDate(value, _tz, pattern) {
         const d = value instanceof Date ? value : new Date(value);

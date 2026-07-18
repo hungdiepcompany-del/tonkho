@@ -638,3 +638,36 @@ PRODUCTION_MUTATION=NONE
 NEXT_ALLOWED_BUNDLE=D6J_B_RESUME_WITH_SAFE_EXACT_GMAIL_DRY_RUN_EXECUTION_CHANNEL
 NEXT_ALLOWED_PHASE=D6J_B_RESUME_WITH_SAFE_EXACT_GMAIL_DRY_RUN_EXECUTION_CHANNEL
 NEXT_AI_FIRST_ACTION=Resume only after a safe exact Gmail dry-run execution channel is available, such as an attachable authenticated browser/Gmail connector or an owner-approved deployed exact-query read-only GAS dry-run runner. Do not use old broad scanner paths and do not mutate Gmail, Drive, Sheets, Firestore, or triggers before the dry-run gates pass and the standard mutation marker is provided.
+
+## SGDS D6J-B Safe Exact Production Dry-Run Channel Handoff
+
+CURRENT_BUNDLE=D6J_B_SAFE_EXACT_PRODUCTION_DRY_RUN_CHANNEL
+STATUS=BLOCKED_CLASP_PUSH_SKIPPED_SOURCE_SYNC_NOT_PROVEN
+START_HEAD=0ef290fe7217ce0c08bd259ecd64e7d47ab6c979
+READ_ONLY_ENTRYPOINT=runD6jBProductionDryRunReadOnly
+RUNNER_SOURCE=d6jBProductionDryRunReadOnly.js
+UNIT_TESTS=tests/unit/d6j-b-production-dry-run-read-only.test.mjs
+STATIC_CHECKER=scripts/checkers/check-d6j-b-safe-exact-production-dry-run-channel.mjs
+PHASE_DOC=docs/phases/D6J_B_SAFE_EXACT_PRODUCTION_DRY_RUN_CHANNEL.md
+EVIDENCE_DOC=docs/evidence/D6J_B_SAFE_EXACT_PRODUCTION_DRY_RUN_CHANNEL_EVIDENCE.md
+SCRIPT_PROPERTIES_CONTRACT=PROPERTY_NAMES_ONLY
+PRIVATE_VALUES_COMMITTED=NO
+OWNER_APPROVED_D6J_REQUIRED_DEPLOYMENTS=PRESENT
+OWNER_APPROVED_D6J_PRODUCTION_DRY_RUN=PRESENT
+OWNER_APPROVED_D6J_ONE_RECORD_PRODUCTION_MUTATION=NOT_GRANTED
+GMAIL_QUERY_POLICY=bounded_max_2_exact_message_id_verified
+DRIVE_WRITE_ACCESS_PROBED=NO
+SHEETS_WRITE_ACCESS_PROBED=NO
+FIRESTORE_WRITE_ACCESS_PROBED=NO
+PRODUCTION_DRY_RUN_EXECUTED=NO
+LOCAL_TESTS=PASS
+STATIC_SAFETY_CHECK=PASS
+PROJECT_CHECK=PASS
+CLASP_STATUS=PASS_NEW_ENTRYPOINT_INCLUDED_LOCAL_HELPER_EXCLUDED
+CLASP_PUSH_ATTEMPT_COUNT=1
+CLASP_PUSH_RESULT=SKIPPED_BY_CLASP
+APPS_SCRIPT_SOURCE_SYNC=BLOCKED_NOT_PROVEN
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_BUNDLE=RESOLVE_D6J_B_CLASP_SOURCE_SYNC_WITHOUT_FORCE
+NEXT_ALLOWED_PHASE=RESOLVE_D6J_B_CLASP_SOURCE_SYNC_WITHOUT_FORCE
+NEXT_AI_FIRST_ACTION=Resolve why clasp push returns "Skipping push." even though d6jBProductionDryRunReadOnly.js is tracked. Do not use --force, deploy, create triggers, or run production dry-run until source sync is proven. After sync, execute runD6jBProductionDryRunReadOnly exactly once through clasp run if already supported, otherwise hand owner the manual Apps Script Editor steps.
