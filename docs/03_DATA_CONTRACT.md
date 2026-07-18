@@ -208,3 +208,17 @@ SHEETS_IMMUTABILITY_RULES=direct history edit blocked;direct history delete bloc
 ERROR_TAXONOMY=adapter_auth_error;adapter_permission_error;adapter_not_found;adapter_rate_limited;adapter_transient_error;adapter_contract_error;adapter_conflict;adapter_idempotent_replay
 
 Adapter DTOs are JSON-safe. Apps Script runtime objects, Drive file/folder objects, Gmail thread/message objects, sheet range objects, raw email bodies, and raw file bytes do not cross into business contracts.
+## D6C-D6E Local Adapter Data Contract
+
+PHASE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
+STATUS=PASS_LOCAL_IMPLEMENTATION_VALIDATED
+SCHEMA_VERSION=SGDS_D6C_D6E_LOCAL_ADAPTERS_V1
+GMAIL_MESSAGE_DTO=gmailMessageId;threadId;senderEmail;senderDisplayName;recipientEmails;ccEmails;subject;receivedAt;sentAt;snippet;normalizedHeaders;attachmentCandidates;labelIds;labelNames;sourceAccount;sourceMailbox;messageFingerprint;schemaVersion
+GMAIL_ATTACHMENT_DTO=gmailMessageId;attachmentId;originalFilename;normalizedFilename;mimeType;sizeBytes;inline;contentId;attachmentFingerprint;expectedSha256;computedSha256;schemaVersion
+DRIVE_EVIDENCE_DTO=pathPlan;fileNamePlan;duplicate;metadata;reconciliation;idempotencyKey;productionMutation;schemaVersion
+SHEETS_LEDGER_DTO=recordId;businessKey;documentType;documentNumber;documentDate;senderSupplier;subject;amount;currency;gmailMessageId;gmailThreadId;attachmentId;driveFileId;driveFileUrl;sourceSha256;processingStatus;reviewStatus;createdAt;updatedAt;schemaVersion
+BUSINESS_KEY_POLICY=documentType+documentNumber+documentDate+senderSupplier+sourceSha256
+ROW_NUMBER_AS_IDENTITY=NO
+USER_EDITABLE_COLUMN_OVERWRITE=BLOCKED_REVIEW_REQUIRED
+AMBIGUOUS_DATE_POLICY=HOLD_FOR_REVIEW
+PRODUCTION_MUTATION=NONE

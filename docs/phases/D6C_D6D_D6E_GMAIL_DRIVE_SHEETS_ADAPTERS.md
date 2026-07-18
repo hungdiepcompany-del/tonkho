@@ -1,6 +1,7 @@
 # D6C-D6D-D6E Gmail Drive Sheets Adapters
 
 PHASE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
+STATUS=PASS_LOCAL_IMPLEMENTATION_VALIDATED
 STATUS=PASS_LOCAL_APPS_SCRIPT_ADAPTERS_IMPLEMENTED
 
 ## Runtime Boundary
@@ -16,6 +17,25 @@ CLOUD_RUN_FALLBACK_AUTOMATIC=false
 
 This phase is local-only. It defines Apps Script-first adapter contracts, fakes, deterministic DTOs, retry/error taxonomy, and local tests. It does not wire production scanners, deploy Apps Script, deploy Firebase, deploy Cloud Run, mutate triggers, call live Gmail, call live Drive, call live Sheets, or write production Firestore.
 
+## Strict Local Planning Layer
+
+STRICT_LOCAL_PLANNING_FILE=sgdsD6LocalAdapterPlanning.js
+STRICT_LOCAL_PLANNING_SCHEMA_VERSION=SGDS_D6C_D6E_LOCAL_ADAPTERS_V1
+GMAIL_DISCOVERY_ADAPTER=IMPLEMENTED_LOCAL_ONLY
+DRIVE_EVIDENCE_STORE_ADAPTER=IMPLEMENTED_LOCAL_ONLY
+SHEETS_LEDGER_ADAPTER=IMPLEMENTED_LOCAL_ONLY
+SHARED_NORMALIZATION_CONTRACT=IMPLEMENTED
+SHARED_IDEMPOTENCY_CONTRACT=IMPLEMENTED
+SHARED_DRY_RUN_CONTRACT=IMPLEMENTED
+SHARED_RECONCILIATION_CONTRACT=IMPLEMENTED
+COMBINED_DRY_RUN_PIPELINE=IMPLEMENTED_LOCAL_ONLY
+FIXTURE_CATALOGUE=fixtures/d6c-d6e/adapter-fixtures.json
+FIXTURE_CATALOGUE_CASE_COUNT=18
+LIVE_CONFIGURATION_STATUS=NOT_LIVE_VERIFIED_PLACEHOLDERS_ONLY
+FIRESTORE_EMULATOR_EVIDENCE=LOCAL_INJECTED_TRANSPORT_AND_DRY_RUN_JOB_PLAN
+
+The stricter D6 layer is a local planner above the basic fake adapter contracts. It normalizes Gmail discovery candidates, classifies attachments, plans Drive evidence storage without writing, plans Sheets upserts without row-number identity, and emits a combined dry-run plan with Firestore job/audit evidence metadata only.
+
 ## D6C Gmail Adapter
 
 GMAIL_EXISTING_CONTRACTS=invoice labels;bounded thread search;thread metadata;message attachment collection;XML/PDF/link classification;saved-label projection after verified ledger commit
@@ -25,11 +45,18 @@ GMAIL_IDEMPOTENCY_REQUIREMENTS=threadId+messageId+attachmentId+contentHash+invoi
 GMAIL_CURSOR_OR_CHECKPOINT_MODEL=bounded_query_plus_thread_message_checkpoint
 
 GMAIL_ADAPTER_FILES=sgdsGmailAdapter.js
+GMAIL_DISCOVERY_PLANNING_FILE=sgdsD6LocalAdapterPlanning.js
+GMAIL_DISCOVERY_COMPONENTS=GmailDiscoveryService;GmailQueryBuilder;GmailMessageNormalizer;GmailAttachmentNormalizer;GmailClassificationEngine;GmailFingerprintService;GmailDiscoveryCursor;GmailTransport interface;FakeGmailTransport;GmailDiscoveryDryRunPlanner
 GMAIL_READ_OPERATIONS=searchCandidateThreads;readThreadMetadata;readMessage;listAttachments;readAttachmentContent;readLabels
 GMAIL_MUTATION_OPERATIONS=applyProcessingLabel;removeTemporaryLabel
 GMAIL_NORMALIZED_DTO=threadId;messageId;historyId;order;internalDate;sender;recipients;subject;boundedBodyPreview;attachmentMetadata;labelNames
+GMAIL_STRICT_NORMALIZED_DTO=gmailMessageId;threadId;senderEmail;senderDisplayName;recipientEmails;ccEmails;subject;receivedAt;sentAt;snippet;normalizedHeaders;attachmentCandidates;labelIds;labelNames;sourceAccount;sourceMailbox;messageFingerprint;schemaVersion
+GMAIL_ATTACHMENT_DTO=gmailMessageId;attachmentId;originalFilename;normalizedFilename;mimeType;sizeBytes;inline;contentId;attachmentFingerprint;expectedSha256;computedSha256;schemaVersion
+GMAIL_CLASSIFICATIONS=invoice;quotation;purchase_order;delivery_note;report;spreadsheet;image;pdf_document;unknown
+GMAIL_QUERY_POLICY=bounded_filters_required;unsafe_raw_query_rejected;trusted_raw_query_explicit_only;max_results_capped;no_whole_mailbox_default;dry_run_summary_required
 GMAIL_FAKE_ADAPTER=createFakeSgdsGmailAdapter_
 GMAIL_ADAPTER_TESTS_PASS=PASS
+GMAIL_DISCOVERY_STRICT_TESTS_PASS=PASS
 
 Read operations return JSON-safe DTOs and do not mutate mailbox state. Mutation operations require explicit idempotency keys. One thread can produce multiple logical invoice candidates. XML candidates remain processable, while PDF-only and link-only candidates are marked review-required.
 
@@ -42,10 +69,17 @@ DRIVE_DEDUPLICATION_MODEL=deterministic logical artifact identity, not filename-
 DRIVE_METADATA_MODEL=fileReference;folderReference;logicalFileIdentityHashPrefix;artifactType;mimeType;contentHash;byteSize;boundedMetadata
 
 DRIVE_ADAPTER_FILES=sgdsDriveAdapter.js
+DRIVE_EVIDENCE_PLANNING_FILE=sgdsD6LocalAdapterPlanning.js
+DRIVE_EVIDENCE_COMPONENTS=DriveEvidenceStore;DrivePathPlanner;DriveFileNameSanitizer;DriveFolderResolver;DriveDuplicateDetector;DriveMetadataBuilder;DriveReconciliationService;DriveTransport interface;FakeDriveTransport;DriveWriteDryRunPlanner
 DRIVE_READ_OPERATIONS=findFolder;findFileByIdentity;readFileMetadata;readFileBytes;generateDriveReference
 DRIVE_MUTATION_OPERATIONS=ensureFolder;createFileIfAbsent;updateBoundedMetadata
+DRIVE_PATH_STRUCTURE=SyncGmailDriveSheet/YYYY/MM/classification
+DRIVE_FILENAME_POLICY=preserve_extension;remove_controls;reject_traversal;replace_separators;cap_length;preserve_original_metadata;avoid_hidden_ambiguous_extension
+DRIVE_DUPLICATE_POLICY=source_sha256;gmail_message_attachment_identity;metadata_identity;fallback_requires_review;never_delete
+DRIVE_RECONCILIATION_STATES=planned_new_file;existing_exact_match;existing_source_identity_match;conflicting_hash;conflicting_metadata;missing_source_attachment;invalid_path;requires_review
 DRIVE_FAKE_ADAPTER=createFakeSgdsDriveAdapter_
 DRIVE_ADAPTER_TESTS_PASS=PASS
+DRIVE_EVIDENCE_STORE_STRICT_TESTS_PASS=PASS
 
 Same artifact replay resolves to the same logical Drive object. Same filename with different content does not merge incorrectly. Replacement, adjustment, and cancellation artifacts remain independently auditable through the logical identity inputs.
 
@@ -59,10 +93,17 @@ SHEETS_REBUILD_MODEL=earliest_affected_transaction_or_full_rebuild
 SHEETS_IMMUTABILITY_RULES=direct history edit blocked;direct history delete blocked;adjustment/replacement/cancellation append-only
 
 SHEETS_ADAPTER_FILES=sgdsSheetsLedgerAdapter.js
+SHEETS_LEDGER_PLANNING_FILE=sgdsD6LocalAdapterPlanning.js
+SHEETS_LEDGER_COMPONENTS=SheetsLedgerAdapter;SheetSchemaRegistry;SheetRowNormalizer;SheetBusinessKeyBuilder;SheetRecordMatcher;SheetUpsertPlanner;SheetColumnOwnershipPolicy;SheetConflictDetector;SheetReconciliationService;SheetsTransport interface;FakeSheetsTransport;SheetWriteDryRunPlanner
 SHEETS_READ_OPERATIONS=readLedgerRows;readConfigurationRows;findTransactionByIdentity;readRowsForRebuild;planRebuildFromEarliestAffected
 SHEETS_MUTATION_OPERATIONS=appendImmutableTransactionsIfAbsent;appendAdjustment;appendReplacement;appendCancellation;replaceDerivedRangeForRebuild
+SHEETS_STRICT_SCHEMA_FIELDS=recordId;businessKey;documentType;documentNumber;documentDate;senderSupplier;subject;amount;currency;gmailMessageId;gmailThreadId;attachmentId;driveFileId;driveFileUrl;sourceSha256;processingStatus;reviewStatus;createdAt;updatedAt;schemaVersion
+SHEETS_BUSINESS_KEY_POLICY=documentType+documentNumber+documentDate+senderSupplier+sourceSha256;row_number_never_identity
+SHEETS_UPSERT_ACTIONS=INSERT;UPDATE;NO_OP;HOLD_FOR_REVIEW;REJECT_INVALID
+SHEETS_COLUMN_OWNERSHIP=system_owned_fields_bounded;user_editable_fields_not_overwritten
 SHEETS_FAKE_ADAPTER=createFakeSgdsSheetsLedgerAdapter_
 SHEETS_ADAPTER_TESTS_PASS=PASS
+SHEETS_LEDGER_STRICT_TESTS_PASS=PASS
 
 DIRECT_HISTORY_EDIT_BLOCKED=true
 DIRECT_HISTORY_DELETE_BLOCKED=true
@@ -119,6 +160,7 @@ New D6C-D6E adapter tests do not call or name production Google service globals.
 ## Local Integration
 
 LOCAL_END_TO_END_ADAPTER_FLOW_PASS=true
+COMBINED_DRY_RUN_PIPELINE_TESTS_PASS=PASS
 PRODUCTION_HTTP_CALL_COUNT=0
 PRODUCTION_GOOGLE_API_CALL_COUNT=0
 
@@ -127,6 +169,7 @@ The local end-to-end fixture uses a fake Gmail thread, fake Drive storage, a Fir
 ## Validation
 
 D6C_D6E_CHECK=PASS
+D6C_D6E_STRICT_CHECK=PASS
 FIRESTORE_EMULATOR_TESTS=PASS
 LOCAL_SERVICE_TESTS=PASS
 BUNDLE_C_CHECK=PASS
@@ -153,4 +196,4 @@ PRODUCTION_GOOGLE_API_CALL_COUNT=0
 
 LIVE_VERIFICATION=NOT_RUN
 PRODUCTION_SCANNER_WIRING=NOT_STARTED
-NEXT_ALLOWED_PHASE=D6F_D6G_LOCAL_SCANNER_COMPOSITION_WITH_ADAPTERS
+NEXT_ALLOWED_PHASE=D6F_D6G_CHECKPOINT_WORKER_TRIGGER_GUARDS

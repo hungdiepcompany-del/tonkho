@@ -426,3 +426,14 @@ CLOUD_RUN_FALLBACK_AUTOMATIC=false
 PRODUCTION_GOOGLE_API_CALL_COUNT=0
 LIVE_VERIFICATION=NOT_RUN
 NEXT_ALLOWED_PHASE=D6F_D6G_LOCAL_SCANNER_COMPOSITION_WITH_ADAPTERS
+## D6C-D6E Strict Local Adapter Planning Decision
+
+PHASE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
+DECISION=Use Apps Script-first local planners for Gmail discovery, Drive evidence storage, and Sheets ledger upsert before scanner wiring.
+STATUS=ACCEPTED_LOCAL_ONLY
+RATIONALE=The scanner needs deterministic DTOs, idempotency keys, duplicate policies, business-key matching, and review states before any live Gmail/Drive/Sheets mutation path can be safely composed.
+PRIMARY_RUNTIME=apps_script
+CLOUD_RUN_FALLBACK_AUTOMATIC=false
+LIVE_CONFIGURATION_STATUS=NOT_LIVE_VERIFIED_PLACEHOLDERS_ONLY
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_PHASE=D6F_D6G_CHECKPOINT_WORKER_TRIGGER_GUARDS

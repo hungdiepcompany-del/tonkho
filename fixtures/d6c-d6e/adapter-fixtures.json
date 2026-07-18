@@ -1,0 +1,286 @@
+{
+  "schemaVersion": "SGDS_D6C_D6E_LOCAL_ADAPTERS_V1",
+  "fixturePolicy": {
+    "realPrivateContent": false,
+    "rawAttachmentBytes": false,
+    "productionGoogleApi": false,
+    "productionFirestore": false
+  },
+  "cases": [
+    {
+      "id": "invoice_pdf_email",
+      "description": "Invoice email with XML and PDF evidence",
+      "expectedClassification": "invoice",
+      "message": {
+        "gmailMessageId": "msg-fixture-001",
+        "threadId": "thread-fixture-001",
+        "from": "Supplier One <supplier.one@example.test>",
+        "to": ["accounting@example.test"],
+        "subject": "Sanitized HDDT invoice",
+        "receivedAt": "2026-02-01T03:26:41.000Z",
+        "attachments": [
+          {
+            "attachmentId": "att-001-xml",
+            "fileName": "invoice-001.xml",
+            "mimeType": "application/xml",
+            "sizeBytes": 1200,
+            "expectedSha256": "sha256_fixture_invoice_001_xml"
+          },
+          {
+            "attachmentId": "att-001-pdf",
+            "fileName": "invoice-001.pdf",
+            "mimeType": "application/pdf",
+            "sizeBytes": 2200,
+            "expectedSha256": "sha256_fixture_invoice_001_pdf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quotation_excel_email",
+      "description": "Quotation spreadsheet",
+      "expectedClassification": "quotation",
+      "message": {
+        "gmailMessageId": "msg-fixture-002",
+        "threadId": "thread-fixture-002",
+        "from": "sales@example.test",
+        "to": ["purchasing@example.test"],
+        "subject": "Quotation for material",
+        "receivedAt": "2026-02-02T01:00:00.000Z",
+        "attachments": [
+          {
+            "attachmentId": "att-002-xlsx",
+            "fileName": "quotation.xlsx",
+            "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "sizeBytes": 4096,
+            "expectedSha256": "sha256_fixture_quotation_xlsx"
+          }
+        ]
+      }
+    },
+    {
+      "id": "two_attachments",
+      "description": "Two attachments in one message",
+      "expectedAttachmentCount": 2,
+      "message": {
+        "gmailMessageId": "msg-fixture-003",
+        "threadId": "thread-fixture-003",
+        "from": "source@example.test",
+        "to": ["accounting@example.test"],
+        "subject": "Two sanitized attachments",
+        "receivedAt": "2026-02-03",
+        "attachments": [
+          {
+            "attachmentId": "att-003-a",
+            "fileName": "a.xml",
+            "mimeType": "application/xml",
+            "sizeBytes": 10,
+            "expectedSha256": "sha256_fixture_003_a"
+          },
+          {
+            "attachmentId": "att-003-b",
+            "fileName": "b.pdf",
+            "mimeType": "application/pdf",
+            "sizeBytes": 20,
+            "expectedSha256": "sha256_fixture_003_b"
+          }
+        ]
+      }
+    },
+    {
+      "id": "no_attachment",
+      "description": "Message without attachment",
+      "expectedAttachmentCount": 0,
+      "message": {
+        "gmailMessageId": "msg-fixture-004",
+        "threadId": "thread-fixture-004",
+        "from": "source@example.test",
+        "to": ["accounting@example.test"],
+        "subject": "No attachment",
+        "receivedAt": "2026-02-04",
+        "attachments": []
+      }
+    },
+    {
+      "id": "inline_image",
+      "description": "Inline image requires non-invoice classification",
+      "expectedClassification": "image",
+      "message": {
+        "gmailMessageId": "msg-fixture-005",
+        "threadId": "thread-fixture-005",
+        "from": "source@example.test",
+        "to": ["accounting@example.test"],
+        "subject": "Inline image",
+        "receivedAt": "2026-02-05",
+        "attachments": [
+          {
+            "attachmentId": "att-005-image",
+            "fileName": "inline.png",
+            "mimeType": "image/png",
+            "inline": true,
+            "sizeBytes": 800,
+            "expectedSha256": "sha256_fixture_inline_image"
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate_message",
+      "description": "Duplicate Gmail message fingerprint",
+      "duplicateOf": "invoice_pdf_email",
+      "message": {
+        "gmailMessageId": "msg-fixture-001",
+        "threadId": "thread-fixture-001",
+        "from": "Supplier One <supplier.one@example.test>",
+        "to": ["accounting@example.test"],
+        "subject": "Sanitized HDDT invoice",
+        "receivedAt": "2026-02-01T03:26:41.000Z",
+        "attachments": [
+          {
+            "attachmentId": "att-001-xml",
+            "fileName": "invoice-001.xml",
+            "mimeType": "application/xml",
+            "sizeBytes": 1200,
+            "expectedSha256": "sha256_fixture_invoice_001_xml"
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate_attachment_hash",
+      "description": "Different attachment identity with duplicate hash",
+      "existingDriveFiles": [
+        {
+          "driveFileId": "drive-existing-007",
+          "sourceSha256": "sha256_duplicate_attachment_hash"
+        }
+      ],
+      "attachment": {
+        "gmailMessageId": "msg-fixture-007",
+        "threadId": "thread-fixture-007",
+        "attachmentId": "att-007-new",
+        "originalFilename": "duplicate.xml",
+        "mimeType": "application/xml",
+        "expectedSha256": "sha256_duplicate_attachment_hash",
+        "classification": "invoice",
+        "receivedAt": "2026-02-07"
+      }
+    },
+    {
+      "id": "invalid_path_chars",
+      "description": "Drive path and file name sanitization",
+      "fileName": "bad:name?.xml",
+      "senderBusinessFolder": "ACME/Unsafe"
+    },
+    {
+      "id": "very_long_filename",
+      "description": "Long filename must be capped",
+      "fileName": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.xml"
+    },
+    {
+      "id": "unknown_mime",
+      "description": "Unknown MIME requires review",
+      "expectedClassification": "unknown",
+      "attachment": {
+        "gmailMessageId": "msg-fixture-010",
+        "threadId": "thread-fixture-010",
+        "attachmentId": "att-010",
+        "originalFilename": "blob.bin",
+        "mimeType": "application/octet-stream",
+        "expectedSha256": "sha256_unknown_mime"
+      }
+    },
+    {
+      "id": "ambiguous_date",
+      "description": "Ambiguous dd/mm date requires review",
+      "businessRecord": {
+        "documentType": "invoice",
+        "documentNumber": "AMB-001",
+        "documentDate": "02/03/2026",
+        "senderSupplier": "supplier@example.test",
+        "sourceSha256": "sha256_ambiguous_date",
+        "amount": "1000"
+      }
+    },
+    {
+      "id": "same_business_key_identical",
+      "description": "Existing identical business key is no-op",
+      "expectedSheetAction": "NO_OP",
+      "businessRecord": {
+        "documentType": "invoice",
+        "documentNumber": "INV-012",
+        "documentDate": "2026-02-12",
+        "senderSupplier": "supplier@example.test",
+        "sourceSha256": "sha256_inv_012",
+        "amount": 1000
+      }
+    },
+    {
+      "id": "same_business_key_changed_system_owned",
+      "description": "System-owned column change is bounded update",
+      "expectedSheetAction": "UPDATE",
+      "businessRecord": {
+        "documentType": "invoice",
+        "documentNumber": "INV-013",
+        "documentDate": "2026-02-13",
+        "senderSupplier": "supplier@example.test",
+        "sourceSha256": "sha256_inv_013",
+        "driveFileId": "drive-new-013",
+        "amount": 1000
+      }
+    },
+    {
+      "id": "same_business_key_conflicting_user_editable",
+      "description": "User-editable column conflict is held for review",
+      "expectedSheetAction": "HOLD_FOR_REVIEW",
+      "businessRecord": {
+        "documentType": "invoice",
+        "documentNumber": "INV-014",
+        "documentDate": "2026-02-14",
+        "senderSupplier": "supplier@example.test",
+        "sourceSha256": "sha256_inv_014",
+        "amount": 2000
+      }
+    },
+    {
+      "id": "multiple_existing_sheets_matches",
+      "description": "Multiple existing matches require review",
+      "expectedSheetAction": "HOLD_FOR_REVIEW",
+      "businessRecord": {
+        "documentType": "invoice",
+        "documentNumber": "INV-015",
+        "documentDate": "2026-02-15",
+        "senderSupplier": "supplier@example.test",
+        "sourceSha256": "sha256_inv_015",
+        "amount": 1000
+      }
+    },
+    {
+      "id": "missing_required_business_field",
+      "description": "Missing required field is invalid",
+      "expectedSheetAction": "REJECT_INVALID",
+      "businessRecord": {
+        "documentType": "invoice",
+        "documentDate": "2026-02-16",
+        "senderSupplier": "supplier@example.test",
+        "sourceSha256": "sha256_inv_016"
+      }
+    },
+    {
+      "id": "retryable_injected_transport_failure",
+      "description": "Injected transport failure maps to retryable evidence",
+      "injectedError": {
+        "code": 503,
+        "safeMessage": "synthetic unavailable"
+      }
+    },
+    {
+      "id": "terminal_validation_failure",
+      "description": "Terminal validation failure maps to non-retryable review",
+      "injectedError": {
+        "code": "adapter_contract_error",
+        "safeMessage": "synthetic validation failure"
+      }
+    }
+  ]
+}
