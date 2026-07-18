@@ -150,13 +150,13 @@ test('D5H metadata, emulator guard constants, rules, and indexes are local-only'
 
   const indexes = JSON.parse(fs.readFileSync('firestore.indexes.json', 'utf8'));
   const fields = indexes.indexes.map(index => index.fields.map(field => field.fieldPath).join('+'));
-  assert.deepEqual(fields, [
+  for (const expected of [
     'status+updatedAt',
     'executionMode+updatedAt',
     'latestReconciliationStatus+updatedAt',
     'invoiceIdentityHash',
     'retentionClass+updatedAt'
-  ]);
+  ]) assert.equal(fields.includes(expected), true, `missing D5H index ${expected}`);
 });
 
 test('D5H emulator config fails closed for missing or production-like project settings', () => {

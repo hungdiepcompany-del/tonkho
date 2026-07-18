@@ -1,0 +1,222 @@
+{
+  "fixturePolicy": {
+    "syntheticOnly": true,
+    "liveFirebase": false,
+    "liveWorkspaceApis": false,
+    "productionFirestore": false,
+    "adminCredentials": false,
+    "rawEmailHtml": false
+  },
+  "users": {
+    "viewer": {
+      "uid": "uid_viewer_001",
+      "email": "viewer@example.test",
+      "normalizedEmail": "viewer@example.test",
+      "displayName": "Viewer Example",
+      "role": "viewer",
+      "active": true,
+      "allowedCommands": [],
+      "createdAt": "2026-07-18T00:00:00.000Z",
+      "updatedAt": "2026-07-18T00:00:00.000Z"
+    },
+    "operator": {
+      "uid": "uid_operator_001",
+      "email": "operator@example.test",
+      "normalizedEmail": "operator@example.test",
+      "displayName": "Operator Example",
+      "role": "operator",
+      "active": true,
+      "allowedCommands": ["retry_job", "reprocess_attachment", "reconcile_job"],
+      "createdAt": "2026-07-18T00:00:00.000Z",
+      "updatedAt": "2026-07-18T00:00:00.000Z"
+    },
+    "admin": {
+      "uid": "uid_admin_001",
+      "email": "admin@example.test",
+      "normalizedEmail": "admin@example.test",
+      "displayName": "Admin Example",
+      "role": "admin",
+      "active": true,
+      "allowedCommands": ["retry_job", "ignore_job", "reprocess_attachment", "reconcile_job"],
+      "createdAt": "2026-07-18T00:00:00.000Z",
+      "updatedAt": "2026-07-18T00:00:00.000Z"
+    },
+    "inactive": {
+      "uid": "uid_inactive_001",
+      "email": "inactive@example.test",
+      "normalizedEmail": "inactive@example.test",
+      "displayName": "Inactive Example",
+      "role": "operator",
+      "active": false,
+      "allowedCommands": ["retry_job"],
+      "createdAt": "2026-07-18T00:00:00.000Z",
+      "updatedAt": "2026-07-18T00:00:00.000Z"
+    }
+  },
+  "jobs": [
+    {
+      "id": "job_retry_001",
+      "jobId": "job_retry_001",
+      "status": "failed_retryable",
+      "currentStep": "sheet_written",
+      "attemptCount": 2,
+      "retryPolicy": { "maxAttempts": 5 },
+      "retryEligible": true,
+      "nextRetryAt": "2026-07-18T00:10:00.000Z",
+      "leaseOwner": "",
+      "attachmentIds": ["att_xml_001", "att_pdf_001"],
+      "gmailMessageId": "msg_001",
+      "sheetBusinessKeyHash": "sheetkey_1234",
+      "reconciliationStatus": "requires_review",
+      "reviewRequired": true,
+      "lastErrorCode": "SHEETS_TEMPORARY",
+      "lastErrorMessage": "temporary sheet transport failure",
+      "updatedAt": "2026-07-18T00:04:00.000Z",
+      "completedAt": ""
+    },
+    {
+      "id": "job_done_001",
+      "jobId": "job_done_001",
+      "status": "completed",
+      "currentStep": "completed",
+      "attemptCount": 1,
+      "retryPolicy": { "maxAttempts": 5 },
+      "retryEligible": false,
+      "nextRetryAt": "",
+      "leaseOwner": "",
+      "attachmentIds": ["att_xml_002"],
+      "gmailMessageId": "msg_002",
+      "sheetBusinessKeyHash": "sheetkey_5678",
+      "reconciliationStatus": "fully_reconciled",
+      "reviewRequired": false,
+      "lastErrorCode": "",
+      "lastErrorMessage": "",
+      "updatedAt": "2026-07-18T00:05:00.000Z",
+      "completedAt": "2026-07-18T00:05:00.000Z"
+    },
+    {
+      "id": "job_processing_001",
+      "jobId": "job_processing_001",
+      "status": "processing",
+      "currentStep": "attachment_saved",
+      "attemptCount": 1,
+      "retryPolicy": { "maxAttempts": 5 },
+      "retryEligible": false,
+      "nextRetryAt": "",
+      "leaseOwner": "LEASE_PRESENT",
+      "attachmentIds": ["att_xml_003"],
+      "gmailMessageId": "msg_003",
+      "sheetBusinessKeyHash": "sheetkey_9012",
+      "reconciliationStatus": "incomplete",
+      "reviewRequired": false,
+      "lastErrorCode": "",
+      "lastErrorMessage": "",
+      "updatedAt": "2026-07-18T00:03:00.000Z",
+      "completedAt": ""
+    }
+  ],
+  "attachments": [
+    {
+      "id": "att_xml_001",
+      "attachmentId": "att_xml_001",
+      "jobId": "job_retry_001",
+      "mimeType": "application/xml",
+      "sha256Prefix": "abcd1234ef00",
+      "driveFileIdHashPrefix": "drivehash01",
+      "sizeBytes": 1400,
+      "updatedAt": "2026-07-18T00:01:00.000Z"
+    },
+    {
+      "id": "att_pdf_001",
+      "attachmentId": "att_pdf_001",
+      "jobId": "job_retry_001",
+      "mimeType": "application/pdf",
+      "sha256Prefix": "abcd1234ef99",
+      "driveFileIdHashPrefix": "drivehash02",
+      "sizeBytes": 2400,
+      "updatedAt": "2026-07-18T00:02:00.000Z"
+    }
+  ],
+  "gmail_messages": [
+    {
+      "id": "msg_001",
+      "gmailMessageId": "msg_001",
+      "jobId": "job_retry_001",
+      "threadHashPrefix": "thread001",
+      "senderHashPrefix": "sender001",
+      "subjectHashPrefix": "subject001",
+      "direction": "NHAP",
+      "receivedAt": "2026-07-18T00:00:00.000Z",
+      "labelProjectionStatus": "saved_label_after_commit"
+    }
+  ],
+  "audit_events": [
+    {
+      "id": "evt_001",
+      "eventId": "evt_001",
+      "jobId": "job_retry_001",
+      "eventType": "transition_recorded",
+      "occurredAt": "2026-07-18T00:02:30.000Z",
+      "actor": { "type": "worker", "id": "apps_script_worker" },
+      "priorState": "processing",
+      "nextState": "failed_retryable",
+      "correlationId": "corr_test_001",
+      "summary": "safe redacted transition"
+    }
+  ],
+  "commands": [
+    {
+      "id": "cmd_existing_retry",
+      "commandId": "cmd_existing_retry",
+      "commandType": "retry_job",
+      "targetJobId": "job_retry_001",
+      "targetAttachmentId": "",
+      "requestedByUid": "uid_operator_001",
+      "requestedByEmail": "operator@example.test",
+      "requestedAt": "2026-07-18T00:06:00.000Z",
+      "reason": "retry temporary failure",
+      "idempotencyKey": "cmdem_existing",
+      "status": "requested"
+    }
+  ],
+  "worker_run_summaries": [
+    {
+      "id": "run_001",
+      "runId": "run_001",
+      "startedAt": "2026-07-18T00:00:00.000Z",
+      "finishedAt": "2026-07-18T00:05:00.000Z",
+      "status": "completed",
+      "attemptedJobCount": 2,
+      "completedCount": 1,
+      "failedCount": 1,
+      "productionCallCount": 0
+    }
+  ],
+  "rulesCases": [
+    "unauthenticated_read_denied",
+    "missing_authorized_user_denied",
+    "inactive_user_denied",
+    "viewer_monitoring_read_allowed",
+    "viewer_command_create_denied",
+    "operator_retry_command_create_allowed",
+    "admin_ignore_command_create_allowed",
+    "impersonated_uid_denied",
+    "inconsistent_email_denied",
+    "completed_status_denied",
+    "claimed_by_create_denied",
+    "command_update_denied",
+    "command_delete_denied",
+    "job_write_denied",
+    "audit_write_denied",
+    "lease_write_denied",
+    "runtime_config_write_denied",
+    "authorized_user_update_denied",
+    "unsupported_command_type_denied",
+    "missing_reason_denied",
+    "oversized_reason_denied",
+    "invalid_schema_version_denied",
+    "invalid_target_job_id_denied",
+    "idempotency_shape_denied",
+    "bounded_authorized_reads"
+  ]
+}

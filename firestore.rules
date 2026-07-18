@@ -2,6 +2,72 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isD6hD6iSignedIn() {
+      return request.auth != null;
+    }
+
+    function isD6hD6iAuthorized() {
+      return isD6hD6iSignedIn()
+        && exists(/databases/$(database)/documents/authorized_users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.active == true;
+    }
+
+    function d6hD6iRole() {
+      return get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.role;
+    }
+
+    function d6hD6iEmail() {
+      return get(/databases/$(database)/documents/authorized_users/$(request.auth.uid)).data.email;
+    }
+
+    function d6hD6iCanCreateCommand(commandType) {
+      return isD6hD6iAuthorized()
+        && (
+          d6hD6iRole() == 'admin'
+          || (d6hD6iRole() == 'operator' && commandType in ['retry_job', 'reprocess_attachment', 'reconcile_job'])
+        );
+    }
+
+    function d6hD6iSafeDocId(value) {
+      return value is string && value.matches('^[A-Za-z0-9_-]{1,96}$');
+    }
+
+    function d6hD6iSafeReason(value) {
+      return value is string && value.size() <= 300;
+    }
+
+    function d6hD6iCommandCreateShape(commandId) {
+      return request.resource.data.keys().hasOnly([
+          'commandId',
+          'commandType',
+          'targetJobId',
+          'targetAttachmentId',
+          'requestedByUid',
+          'requestedByEmail',
+          'requestedAt',
+          'reason',
+          'idempotencyKey',
+          'status',
+          'schemaVersion'
+        ])
+        && request.resource.data.commandId == commandId
+        && d6hD6iSafeDocId(request.resource.data.commandId)
+        && request.resource.data.commandType in ['retry_job', 'ignore_job', 'reprocess_attachment', 'reconcile_job']
+        && d6hD6iSafeDocId(request.resource.data.targetJobId)
+        && (!('targetAttachmentId' in request.resource.data) || request.resource.data.targetAttachmentId == '' || d6hD6iSafeDocId(request.resource.data.targetAttachmentId))
+        && request.resource.data.requestedByUid == request.auth.uid
+        && request.resource.data.requestedByEmail == d6hD6iEmail()
+        && request.resource.data.status == 'requested'
+        && request.resource.data.schemaVersion == 'SGDS_D6H_D6I_FIREBASE_UI_COMMAND_QUEUE_V1'
+        && request.resource.data.idempotencyKey is string
+        && request.resource.data.idempotencyKey.matches('^cmdem_[A-Fa-f0-9]{8}$')
+        && d6hD6iSafeReason(request.resource.data.reason)
+        && (
+          !(request.resource.data.commandType in ['ignore_job', 'reprocess_attachment'])
+          || request.resource.data.reason.size() > 0
+        );
+    }
+
     function sgdsD5fD5iClientWritesDenied() {
       return false;
     }
@@ -28,6 +94,54 @@ service cloud.firestore {
     match /invoiceJobProjections/{jobId} {
       allow read: if sgdsD5fD5iClientReadsDeniedByDefault();
       allow create, update, delete: if sgdsD5fD5iClientWritesDenied();
+    }
+
+    match /authorized_users/{userId} {
+      allow get: if isD6hD6iSignedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isD6hD6iAuthorized();
+      allow create, update, delete: if false;
+    }
+
+    match /gmail_messages/{messageId} {
+      allow read: if isD6hD6iAuthorized();
+      allow create, update, delete: if false;
+    }
+
+    match /attachments/{attachmentId} {
+      allow read: if isD6hD6iAuthorized();
+      allow create, update, delete: if false;
+    }
+
+    match /audit_events/{eventId} {
+      allow read: if isD6hD6iAuthorized();
+      allow create, update, delete: if false;
+    }
+
+    match /worker_run_summaries/{runId} {
+      allow read: if isD6hD6iAuthorized();
+      allow create, update, delete: if false;
+    }
+
+    match /worker_leases/{leaseId} {
+      allow read: if isD6hD6iAuthorized();
+      allow create, update, delete: if false;
+    }
+
+    match /runtime_config/{configId} {
+      allow read: if isD6hD6iAuthorized();
+      allow create, update, delete: if false;
+    }
+
+    match /commands/{commandId} {
+      allow read: if isD6hD6iAuthorized();
+      allow create: if d6hD6iCanCreateCommand(request.resource.data.commandType)
+        && d6hD6iCommandCreateShape(commandId);
+      allow update, delete: if false;
     }
 
     match /{document=**} {

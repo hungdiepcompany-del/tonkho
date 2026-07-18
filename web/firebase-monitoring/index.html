@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SGDS Monitor</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>SyncGmailDriveSheet</h1>
+        <p>Firebase monitoring console</p>
+      </div>
+      <span class="mode" data-testid="emulator-mode">LOCAL EMULATOR</span>
+    </header>
+    <main id="app" data-app="sgds-monitoring">
+      <section class="auth-panel" data-state="auth_initializing">
+        <h2>Authentication</h2>
+        <button type="button" data-action="google-sign-in">Sign in with Google</button>
+        <button type="button" data-action="sign-out">Sign out</button>
+      </section>
+      <section class="dashboard-grid" data-view="dashboard"></section>
+      <section class="work-surface">
+        <nav class="tabs" aria-label="Monitoring sections">
+          <button type="button" data-view-target="jobs">Jobs</button>
+          <button type="button" data-view-target="review">Review</button>
+          <button type="button" data-view-target="attachments">Attachments</button>
+          <button type="button" data-view-target="gmail">Gmail</button>
+          <button type="button" data-view-target="sheets">Sheets</button>
+          <button type="button" data-view-target="audit">Audit</button>
+          <button type="button" data-view-target="runs">Runs</button>
+          <button type="button" data-view-target="commands">Commands</button>
+          <button type="button" data-view-target="diagnostics">Diagnostics</button>
+        </nav>
+        <section class="panel" data-view="jobs"></section>
+        <section class="panel" data-view="job-detail"></section>
+        <section class="panel" data-view="command-request">
+          <form data-command-form="request">
+            <select name="commandType" aria-label="Command type">
+              <option value="retry_job">Retry job</option>
+              <option value="ignore_job">Ignore job</option>
+              <option value="reprocess_attachment">Reprocess attachment</option>
+              <option value="reconcile_job">Reconcile job</option>
+            </select>
+            <input name="targetJobId" maxlength="96" autocomplete="off" placeholder="Job ID">
+            <input name="targetAttachmentId" maxlength="96" autocomplete="off" placeholder="Attachment ID">
+            <textarea name="reason" maxlength="300" placeholder="Reason"></textarea>
+            <button type="submit">Request command</button>
+          </form>
+        </section>
+        <section class="panel" data-view="command-history"></section>
+      </section>
+    </main>
+    <script type="module" src="./sgds-monitoring-ui.mjs"></script>
+  </body>
+</html>
