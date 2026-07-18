@@ -1,7 +1,7 @@
 # D6J-B Safe Exact Production Dry-Run Channel
 
 PHASE=D6J_B_SAFE_EXACT_PRODUCTION_DRY_RUN_CHANNEL
-STATUS=BLOCKED_CLASP_PUSH_SKIPPED_SOURCE_SYNC_NOT_PROVEN
+STATUS=BLOCKED_CLASP_PUSH_SKIPPED_REMOTE_SOURCE_MISSING
 DATE=2026-07-18
 
 ## Boundary
@@ -70,6 +70,11 @@ CLASP_PUSH_ATTEMPT_COUNT=1
 CLASP_PUSH_RESULT=SKIPPED_BY_CLASP
 APPS_SCRIPT_SOURCE_SYNC=BLOCKED_NOT_PROVEN
 PRODUCTION_DRY_RUN_EXECUTED=NO
+REMOTE_SOURCE_FETCH_STATUS=PASS
+REMOTE_ENTRYPOINT_PRESENT=NO
+REMOTE_SUPPORT_FUNCTIONS_PRESENT=NO
+SOURCE_SEMANTIC_MATCH=NO_REMOTE_SOURCE_ABSENT
+SOURCE_SYNC_PROOF=docs/evidence/D6J_B_CLASP_SOURCE_SYNC_PROOF.md
 
-BLOCKER=clasp push listed the new read-only entrypoint as tracked but returned "Skipping push." on the only allowed push attempt.
-NEXT_ALLOWED_ACTION=Resolve clasp noninteractive source synchronization without force, then run the already validated read-only entrypoint exactly once through clasp run if available or owner manual Apps Script Editor execution.
+BLOCKER=remote Apps Script source was fetched read-only and does not contain runD6jBProductionDryRunReadOnly; local clasp status includes d6jBProductionDryRunReadOnly.js in filesToPush; one normal clasp push still returned "Skipping push."
+NEXT_ALLOWED_ACTION=Resolve clasp push no-op while remote source is missing, without force, public deployment, clasp pull into the repo, or production dry-run execution.

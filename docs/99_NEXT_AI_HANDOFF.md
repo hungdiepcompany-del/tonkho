@@ -671,3 +671,29 @@ PRODUCTION_MUTATION=NONE
 NEXT_ALLOWED_BUNDLE=RESOLVE_D6J_B_CLASP_SOURCE_SYNC_WITHOUT_FORCE
 NEXT_ALLOWED_PHASE=RESOLVE_D6J_B_CLASP_SOURCE_SYNC_WITHOUT_FORCE
 NEXT_AI_FIRST_ACTION=Resolve why clasp push returns "Skipping push." even though d6jBProductionDryRunReadOnly.js is tracked. Do not use --force, deploy, create triggers, or run production dry-run until source sync is proven. After sync, execute runD6jBProductionDryRunReadOnly exactly once through clasp run if already supported, otherwise hand owner the manual Apps Script Editor steps.
+
+## SGDS D6J-B Clasp Source Sync Proof Handoff
+
+CURRENT_BUNDLE=D6J_B_CLASP_SOURCE_SYNC_PROOF
+STATUS=BLOCKED_CLASP_PUSH_SKIPPED_REMOTE_SOURCE_MISSING
+START_HEAD=02e431386aac9221f1568b9da56fb5da8f922e8f
+PROOF_DOC=docs/evidence/D6J_B_CLASP_SOURCE_SYNC_PROOF.md
+CHECKER=scripts/checkers/check-d6j-b-clasp-source-sync-proof.mjs
+APPS_SCRIPT_ID=19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+CLASP_ACCOUNT=hungdiepcompany@gmail.com
+CLASP_ROOT_DIR=.
+LOCAL_ENTRYPOINT_PRESENT=YES
+LOCAL_ENTRYPOINT_INCLUDED_BY_CLASP=YES
+LOCAL_ONLY_HELPER_EXCLUDED=YES
+REMOTE_SOURCE_FETCH_STATUS=PASS
+REMOTE_ENTRYPOINT_PRESENT=NO
+REMOTE_SUPPORT_FUNCTIONS_PRESENT=NO
+LOCAL_MAPPING_DEFECT_FOUND=NO
+CLASP_PUSH_ATTEMPT_COUNT_THIS_PHASE=1
+CLASP_PUSH_RESULT=SKIPPED_BY_CLASP
+APPS_SCRIPT_SOURCE_SYNC=BLOCKED_NOT_PROVEN
+PRODUCTION_DRY_RUN_EXECUTED=NO
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_BUNDLE=RESOLVE_D6J_B_CLASP_PUSH_SKIPPED_REMOTE_SOURCE_MISSING_WITHOUT_FORCE
+NEXT_ALLOWED_PHASE=RESOLVE_D6J_B_CLASP_PUSH_SKIPPED_REMOTE_SOURCE_MISSING_WITHOUT_FORCE
+NEXT_AI_FIRST_ACTION=Resolve why normal clasp push returns "Skipping push." while read-only remote clone proves runD6jBProductionDryRunReadOnly is absent. Do not use --force, public deployment, clasp pull into the repo, triggers, production dry-run execution, or any Gmail/Drive/Sheets/Firestore mutation.
