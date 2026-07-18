@@ -403,3 +403,16 @@ AUTH_DECISION=Cloud Run IAM authentication plus application-level Google ID toke
 RUNTIME_IDENTITY_DECISION=Use attached service identity sgds-firestore-runtime@tonkhohd.iam.gserviceaccount.com; no runtime gcloud impersonation and no key file mode.
 APPS_SCRIPT_CALLER_DECISION=Feature-gated caller default false using ScriptApp.getIdentityToken and UrlFetchApp after future custom audience configuration.
 DEPLOYMENT_DECISION=BLOCKED until billing and required APIs are enabled, Docker local validation or equivalent build validation is available, and owner provides exact deploy approval marker.
+
+## 2026-07-18 - SGDS D5Y Apps Script First No-Billing Runtime Decision
+
+DECISION=Lock the active product roadmap to Apps Script first with Firestore as the control plane and no Billing requirement.
+RATIONALE=D5S-D5X kept Cloud Run viable as optional future infrastructure, but Billing/API/Docker blockers should not block the main Gmail, Drive, Sheets, Firestore, Firebase Hosting, and Firebase Authentication roadmap.
+SGDS_RUNTIME_STRATEGY=APPS_SCRIPT_FIRST_NO_BILLING
+PRIMARY_WORKER=GOOGLE_APPS_SCRIPT
+BILLING_REQUIRED=NO
+CLOUD_RUN_STATUS=DEFERRED_OPTIONAL
+CLOUD_RUN_PRIMARY_PATH=NO
+CLOUD_RUN_CODE_RETAINED=YES_OPTIONAL_ADAPTER
+RESTORE_CLOUD_RUN_AS_PRIMARY_REQUIRES_OWNER_DECISION=YES
+NEXT_ALLOWED_PHASE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS

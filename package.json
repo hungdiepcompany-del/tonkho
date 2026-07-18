@@ -35,6 +35,9 @@
     "test:sgds-cloud-run-service": "node --test \"services/sgds-durable-orchestrator/test/**/*.test.mjs\"",
     "check:sgds-d5s-d5x": "node scripts/checkers/check-sgds-d5s-d5x-cloud-run-build-deploy-review.mjs",
     "check:sgds-cloud-run-build-deploy-review": "node scripts/checkers/check-sgds-d5s-d5x-cloud-run-build-deploy-review.mjs",
-    "check:sgds-crit-003-d5j-project-confirmation": "node scripts/checkers/check-sgds-crit-003-d5j-production-project-confirmation.mjs"
+    "check:sgds-crit-003-d5j-project-confirmation": "node scripts/checkers/check-sgds-crit-003-d5j-production-project-confirmation.mjs",
+    "baseline:sgds-read-only": "node scripts/baseline/collect-sgds-read-only-baseline.mjs",
+    "check:sgds-apps-script-first-architecture": "node scripts/checkers/check-sgds-apps-script-first-architecture.mjs",
+    "check:d5y-d5z-d6a-d6b": "node scripts/checkers/check-d5y-d5z-d6a-d6b-apps-script-first-foundation.mjs"
   }
 }

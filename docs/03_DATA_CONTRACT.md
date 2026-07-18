@@ -188,3 +188,12 @@ CURRENT_DATA_CONTRACT_STATUS=OWNER_APPROVED_V1
 CURRENT_INVARIANTS_STATUS=OWNER_APPROVED_V1
 
 The historical marker above is retained only so the Bundle B checker can prove the old policy-pending marker existed. It is not the current status.
+# D6A Firestore Apps Script First Contract
+
+DATA_CONTRACT_LOCKED=YES
+SCHEMA_VERSION=SGDS_FIRESTORE_APPS_SCRIPT_FIRST_V1
+COLLECTIONS=jobs;gmail_messages;attachments;audit_events;worker_leases;commands;runtime_config;authorized_users
+JOB_STATES=discovered;queued;processing;attachment_saved;data_extracted;sheet_written;completed;failed_retryable;failed_terminal;ignored
+SOURCE=firestoreDataContract.js
+
+Firestore stores durable technical workflow state only. Google Drive stores original XML/PDF bytes, and Google Sheets remains the business ledger. Audit events are append-only, idempotency keys are mandatory for externally visible writes, and frontend clients cannot directly complete jobs.

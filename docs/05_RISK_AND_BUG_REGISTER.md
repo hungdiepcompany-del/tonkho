@@ -1039,3 +1039,18 @@ DOCKER_CLI_AVAILABLE=NO
 CLOUD_RUN_DEPLOY=NOT_RUN_APPROVAL_AND_INFRASTRUCTURE_PREREQUISITES_MISSING
 PRODUCTION_FIRESTORE_MUTATION=NONE
 WORKSPACE_MUTATION=NONE
+
+## SGDS D5Y-D5Z-D6A-D6B Apps Script First Foundation Risk Status
+
+RISK_REDUCED=Active roadmap no longer depends on Billing, Docker, Cloud Build, Artifact Registry, or Cloud Run deployment; Apps Script first runtime, Firestore contract, safe baseline, and local REST gateway foundation are defined.
+RISK_REMAINING=Scanner adapters are not yet wired to the Apps Script Firestore gateway; production Gmail/Drive/Sheets workflow still needs D6C-D6E local adapters before any pilot.
+BILLING_REQUIRED=NO
+CLOUD_RUN_STATUS=DEFERRED_OPTIONAL
+CLOUD_RUN_PRIMARY_PATH=NO
+DATA_CONTRACT_LOCKED=YES
+FIRESTORE_REST_CLIENT=IMPLEMENTED_LOCAL_ONLY
+PRODUCTION_FIRESTORE_MUTATION=NONE
+GMAIL_MUTATION=NONE
+DRIVE_MUTATION=NONE
+GOOGLE_SHEETS_MUTATION=NONE
+NEXT_ALLOWED_ACTION=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
