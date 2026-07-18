@@ -416,3 +416,13 @@ CLOUD_RUN_PRIMARY_PATH=NO
 CLOUD_RUN_CODE_RETAINED=YES_OPTIONAL_ADAPTER
 RESTORE_CLOUD_RUN_AS_PRIMARY_REQUIRES_OWNER_DECISION=YES
 NEXT_ALLOWED_PHASE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
+
+## 2026-07-18 - SGDS D6C-D6E Local Adapter Boundary Decision
+
+DECISION=Define Gmail, Drive, and Sheets through Apps Script-first adapter contracts before scanner composition.
+RATIONALE=New business logic needs JSON-safe DTOs, fake adapters, idempotent mutation boundaries, deterministic Drive identity, append-only Sheets ledger operations, and normalized adapter errors before any production scanner pilot.
+PRIMARY_RUNTIME=apps_script
+CLOUD_RUN_FALLBACK_AUTOMATIC=false
+PRODUCTION_GOOGLE_API_CALL_COUNT=0
+LIVE_VERIFICATION=NOT_RUN
+NEXT_ALLOWED_PHASE=D6F_D6G_LOCAL_SCANNER_COMPOSITION_WITH_ADAPTERS

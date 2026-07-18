@@ -1,13 +1,13 @@
 PROJECT=SyncGmailDriveSheet
 ARCHITECTURE=Firebase Hosting future frontend; Firebase Auth Google login; Firestore job/metadata/audit/error/projection; GAS worker/backend; Gmail source; Drive evidence store; Sheets business ledger.
-CURRENT_BUNDLE=D5Y_D5Z_D6A_D6B_APPS_SCRIPT_FIRST_FOUNDATION
-CURRENT_SUBPHASE=APPS_SCRIPT_FIRST_FIRESTORE_FOUNDATION_VALIDATED
-STATUS=PASS_LOCAL_IMPLEMENTATION_VALIDATED
+CURRENT_BUNDLE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
+CURRENT_SUBPHASE=LOCAL_APPS_SCRIPT_GMAIL_DRIVE_SHEETS_ADAPTERS
+STATUS=PASS_LOCAL_APPS_SCRIPT_ADAPTERS_IMPLEMENTED
 LAST_COMMIT=THIS_PHASE_COMMIT
 START_HEAD=9f29883a7a03c029d9f1617aa64ec60cd81aa38a
 BRANCH=main
 WORKTREE=CLEAN_AFTER_COMMIT
-FILES_CHANGED=sgdsRuntimeArchitecture.js;firestoreDataContract.js;firestoreRestGateway.js;scripts/baseline/collect-sgds-read-only-baseline.mjs;scripts/checkers/check-sgds-apps-script-first-architecture.mjs;scripts/checkers/check-d5y-d5z-d6a-d6b-apps-script-first-foundation.mjs;tests/unit/apps-script-first-firestore-foundation.test.mjs;tests/unit/sgds-read-only-baseline.test.mjs;tests/emulator/apps-script-firestore-rest-gateway-emulator.test.mjs;package.json;docs/phases/SGDS_D5Y_D5Z_D6A_D6B_APPS_SCRIPT_FIRST_FOUNDATION.md;docs/evidence/SGDS_D5Z_READ_ONLY_BASELINE.md;docs/00_INDEX.md;docs/02_TARGET_ARCHITECTURE.md;docs/03_DATA_CONTRACT.md;docs/04_MASTER_PLAN.md;docs/05_RISK_AND_BUG_REGISTER.md;docs/07_WORK_LOG.md;docs/08_DECISION_LOG.md;docs/09_VALIDATION_LOG.md;docs/99_NEXT_AI_HANDOFF.md
+FILES_CHANGED=sgdsAdapterErrors.js;sgdsGmailAdapter.js;sgdsDriveAdapter.js;sgdsSheetsLedgerAdapter.js;sgdsRuntimeAdapterFactory.js;tests/unit/apps-script-adapters.test.mjs;scripts/checkers/check-d6c-d6e-apps-script-adapters.mjs;package.json;docs/phases/D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS.md;docs/evidence/D6C_D6D_D6E_LOCAL_ADAPTER_EVIDENCE.md;docs/00_INDEX.md;docs/02_TARGET_ARCHITECTURE.md;docs/03_DATA_CONTRACT.md;docs/04_MASTER_PLAN.md;docs/05_RISK_AND_BUG_REGISTER.md;docs/07_WORK_LOG.md;docs/08_DECISION_LOG.md;docs/09_VALIDATION_LOG.md;docs/99_NEXT_AI_HANDOFF.md
 VALIDATION=PASS
 RUNTIME_MUTATION=LOCAL_SOURCE_ONLY
 PRODUCTION_READ=NO_LIVE_BASELINE_NOT_RUN
@@ -19,7 +19,7 @@ FIREBASE_DEPLOY=NOT_RUN
 FIRESTORE_RULES_DEPLOY=NOT_RUN
 FIRESTORE_INDEX_DEPLOY=NOT_RUN
 GIT_PUSH=PASS_AFTER_PUSH
-BLOCKERS=D6C_D6D_D6E_ADAPTERS_NOT_STARTED;PRODUCTION_PILOT_NOT_STARTED;CANONICAL_PIPELINE_NOT_WIRED
+BLOCKERS=PRODUCTION_SCANNER_WIRING_NOT_STARTED;LEGACY_DIRECT_PLATFORM_CALLS_REMAIN;PRODUCTION_PILOT_NOT_STARTED;CANONICAL_PIPELINE_NOT_WIRED
 OWNER_DECISIONS_REQUIRED=0
 OWNER_INPUT_REQUIRED=NONE_FOR_NEXT_LOCAL_PHASE
 
@@ -423,4 +423,21 @@ GMAIL_MUTATION=NONE
 DRIVE_MUTATION=NONE
 GOOGLE_SHEETS_MUTATION=NONE
 NEXT_ALLOWED_PHASE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
-NEXT_AI_FIRST_ACTION=Start D6C-D6D-D6E local Gmail, Drive, and Sheets adapters against the locked Apps Script-first Firestore gateway contract. Do not deploy GAS/Firebase/Cloud Run, mutate triggers, or run production scanners.
+NEXT_AI_FIRST_ACTION=Start D6F-D6G local scanner composition against the D6C-D6E adapters. Do not deploy GAS/Firebase/Cloud Run, mutate triggers, call live Gmail/Drive/Sheets, or run production scanners.
+
+## SGDS D6C-D6D-D6E Adapter Handoff
+
+CURRENT_BUNDLE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
+STATUS=PASS_LOCAL_APPS_SCRIPT_ADAPTERS_IMPLEMENTED
+PRIMARY_RUNTIME=apps_script
+GMAIL_ADAPTER_FILES=sgdsGmailAdapter.js
+DRIVE_ADAPTER_FILES=sgdsDriveAdapter.js
+SHEETS_ADAPTER_FILES=sgdsSheetsLedgerAdapter.js
+RUNTIME_ADAPTER_FACTORY=sgdsRuntimeAdapterFactory.js
+ERROR_TAXONOMY=sgdsAdapterErrors.js
+CLOUD_RUN_FALLBACK_AUTOMATIC=false
+LOCAL_END_TO_END_ADAPTER_FLOW_PASS=true
+PRODUCTION_GOOGLE_API_CALL_COUNT=0
+PRODUCTION_FIRESTORE_MUTATION=NONE
+LIVE_VERIFICATION=NOT_RUN
+NEXT_ALLOWED_PHASE=D6F_D6G_LOCAL_SCANNER_COMPOSITION_WITH_ADAPTERS

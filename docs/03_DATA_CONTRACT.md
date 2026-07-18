@@ -197,3 +197,14 @@ JOB_STATES=discovered;queued;processing;attachment_saved;data_extracted;sheet_wr
 SOURCE=firestoreDataContract.js
 
 Firestore stores durable technical workflow state only. Google Drive stores original XML/PDF bytes, and Google Sheets remains the business ledger. Audit events are append-only, idempotency keys are mandatory for externally visible writes, and frontend clients cannot directly complete jobs.
+
+# D6C-D6E Adapter Data Boundary
+
+PHASE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
+GMAIL_DTO=threadId;messageId;historyId;order;internalDate;sender;recipients;subject;boundedBodyPreview;attachmentMetadata;labelNames
+DRIVE_FILE_IDENTITY_MODEL=invoiceKeyV2+messageId+attachmentId+contentHash+artifactType
+SHEETS_APPEND_MODEL=append_only_transaction_sequence
+SHEETS_IMMUTABILITY_RULES=direct history edit blocked;direct history delete blocked;adjustment/replacement/cancellation append-only
+ERROR_TAXONOMY=adapter_auth_error;adapter_permission_error;adapter_not_found;adapter_rate_limited;adapter_transient_error;adapter_contract_error;adapter_conflict;adapter_idempotent_replay
+
+Adapter DTOs are JSON-safe. Apps Script runtime objects, Drive file/folder objects, Gmail thread/message objects, sheet range objects, raw email bodies, and raw file bytes do not cross into business contracts.

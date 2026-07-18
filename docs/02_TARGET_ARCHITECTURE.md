@@ -38,3 +38,13 @@ CLOUD_RUN_BLOCKER_FOR_CURRENT_ROADMAP=NO
 CLOUD_RUN_CODE_RETAINED=YES_OPTIONAL_ADAPTER
 
 D5S-D5X Cloud Run work is retained as a future optional adapter. Disabled Billing, Docker, Cloud Build, Artifact Registry, and Cloud Run are no longer current-roadmap blockers because the production worker path is Google Apps Script plus Firestore REST.
+
+## D6C-D6E Apps Script Adapter Boundary
+
+PHASE=D6C_D6D_D6E_GMAIL_DRIVE_SHEETS_ADAPTERS
+STATUS=PASS_LOCAL_APPS_SCRIPT_ADAPTERS_IMPLEMENTED
+PRIMARY_RUNTIME=apps_script
+RUNTIME_ADAPTER_FACTORY=sgdsRuntimeAdapterFactory.js
+CLOUD_RUN_FALLBACK_AUTOMATIC=false
+
+Gmail, Drive, and Sheets are accessed through local adapter contracts for new D6 code. Production Apps Script remains the default runtime. Cloud Run remains retained as optional future infrastructure only.
