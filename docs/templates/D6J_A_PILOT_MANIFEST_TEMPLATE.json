@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "D6J_A_PILOT_MANIFEST_V1",
+  "pilotId": "<OWNER_CONFIRMED_PILOT_ID>",
+  "environment": "production",
+  "approvedBy": "<OWNER_CONFIRMED_APPROVER>",
+  "approvalMarker": "OWNER_APPROVED_D6J_PRODUCTION_DRY_RUN",
+  "gmail": {
+    "queryShape": {
+      "from": "<OWNER_CONFIRMED_EXACT_SENDER>",
+      "subjectPhrase": "<OWNER_CONFIRMED_UNIQUE_SUBJECT_PHRASE>",
+      "dateWindow": "<OWNER_CONFIRMED_BOUNDED_DATE_WINDOW>",
+      "hasAttachment": true,
+      "label": "<OWNER_CONFIRMED_OPTIONAL_LABEL>",
+      "maxResults": 1
+    },
+    "expectedMessageId": "<OWNER_CONFIRMED_GMAIL_MESSAGE_ID>",
+    "expectedThreadId": "<OWNER_CONFIRMED_GMAIL_THREAD_ID>",
+    "expectedAttachmentId": "<OWNER_CONFIRMED_ATTACHMENT_ID>",
+    "expectedAttachmentMimeType": "<OWNER_CONFIRMED_ATTACHMENT_MIME_TYPE>",
+    "maximumAttachmentBytes": 5000000
+  },
+  "drive": {
+    "rootFolderId": "<OWNER_CONFIRMED_DRIVE_ROOT_FOLDER_ID>",
+    "intendedPath": "<OWNER_CONFIRMED_DRIVE_PILOT_PATH>",
+    "createFolderAllowed": false,
+    "maximumFilesCreated": 1
+  },
+  "sheets": {
+    "spreadsheetId": "<OWNER_CONFIRMED_SPREADSHEET_ID>",
+    "targetSheetName": "<OWNER_CONFIRMED_SHEET_NAME>",
+    "businessKeyStrategy": "invoiceKeyV2",
+    "maximumInsertedRows": 1,
+    "maximumUpdatedRows": 0
+  },
+  "firestore": {
+    "projectId": "tonkhohd",
+    "databaseId": "(default)",
+    "maximumJobsCreated": 1,
+    "maximumGmailMessageRecordsCreated": 1,
+    "maximumAttachmentRecordsCreated": 1,
+    "commandDocumentsCreated": 0
+  },
+  "dryRun": {
+    "required": true,
+    "approvalMarker": "OWNER_APPROVED_D6J_PRODUCTION_DRY_RUN",
+    "mutationAfterDryRunAutomatic": false
+  },
+  "mutationLimits": {
+    "gmailMessagesRead": 1,
+    "attachmentsProcessed": 1,
+    "driveFilesCreatedMax": 1,
+    "driveFoldersCreatedPreferred": 0,
+    "driveFoldersCreatedMaxWithOwnerApproval": 1,
+    "sheetsRowsInsertedMax": 1,
+    "sheetsRowsUpdatedMaxDefault": 0,
+    "firestoreJobsCreatedMax": 1,
+    "firestoreGmailMessageRecordsCreatedMax": 1,
+    "firestoreAttachmentRecordsCreatedMax": 1,
+    "commandDocumentsCreated": 0,
+    "triggersCreated": 0,
+    "gmailMutations": 0,
+    "destructiveOperations": 0
+  },
+  "rollbackPlan": {
+    "approvalMarker": "OWNER_APPROVED_D6J_PILOT_ROLLBACK",
+    "preserveAuditEvidence": true,
+    "deletePreExistingData": false,
+    "requirePilotOwnershipProof": true
+  },
+  "idempotencyVerificationPlan": {
+    "rerunSameMessageExpected": "NO_OP_OR_ALREADY_COMMITTED",
+    "duplicateDriveFile": false,
+    "duplicateSheetRow": false,
+    "duplicateActiveJob": false,
+    "deterministicSourceIdentity": true
+  },
+  "reconciliationRequirements": {
+    "requirePilotId": true,
+    "requireCorrelationId": true,
+    "traceGmailMessage": true,
+    "traceAttachment": true,
+    "traceDriveFile": true,
+    "traceSheetRow": true,
+    "traceAuditEvent": true
+  }
+}

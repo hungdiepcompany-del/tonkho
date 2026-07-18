@@ -1,0 +1,108 @@
+{
+  "fixturePolicy": {
+    "syntheticOnly": true,
+    "liveFirebase": false,
+    "liveWorkspaceApis": false,
+    "productionFirestoreMutation": false,
+    "privateIdentifiers": false
+  },
+  "validCandidate": {
+    "gmailMessageCount": 1,
+    "attachmentCount": 1,
+    "gmailMutationCount": 0,
+    "driveFilesCreated": 1,
+    "sheetRowsInserted": 1,
+    "sheetRowsUpdated": 0,
+    "commandDocumentsCreated": 0,
+    "destructiveOperationCount": 0
+  },
+  "invalidCandidates": [
+    {
+      "name": "two gmail messages",
+      "candidate": {
+        "gmailMessageCount": 2,
+        "attachmentCount": 1,
+        "gmailMutationCount": 0,
+        "driveFilesCreated": 1,
+        "sheetRowsInserted": 1,
+        "sheetRowsUpdated": 0,
+        "commandDocumentsCreated": 0,
+        "destructiveOperationCount": 0
+      },
+      "code": "D6J_A_EXACT_ONE_MESSAGE_REQUIRED"
+    },
+    {
+      "name": "two attachments",
+      "candidate": {
+        "gmailMessageCount": 1,
+        "attachmentCount": 2,
+        "gmailMutationCount": 0,
+        "driveFilesCreated": 1,
+        "sheetRowsInserted": 1,
+        "sheetRowsUpdated": 0,
+        "commandDocumentsCreated": 0,
+        "destructiveOperationCount": 0
+      },
+      "code": "D6J_A_EXACT_ONE_ATTACHMENT_REQUIRED"
+    },
+    {
+      "name": "gmail mutation",
+      "candidate": {
+        "gmailMessageCount": 1,
+        "attachmentCount": 1,
+        "gmailMutationCount": 1,
+        "driveFilesCreated": 1,
+        "sheetRowsInserted": 1,
+        "sheetRowsUpdated": 0,
+        "commandDocumentsCreated": 0,
+        "destructiveOperationCount": 0
+      },
+      "code": "D6J_A_GMAIL_MUTATION_FORBIDDEN"
+    },
+    {
+      "name": "sheet update",
+      "candidate": {
+        "gmailMessageCount": 1,
+        "attachmentCount": 1,
+        "gmailMutationCount": 0,
+        "driveFilesCreated": 1,
+        "sheetRowsInserted": 1,
+        "sheetRowsUpdated": 1,
+        "commandDocumentsCreated": 0,
+        "destructiveOperationCount": 0
+      },
+      "code": "D6J_A_SHEET_UPDATE_FORBIDDEN_BY_DEFAULT"
+    },
+    {
+      "name": "command document",
+      "candidate": {
+        "gmailMessageCount": 1,
+        "attachmentCount": 1,
+        "gmailMutationCount": 0,
+        "driveFilesCreated": 1,
+        "sheetRowsInserted": 1,
+        "sheetRowsUpdated": 0,
+        "commandDocumentsCreated": 1,
+        "destructiveOperationCount": 0
+      },
+      "code": "D6J_A_COMMAND_DOCUMENT_FORBIDDEN"
+    }
+  ],
+  "deploymentGap": {
+    "claspPushRequired": true,
+    "firestoreRulesDeployRequired": true,
+    "firestoreIndexesDeployRequired": true,
+    "authorizedUserProvisioningRequired": true,
+    "appsScriptOAuthRequired": "OWNER_AUTHORIZATION_MAY_BE_REQUIRED_AFTER_CLASP_PUSH",
+    "firebaseAuthGoogleProviderRequired": "NOT_SAFELY_VERIFIED",
+    "firebaseHostingDeployRequired": false,
+    "billingRequired": false,
+    "cloudRunRequired": false
+  },
+  "liveBaselineClassification": {
+    "pilotEmailSelection": "OWNER_INPUT_REQUIRED",
+    "driveRootFolder": "OWNER_INPUT_REQUIRED",
+    "productionSheetTarget": "OWNER_INPUT_REQUIRED",
+    "productionMutationCounts": [0, 0, 0, 0, 0, 0]
+  }
+}
