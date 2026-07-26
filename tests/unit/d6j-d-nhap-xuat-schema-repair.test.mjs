@@ -46,6 +46,7 @@ const gas = loadGasSource({
     'normalizeD6jDNhapXuatRowFromValues_',
     'assertD6jDHeaderSchema_',
     'canonicalD6jDHeader_',
+    'normalizeD6jCComparableDate_',
     'assertD6jCSheetRowMatches_',
     'createFakeSgdsSheetsLedgerAdapter_'
   ]
@@ -185,6 +186,7 @@ function makeSnapshot(options = {}) {
   const rows = [priorRow()];
   if (options.malformedCount !== 0) rows.push(malformedRow(context));
   if (options.malformedCount === 2) rows.push(malformedRow(context));
+  if (Array.isArray(options.extraRows)) rows.push(...options.extraRows);
   if (options.laterSameItem) {
     rows.push(row([
       4,
@@ -215,6 +217,7 @@ function makeSource(snapshot) {
     appends: 0,
     deletes: 0,
     driveMutations: 0,
+    firestoreWrites: 0,
     gmailMutations: 0,
     triggerMutations: 0,
     destructiveOperations: 0
@@ -307,9 +310,114 @@ test('read-only audit accepts production headers without repair marker and perfo
   assert.equal(h.source.state.appends, 0);
   assert.equal(h.source.state.deletes, 0);
   assert.equal(h.source.state.driveMutations, 0);
+  assert.equal(h.source.state.firestoreWrites, 0);
   assert.equal(h.source.state.gmailMutations, 0);
   assert.equal(h.source.state.triggerMutations, 0);
   assert.equal(h.source.state.destructiveOperations, 0);
+});
+
+test('D6J-D2 date canonicalization supports Date objects, project strings, digits, and timezone-safe midnight', () => {
+  const cases = [
+    [new Date(2026, 2, 9, 0, 0, 0), '20260309'],
+    [new Date('2026-03-08T17:00:00.000Z'), '20260309'],
+    ['2026-03-09', '20260309'],
+    ['2026/03/09', '20260309'],
+    ['09/03/2026', '20260309'],
+    ['09-03-2026', '20260309'],
+    ['20260309', '20260309']
+  ];
+  for (const [input, expected] of cases) {
+    assert.equal(gas.call('normalizeD6jCComparableDate_', input), expected);
+  }
+  assert.throws(() => gas.call('normalizeD6jCComparableDate_', '03/09/26'), /BLOCKED_D6J_D_DATE_VALUE_INVALID/);
+});
+
+test('D6J-D2 Date object in Sheet row matches XML ISO date and locates malformed row', () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
+  const inspection = fromVm(gas.call('inspectD6jDMalformedPilotRow_', snapshot, context, { includeRawCells: true }));
+  assert.equal(inspection.targetRowNumber, 3);
+});
+
+test('D6J-D2 progressive locator disambiguates two business candidates with legacy J:N signature', () => {
+  const context = makeContext();
+  const decoy = malformedRow(context);
+  decoy.rowNumber = 3;
+  decoy.values[9] = '20260309_0100000001_00000999';
+  decoy.values[10] = 'other-line-identity';
+  decoy.values[11] = 'other-xml-hash';
+  decoy.values[12] = 'other-pdf-hash';
+  decoy.values[13] = '20260309_0100000001_00000999';
+  const exact = malformedRow(context);
+  exact.rowNumber = 4;
+  const snapshot = { headers, rows: [priorRow(), decoy, exact] };
+  const inspection = fromVm(gas.call('inspectD6jDMalformedPilotRow_', snapshot, context, { includeRawCells: true }));
+  assert.equal(inspection.targetRowNumber, 4);
+});
+
+test('D6J-D2 zero candidates returns sanitized not-found diagnostic counts from read-only audit', async () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context, malformedCount: 0 });
+  const h = makeRunner({ context, snapshot, props: {} });
+  const result = fromVm(await h.runner.inspect());
+  assert.equal(result.AUDIT_STATUS, 'BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND');
+  assert.equal(result.HEADER_SCHEMA_STATUS, 'PASS');
+  assert.equal(result.TOTAL_DATA_ROWS, 1);
+  assert.equal(result.DATE_MATCH_COUNT, 0);
+  assert.equal(result.DATE_ITEM_MATCH_COUNT, 0);
+  assert.equal(result.BUSINESS_IDENTITY_MATCH_COUNT, 0);
+  assert.equal(result.MALFORMED_SHAPE_MATCH_COUNT, 0);
+  assert.equal(result.LEGACY_SIGNATURE_MATCH_COUNT, 0);
+  assert.equal(result.EXPECTED_DATE_CANONICAL, '20260309');
+  assert.equal(result.EXPECTED_ITEM_CODE, 'ITEM-1');
+  assert.equal(result.EXPECTED_DIRECTION, 'NHAP');
+  assert.equal(result.EXPECTED_QUANTITY, 2);
+  assert.equal(result.EXPECTED_UNIT_PRICE, 100);
+  assert.deepEqual(result.CANDIDATE_ROW_NUMBERS, []);
+  assert.equal(result.NEAR_CANDIDATES.length, 1);
+  assert.equal(result.NEAR_CANDIDATES[0].ROW_NUMBER, 2);
+  assert.equal(result.NEAR_CANDIDATES[0].E_ITEM_CODE_MATCH, true);
+  assert.equal(result.NEAR_CANDIDATES[0].F_ITEM_NAME_MATCH, true);
+  assert.equal(result.NEAR_CANDIDATES[0].B_DATE_MATCH, false);
+  assert.equal(Object.prototype.hasOwnProperty.call(result.NEAR_CANDIDATES[0], 'ROW_VALUES'), false);
+  assert.equal(h.source.state.updates.length, 0);
+  assert.equal(h.source.state.appends, 0);
+  assert.equal(h.source.state.deletes, 0);
+  assert.equal(h.source.state.driveMutations, 0);
+  assert.equal(h.source.state.firestoreWrites, 0);
+  assert.equal(h.source.state.gmailMutations, 0);
+  assert.equal(h.source.state.triggerMutations, 0);
+});
+
+test('D6J-D2 multiple unresolved business candidates block without silent first-row selection', () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context, malformedCount: 2 });
+  snapshot.rows[1].values[9] = 'legacy-a';
+  snapshot.rows[1].values[10] = 'identity-a';
+  snapshot.rows[1].values[11] = 'xml-a';
+  snapshot.rows[1].values[12] = 'pdf-a';
+  snapshot.rows[1].values[13] = 'legacy-a';
+  snapshot.rows[2].rowNumber = 4;
+  snapshot.rows[2].values[9] = 'legacy-b';
+  snapshot.rows[2].values[10] = 'identity-b';
+  snapshot.rows[2].values[11] = 'xml-b';
+  snapshot.rows[2].values[12] = 'pdf-b';
+  snapshot.rows[2].values[13] = 'legacy-b';
+  assert.throws(() => gas.call('inspectD6jDMalformedPilotRow_', snapshot, context), /BLOCKED_D6J_D_MALFORMED_ROW_NOT_UNIQUE/);
+});
+
+test('D6J-D2 canonical repaired A:P row is not classified as malformed', () => {
+  const context = makeContext();
+  const corrected = gas.call('buildD6jCNhapXuatRowAP_', context.ledgerRows[0], context.plan, { averageUnitCost: 700 / 12, stockQuantity: 12, stockValue: 700 }, { type: 'ROW_RELATIVE_FORMULA', formulaR1C1: '=HYPERLINK("https://drive.example/"&RC[-1],"HD")' });
+  const snapshot = {
+    headers,
+    rows: [
+      priorRow(),
+      row(fromVm(corrected).values, 3, { 15: '=HYPERLINK("https://drive.example/"&RC[-1],"HD")' })
+    ]
+  };
+  assert.throws(() => gas.call('inspectD6jDMalformedPilotRow_', snapshot, context), /BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND/);
 });
 
 test('read-only audit derives exact A:P mapping with invoice number, seller, amount, weighted average, hash, key, and HD formula', () => {

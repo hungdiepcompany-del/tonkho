@@ -49,6 +49,20 @@ for (const marker of [
 }
 
 for (const marker of [
+  'tryNormalizeD6jCComparableDate_',
+  'formatD6jCDateObject_',
+  'evaluateD6jDMalformedPilotRows_',
+  'buildD6jDMalformedRowNotFoundDiagnostics_',
+  'DATE_MATCH_COUNT',
+  'BUSINESS_IDENTITY_MATCH_COUNT',
+  'MALFORMED_SHAPE_MATCH_COUNT',
+  'LEGACY_SIGNATURE_MATCH_COUNT',
+  'NEAR_CANDIDATES'
+]) {
+  assert.equal(runner.includes(marker), true, `runner missing D6J-D2 locator marker: ${marker}`);
+}
+
+for (const marker of [
   'legacyHashIndex',
   'hashIndex',
   'invoiceKeyV2',
@@ -68,6 +82,12 @@ for (const marker of [
   'Vietnamese header canonicalization handles D stroke',
   'header schema mismatch reports sanitized column diagnostics',
   'read-only audit accepts production headers without repair marker',
+  'D6J-D2 date canonicalization supports Date objects',
+  'D6J-D2 Date object in Sheet row matches XML ISO date',
+  'D6J-D2 progressive locator disambiguates two business candidates',
+  'D6J-D2 zero candidates returns sanitized not-found diagnostic counts',
+  'D6J-D2 multiple unresolved business candidates block',
+  'D6J-D2 canonical repaired A:P row is not classified as malformed',
   'D6J_D_REPAIR_APPROVAL_MARKER'
 ]) {
   assert.equal(tests.includes(marker), true, `tests missing D6J-D marker: ${marker}`);
@@ -80,6 +100,10 @@ for (const docMarker of [
   'SINGLE_ROW_REPAIR_ENTRYPOINT=PASS',
   'VIETNAMESE_D_STROKE_NORMALIZATION=PASS',
   'EXACT_PRODUCTION_HEADER_TEST=PASS',
+  'DATE_OBJECT_CANONICALIZATION=PASS',
+  'TIMEZONE_SAFE_DATE_COMPARISON=PASS',
+  'PROGRESSIVE_ROW_LOCATOR=PASS',
+  'NOT_FOUND_DIAGNOSTICS=PASS',
   'READ_ONLY_AUDIT_SAFETY=PASS',
   'REPAIR_APPROVAL_MARKER_CONFIGURED=NO',
   'READ_ONLY_AUDIT_EXECUTED=NO',

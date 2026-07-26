@@ -898,7 +898,26 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
     const properties = services.readProperties();
     const context = await services.buildRepairContext(properties);
     const source = services.createSheetsSource({ properties, context });
-    const result = inspectD6jDMalformedPilotRow_(source.readSnapshot(), context, { includeRawCells: true });
+    let result;
+    try {
+      result = inspectD6jDMalformedPilotRow_(source.readSnapshot(), context, { includeRawCells: true });
+    } catch (error) {
+      if (normalizeD6jCString_(error && error.code) === 'BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND' && error.diagnostics) {
+        const blocked = {
+          PHASE: 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL',
+          AUDIT_STATUS: 'BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND',
+          READ_ONLY_AUDIT_ENTRYPOINT: D6J_D_INSPECT_ENTRYPOINT_,
+          HEADER_SCHEMA_STATUS: 'PASS',
+          ...error.diagnostics,
+          BLOCKER_CODE: 'BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND',
+          PRODUCTION_MUTATION: 'NONE',
+          SCHEMA_VERSION: D6J_D_SCHEMA_VERSION_
+        };
+        logD6jDSanitizedResult_(services.logger, blocked);
+        return blocked;
+      }
+      throw error;
+    }
     const out = {
       PHASE: 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL',
       AUDIT_STATUS: 'PASS_MALFORMED_PILOT_ROW_LOCATED',
@@ -1072,8 +1091,13 @@ function inspectD6jDMalformedPilotRow_(snapshot, context, options) {
   const row = ((context && context.ledgerRows) || [])[0];
   if (!row) throw d6jCError_('BLOCKED_D6J_D_EXPECTED_ROW_MISSING');
   const plan = context.plan || {};
-  const matches = findD6jDMalformedPilotRows_(source, context);
-  if (matches.length === 0) throw d6jCError_('BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND');
+  const evaluation = evaluateD6jDMalformedPilotRows_(source, context);
+  const matches = evaluation.finalCandidates;
+  if (matches.length === 0) {
+    const error = d6jCError_('BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND');
+    error.diagnostics = evaluation.diagnostics;
+    throw error;
+  }
   if (matches.length > 1) throw d6jCError_('BLOCKED_D6J_D_MALFORMED_ROW_NOT_UNIQUE');
   const target = matches[0];
   assertNoLaterD6jDItemTransactions_(source, target.rowNumber, row.itemCode);
@@ -1114,27 +1138,150 @@ function inspectD6jDRepairedPilotRow_(snapshot, context, rowNumber) {
 }
 
 function findD6jDMalformedPilotRows_(snapshot, context) {
+  return evaluateD6jDMalformedPilotRows_(snapshot, context).finalCandidates;
+}
+
+function evaluateD6jDMalformedPilotRows_(snapshot, context) {
   const row = ((context && context.ledgerRows) || [])[0] || {};
   const plan = context && context.plan || {};
   const xmlHash = normalizeD6jCString_(plan.driveTargets && plan.driveTargets.xml && plan.driveTargets.xml.contentHash);
   const pdfHash = normalizeD6jCString_(plan.driveTargets && plan.driveTargets.pdf && plan.driveTargets.pdf.contentHash);
-  return (snapshot.rows || []).filter(item => {
+  const expectedDate = normalizeD6jCComparableDate_(row.issueDate);
+  const expected = {
+    date: expectedDate,
+    itemCode: normalizeD6jCString_(row.itemCode),
+    itemName: normalizeD6jCString_(row.itemName),
+    direction: normalizeD6jCString_(row.direction).toUpperCase(),
+    quantity: row.quantity,
+    unitPrice: row.unitPrice,
+    legacyInvoiceKey: normalizeD6jCString_(row.legacyInvoiceKey),
+    identity: normalizeD6jCString_(row.transactionIdentity || row.lineIdentityV2),
+    xmlHash,
+    pdfHash,
+    invoiceKey: normalizeD6jCString_(row.invoiceKeyV2)
+  };
+  const evaluations = (snapshot.rows || []).map(item => {
     const v = item.values || [];
-    return normalizeD6jCComparableDate_(v[1]) === normalizeD6jCComparableDate_(row.issueDate)
-      && normalizeD6jCString_(v[4]) === normalizeD6jCString_(row.itemCode)
-      && normalizeD6jCString_(v[5]) === normalizeD6jCString_(row.itemName)
-      && normalizeD6jCString_(v[6]).toUpperCase() === normalizeD6jCString_(row.direction).toUpperCase()
-      && numbersEqualD6jD_(v[7], row.quantity)
-      && numbersEqualD6jD_(v[8], row.unitPrice)
-      && normalizeD6jCString_(v[9]) === normalizeD6jCString_(row.legacyInvoiceKey)
-      && normalizeD6jCString_(v[10]) === normalizeD6jCString_(row.transactionIdentity || row.lineIdentityV2)
-      && normalizeD6jCString_(v[11]) === xmlHash
-      && normalizeD6jCString_(v[12]) === pdfHash
-      && normalizeD6jCString_(v[13]) === normalizeD6jCString_(row.invoiceKeyV2)
-      && !normalizeD6jCString_(v[2])
-      && !normalizeD6jCString_(v[3])
-      && !normalizeD6jCString_(v[14]);
+    const actualDate = tryNormalizeD6jCComparableDate_(v[1]);
+    const flags = {
+      B_DATE_MATCH: actualDate.valid && actualDate.value === expected.date,
+      E_ITEM_CODE_MATCH: normalizeD6jCString_(v[4]) === expected.itemCode,
+      F_ITEM_NAME_MATCH: normalizeD6jCString_(v[5]) === expected.itemName,
+      G_DIRECTION_MATCH: normalizeD6jCString_(v[6]).toUpperCase() === expected.direction,
+      H_QUANTITY_MATCH: numbersEqualD6jD_(v[7], expected.quantity),
+      I_UNIT_PRICE_MATCH: numbersEqualD6jD_(v[8], expected.unitPrice),
+      C_BLANK: !normalizeD6jCString_(v[2]),
+      D_BLANK: !normalizeD6jCString_(v[3]),
+      O_BLANK: !normalizeD6jCString_(v[14]),
+      J_LEGACY_INVOICE_KEY_MATCH: normalizeD6jCString_(v[9]) === expected.legacyInvoiceKey,
+      K_TRANSACTION_IDENTITY_MATCH: normalizeD6jCString_(v[10]) === expected.identity,
+      L_XML_HASH_MATCH: normalizeD6jCString_(v[11]) === expected.xmlHash,
+      M_PDF_HASH_MATCH: normalizeD6jCString_(v[12]) === expected.pdfHash,
+      N_OLD_INVOICE_KEY_MATCH: normalizeD6jCString_(v[13]) === expected.invoiceKey
+    };
+    const businessIdentityMatch = flags.B_DATE_MATCH
+      && flags.E_ITEM_CODE_MATCH
+      && flags.F_ITEM_NAME_MATCH
+      && flags.G_DIRECTION_MATCH
+      && flags.H_QUANTITY_MATCH
+      && flags.I_UNIT_PRICE_MATCH;
+    const malformedShapeMatch = businessIdentityMatch
+      && flags.C_BLANK
+      && flags.D_BLANK
+      && flags.O_BLANK
+      && !isD6jDCanonicalRepairedRow_(item, row);
+    const legacySignatureMatch = malformedShapeMatch
+      && flags.J_LEGACY_INVOICE_KEY_MATCH
+      && flags.K_TRANSACTION_IDENTITY_MATCH
+      && flags.L_XML_HASH_MATCH
+      && flags.M_PDF_HASH_MATCH
+      && flags.N_OLD_INVOICE_KEY_MATCH;
+    const legacyShapeConsistent = malformedShapeMatch
+      && Boolean(normalizeD6jCString_(v[9]))
+      && Boolean(normalizeD6jCString_(v[10]))
+      && Boolean(normalizeD6jCString_(v[11]))
+      && Boolean(normalizeD6jCString_(v[12]))
+      && Boolean(normalizeD6jCString_(v[13]));
+    return {
+      item,
+      rowNumber: item.rowNumber,
+      flags,
+      businessIdentityMatch,
+      malformedShapeMatch,
+      legacySignatureMatch,
+      legacyShapeConsistent
+    };
   });
+  const stage2 = evaluations.filter(item => item.malformedShapeMatch);
+  const exactLegacy = evaluations.filter(item => item.legacySignatureMatch);
+  let finalEvaluations = [];
+  if (stage2.length === 1 && stage2[0].legacyShapeConsistent) {
+    finalEvaluations = stage2;
+  } else if (stage2.length > 1 && exactLegacy.length === 1) {
+    finalEvaluations = exactLegacy;
+  } else if (stage2.length > 1) {
+    finalEvaluations = stage2;
+  }
+  return {
+    finalCandidates: finalEvaluations.map(item => item.item),
+    diagnostics: buildD6jDMalformedRowNotFoundDiagnostics_(evaluations, expected)
+  };
+}
+
+function buildD6jDMalformedRowNotFoundDiagnostics_(evaluations, expected) {
+  const dateMatches = evaluations.filter(item => item.flags.B_DATE_MATCH);
+  const dateItemMatches = evaluations.filter(item => item.flags.B_DATE_MATCH && item.flags.E_ITEM_CODE_MATCH && item.flags.F_ITEM_NAME_MATCH);
+  const businessMatches = evaluations.filter(item => item.businessIdentityMatch);
+  const malformedShapeMatches = evaluations.filter(item => item.malformedShapeMatch);
+  const legacySignatureMatches = evaluations.filter(item => item.legacySignatureMatch);
+  const near = evaluations
+    .filter(item => item.flags.B_DATE_MATCH || item.flags.E_ITEM_CODE_MATCH || item.flags.F_ITEM_NAME_MATCH || item.businessIdentityMatch || item.malformedShapeMatch)
+    .slice(0, 5)
+    .map(item => ({
+      ROW_NUMBER: Number(item.rowNumber || 0),
+      B_DATE_MATCH: item.flags.B_DATE_MATCH,
+      E_ITEM_CODE_MATCH: item.flags.E_ITEM_CODE_MATCH,
+      F_ITEM_NAME_MATCH: item.flags.F_ITEM_NAME_MATCH,
+      G_DIRECTION_MATCH: item.flags.G_DIRECTION_MATCH,
+      H_QUANTITY_MATCH: item.flags.H_QUANTITY_MATCH,
+      I_UNIT_PRICE_MATCH: item.flags.I_UNIT_PRICE_MATCH,
+      C_BLANK: item.flags.C_BLANK,
+      D_BLANK: item.flags.D_BLANK,
+      O_BLANK: item.flags.O_BLANK,
+      J_LEGACY_INVOICE_KEY_MATCH: item.flags.J_LEGACY_INVOICE_KEY_MATCH,
+      K_TRANSACTION_IDENTITY_MATCH: item.flags.K_TRANSACTION_IDENTITY_MATCH,
+      L_XML_HASH_MATCH: item.flags.L_XML_HASH_MATCH,
+      M_PDF_HASH_MATCH: item.flags.M_PDF_HASH_MATCH,
+      N_OLD_INVOICE_KEY_MATCH: item.flags.N_OLD_INVOICE_KEY_MATCH
+    }));
+  return {
+    TOTAL_DATA_ROWS: evaluations.length,
+    DATE_MATCH_COUNT: dateMatches.length,
+    DATE_ITEM_MATCH_COUNT: dateItemMatches.length,
+    BUSINESS_IDENTITY_MATCH_COUNT: businessMatches.length,
+    MALFORMED_SHAPE_MATCH_COUNT: malformedShapeMatches.length,
+    LEGACY_SIGNATURE_MATCH_COUNT: legacySignatureMatches.length,
+    EXPECTED_DATE_CANONICAL: expected.date,
+    EXPECTED_ITEM_CODE: expected.itemCode,
+    EXPECTED_DIRECTION: expected.direction,
+    EXPECTED_QUANTITY: Number(expected.quantity || 0),
+    EXPECTED_UNIT_PRICE: Number(expected.unitPrice || 0),
+    CANDIDATE_ROW_NUMBERS: malformedShapeMatches.map(item => Number(item.rowNumber || 0)),
+    NEAR_CANDIDATES: near
+  };
+}
+
+function isD6jDCanonicalRepairedRow_(item, expected) {
+  try {
+    const normalized = normalizeD6jDNhapXuatRowFromValues_((item && item.values) || []);
+    assertD6jCSheetRowMatches_(normalized, expected || {});
+    return Boolean(normalizeD6jCString_(normalized.invoiceNo))
+      && Boolean(normalizeD6jCString_(normalized.customerName))
+      && Boolean(normalizeD6jCString_(normalized.legacyHashIndex))
+      && Boolean(normalizeD6jCString_(normalized.invoiceKeyV2));
+  } catch (_error) {
+    return false;
+  }
 }
 
 function buildD6jDRepairCellChanges_(inspection) {
@@ -1380,7 +1527,70 @@ function sanitizeD6jDHeaderDiagnostic_(value) {
 }
 
 function normalizeD6jCComparableDate_(value) {
-  return normalizeD6jCString_(value).replace(/\D/g, '');
+  const result = tryNormalizeD6jCComparableDate_(value);
+  if (!result.valid) throw d6jCError_('BLOCKED_D6J_D_DATE_VALUE_INVALID:' + result.code);
+  return result.value;
+}
+
+function tryNormalizeD6jCComparableDate_(value) {
+  if (value == null || value === '') return { valid: false, value: '', code: 'EMPTY_DATE' };
+  if (isD6jCDateObject_(value)) {
+    if (Number.isNaN(value.getTime())) return { valid: false, value: '', code: 'INVALID_DATE_OBJECT' };
+    return { valid: true, value: formatD6jCDateObject_(value), code: '' };
+  }
+  const text = normalizeD6jCString_(value);
+  if (/^\d{8}$/.test(text)) return isValidD6jCDateParts_(text.slice(0, 4), text.slice(4, 6), text.slice(6, 8))
+    ? { valid: true, value: text, code: '' }
+    : { valid: false, value: '', code: 'INVALID_YYYYMMDD' };
+  let match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (match) return normalizeD6jCDateParts_(match[1], match[2], match[3]);
+  match = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (match) return normalizeD6jCDateParts_(match[3], match[2], match[1]);
+  return { valid: false, value: '', code: 'UNSUPPORTED_DATE_FORMAT' };
+}
+
+function normalizeD6jCDateParts_(yyyy, mm, dd) {
+  const year = String(yyyy || '').padStart(4, '0');
+  const month = String(mm || '').padStart(2, '0');
+  const day = String(dd || '').padStart(2, '0');
+  if (!isValidD6jCDateParts_(year, month, day)) return { valid: false, value: '', code: 'INVALID_DATE_PARTS' };
+  return { valid: true, value: year + month + day, code: '' };
+}
+
+function isValidD6jCDateParts_(yyyy, mm, dd) {
+  const year = Number(yyyy);
+  const month = Number(mm);
+  const day = Number(dd);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return false;
+  if (year < 1900 || year > 2200 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function isD6jCDateObject_(value) {
+  return Object.prototype.toString.call(value) === '[object Date]' && typeof value.getTime === 'function';
+}
+
+function formatD6jCDateObject_(value) {
+  const timeZone = getD6jCScriptTimeZone_();
+  if (typeof Utilities !== 'undefined' && Utilities && typeof Utilities.formatDate === 'function') {
+    const formatted = Utilities.formatDate(value, timeZone, 'yyyyMMdd');
+    if (/^\d{8}$/.test(formatted)) return formatted;
+  }
+  return String(value.getFullYear()).padStart(4, '0')
+    + String(value.getMonth() + 1).padStart(2, '0')
+    + String(value.getDate()).padStart(2, '0');
+}
+
+function getD6jCScriptTimeZone_() {
+  try {
+    if (typeof Session !== 'undefined' && Session && typeof Session.getScriptTimeZone === 'function') {
+      return normalizeD6jCString_(Session.getScriptTimeZone()) || 'Asia/Ho_Chi_Minh';
+    }
+  } catch (_error) {
+    return 'Asia/Ho_Chi_Minh';
+  }
+  return 'Asia/Ho_Chi_Minh';
 }
 
 function numbersEqualD6jD_(a, b) {
