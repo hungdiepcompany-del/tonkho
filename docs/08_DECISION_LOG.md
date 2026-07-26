@@ -470,3 +470,15 @@ OWNER_APPROVAL_MARKER_CONFIGURED=NO
 PRODUCTION_MUTATION_EXECUTED=NO
 PRODUCTION_MUTATION=NONE
 NEXT_ALLOWED_PHASE=OWNER_REVIEW_AND_EXPLICIT_EXECUTION_APPROVAL
+
+## 2026-07-26 - D6J-D Nhap-Xuat Schema Mapping Decision
+
+DECISION=Fix D6J-C future Nhap-Xuat appends to A:P and expose D6J-D as a read-only audit plus separately gated one-row repair channel.
+RATIONALE=The completed pilot wrote the correct business row to the wrong J:N columns. Future appends must use the production sheet contract, and the already-written pilot row needs a narrower repair channel than rerunning the production mutation.
+PHASE=D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL
+STATUS=PASS_IMPLEMENTED_VALIDATED_PENDING_REMOTE_SYNC
+REPAIR_APPROVAL_MARKER_CONFIGURED=NO
+READ_ONLY_AUDIT_EXECUTED=NO
+PILOT_ROW_REPAIR_EXECUTED=NO
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_PHASE=OWNER_RUN_READ_ONLY_MALFORMED_ROW_AUDIT

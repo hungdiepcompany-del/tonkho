@@ -7,10 +7,46 @@ const D6J_C_FIRESTORE_PROJECT_ID_ = 'tonkhohd';
 const D6J_C_FIRESTORE_DATABASE_ID_ = '(default)';
 const D6J_C_LEASE_OWNER_ = 'apps_script_d6j_c';
 const D6J_C_LEASE_DURATION_MS_ = 10 * 60 * 1000;
+const D6J_D_SCHEMA_VERSION_ = 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL_V1';
+const D6J_D_INSPECT_ENTRYPOINT_ = 'runD6jDInspectMalformedPilotRowReadOnly';
+const D6J_D_REPAIR_ENTRYPOINT_ = 'runD6jDRepairSingleMalformedPilotRow';
+const D6J_D_REPAIR_APPROVAL_PROPERTY_ = 'D6J_D_REPAIR_APPROVAL_MARKER';
+const D6J_D_REPAIR_APPROVAL_ = 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR';
+const D6J_D_ORIGINAL_JOB_ID_ = 'd6j_job_10ad66ede74a1121b0d6';
+const D6J_D_PILOT_ID_ = 'd6j_pilot_9e12d76a0f2b6c16';
+const D6J_D_CORRELATION_ID_ = 'd6j_corr_9efff2df466dd953';
+const D6J_D_TARGET_HEADERS_ = [
+  'STT',
+  'Ngay',
+  'Hoa don so',
+  'Ten khach hang',
+  'Ma hang',
+  'Ten hang',
+  'Phan loai',
+  'So luong',
+  'Don gia',
+  'Thanh tien',
+  'Don gia BQ',
+  'So luong ton',
+  'Gia tri ton',
+  'HashIndex',
+  'InvoiceKey',
+  'HD'
+];
 
 function runD6jCOneRecordProductionMutation() {
   const runner = createD6jCOneRecordProductionMutationRunner_();
   return runner.run();
+}
+
+function runD6jDInspectMalformedPilotRowReadOnly() {
+  const runner = createD6jDNhapXuatSchemaRepairRunner_();
+  return runner.inspect();
+}
+
+function runD6jDRepairSingleMalformedPilotRow() {
+  const runner = createD6jDNhapXuatSchemaRepairRunner_();
+  return runner.repair();
 }
 
 function createD6jCOneRecordProductionMutationRunner_(deps) {
@@ -309,19 +345,32 @@ function buildD6jCLedgerRowsFromXml_(context) {
   const item = parsed.items[0] || {};
   const legacyInvoiceKey = buildD6jCLegacyInvoiceKey_(meta.invoiceDate, seller.taxCode, meta.invoiceNo);
   const lineIdentity = hashPrefixD6jC_([legacyInvoiceKey, xml.contentHash, item.code, item.name, item.qty, item.price].join('|'), 32);
+  const hashIndex = buildD6jCInvoiceItemHash_({
+    invoiceDate: meta.invoiceDate,
+    invoiceNo: meta.invoiceNo,
+    customerName: seller.name,
+    itemCode: item.code || 'Unknown_ID',
+    itemName: item.name,
+    invoiceType: D6J_C_DIRECTION_,
+    qty: item.qty
+  });
   return [{
     issueDate: normalizeD6jCString_(meta.invoiceDate),
+    invoiceNo: normalizeD6jCString_(meta.invoiceNo),
+    customerName: normalizeD6jCString_(seller.name),
+    sellerTaxCode: normalizeD6jCString_(seller.taxCode),
     legacyInvoiceKey,
     invoiceKeyV2: legacyInvoiceKey,
     sourceLineNo: 1,
     lineIdentityV2: lineIdentity,
-    legacyHashIndex: lineIdentity,
+    legacyHashIndex: hashIndex,
     transactionIdentity: lineIdentity,
     direction: D6J_C_DIRECTION_,
     itemCode: normalizeD6jCString_(item.code || 'Unknown_ID'),
     itemName: normalizeD6jCString_(item.name),
     quantity: Number(item.qty || 0),
-    unitPrice: Number(item.price || 0)
+    unitPrice: Number(item.price || 0),
+    amount: Number(item.qty || 0) * Number(item.price || 0)
   }];
 }
 
@@ -536,7 +585,9 @@ async function appendAndVerifyD6jCSheetTransaction_(sheets, plan) {
     idempotencyKey: plan.idempotencyKeys.sheet
   });
   const verify = await read.findTransactionByIdentity({
-    transactionIdentity: plan.ledgerRows[0].transactionIdentity
+    hashIndex: plan.ledgerRows[0].legacyHashIndex,
+    invoiceKeyV2: plan.ledgerRows[0].invoiceKeyV2,
+    legacyInvoiceKey: plan.ledgerRows[0].legacyInvoiceKey
   });
   if (verify.status !== 'ALREADY_PRESENT' || verify.rows.length !== 1) throw d6jCError_('BLOCKED_D6J_C_SHEET_READBACK_MISSING');
   assertD6jCSheetRowMatches_(verify.rows[0], plan.ledgerRows[0]);
@@ -551,8 +602,30 @@ async function appendAndVerifyD6jCSheetTransaction_(sheets, plan) {
 }
 
 function assertD6jCSheetRowMatches_(actual, expected) {
-  ['transactionIdentity', 'invoiceKeyV2', 'legacyInvoiceKey', 'lineIdentityV2'].forEach(field => {
+  ['invoiceKeyV2', 'legacyInvoiceKey', 'legacyHashIndex'].forEach(field => {
     if (normalizeD6jCString_(actual && actual[field]) !== normalizeD6jCString_(expected && expected[field])) {
+      throw d6jCError_('BLOCKED_D6J_C_SHEET_TRANSACTION_CONFLICT');
+    }
+  });
+  const semanticPairs = [
+    ['issueDate', normalizeD6jCComparableDate_],
+    ['invoiceNo', normalizeD6jCString_],
+    ['customerName', normalizeD6jCString_],
+    ['direction', value => normalizeD6jCString_(value).toUpperCase()],
+    ['itemCode', normalizeD6jCString_],
+    ['itemName', normalizeD6jCString_]
+  ];
+  semanticPairs.forEach(pair => {
+    const key = pair[0];
+    const normalize = pair[1];
+    if (!normalize(expected && expected[key])) return;
+    if (normalize(actual && actual[key]) !== normalize(expected && expected[key])) {
+      throw d6jCError_('BLOCKED_D6J_C_SHEET_TRANSACTION_CONFLICT');
+    }
+  });
+  ['quantity', 'unitPrice', 'amount'].forEach(field => {
+    if (expected && (expected[field] == null || expected[field] === '')) return;
+    if (!numbersEqualD6jD_(actual && actual[field], expected && expected[field])) {
       throw d6jCError_('BLOCKED_D6J_C_SHEET_TRANSACTION_CONFLICT');
     }
   });
@@ -756,30 +829,19 @@ function createD6jCGasSheetsSource_(context) {
   const spreadsheet = SpreadsheetApp.openById(properties.D6J_SPREADSHEET_ID);
   const sheet = spreadsheet.getSheetByName(properties.D6J_SHEET_NAME);
   if (!sheet) throw d6jCError_('BLOCKED_D6J_C_TARGET_SHEET_MISSING');
-  function readRows() {
-    const lastRow = Math.max(0, Number(sheet.getLastRow() || 0));
-    const lastColumn = Math.max(14, Number(sheet.getLastColumn() || 14));
-    if (lastRow <= 1) return [];
-    return sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+  function readSnapshot() {
+    return readD6jDSheetSnapshotFromSheet_(sheet);
   }
-  function findRow(identity) {
-    const target = normalizeD6jCString_(identity);
-    const rows = readRows();
-    return rows
-      .filter(row => row.map(normalizeD6jCString_).includes(target))
-      .map(row => ({
-        issueDate: row[1],
-        legacyInvoiceKey: row[9] || row[13],
-        invoiceKeyV2: row[13] || row[9],
-        sourceLineNo: 1,
-        lineIdentityV2: target,
-        transactionIdentity: target,
-        direction: row[6],
-        itemCode: row[4],
-        itemName: row[5],
-        quantity: Number(row[7] || 0),
-        unitPrice: Number(row[8] || 0)
-      }));
+  function readRows() {
+    return readSnapshot().rows.map(row => row.values);
+  }
+  function findRow(request) {
+    const hash = normalizeD6jCString_(request && (request.hashIndex || request.legacyHashIndex));
+    const invoiceKey = normalizeD6jCString_(request && (request.invoiceKeyV2 || request.legacyInvoiceKey));
+    if (!hash || !invoiceKey) throw d6jCError_('BLOCKED_D6J_C_SHEET_LOOKUP_KEYS_MISSING');
+    return readRows()
+      .filter(row => normalizeD6jCString_(row[13]) === hash)
+      .map(row => normalizeD6jDNhapXuatRowFromValues_(row));
   }
   return {
     async readLedgerRows() {
@@ -789,7 +851,7 @@ function createD6jCGasSheetsSource_(context) {
       return [];
     },
     async findTransactionByIdentity(request) {
-      const rows = findRow(request && request.transactionIdentity);
+      const rows = findRow(request || {});
       return { status: rows.length === 1 ? 'ALREADY_PRESENT' : rows.length > 1 ? 'CONFLICT' : 'CONFIRMED_NOT_WRITTEN', rows };
     },
     async readRowsForRebuild() {
@@ -799,32 +861,522 @@ function createD6jCGasSheetsSource_(context) {
       const rows = Array.isArray(request.rows) ? request.rows : [];
       if (rows.length !== 1) throw d6jCError_('BLOCKED_D6J_C_APPEND_ROW_COUNT_NOT_ONE');
       const row = rows[0];
-      const existing = findRow(row.transactionIdentity);
+      const existing = findRow({ hashIndex: row.legacyHashIndex, invoiceKeyV2: row.invoiceKeyV2, legacyInvoiceKey: row.legacyInvoiceKey });
       if (existing.length === 1) return { status: 'ALREADY_PRESENT', appendedCount: 0, rows: existing, idempotent: true };
       if (existing.length > 1) throw d6jCError_('BLOCKED_D6J_C_SHEET_TRANSACTION_CONFLICT');
-      const next = [
-        '',
-        row.issueDate,
-        '',
-        '',
-        row.itemCode,
-        row.itemName,
-        row.direction,
-        row.quantity,
-        row.unitPrice,
-        row.legacyInvoiceKey,
-        row.transactionIdentity,
-        context.plan.driveTargets.xml.contentHash,
-        context.plan.driveTargets.pdf.contentHash,
-        row.invoiceKeyV2
-      ];
-      sheet.getRange(sheet.getLastRow() + 1, 1, 1, next.length).setValues([next]);
+      const snapshot = readSnapshot();
+      assertD6jDHeaderSchema_(snapshot.headers);
+      const nextRowNumber = sheet.getLastRow() + 1;
+      const previousRows = snapshot.rows.map(item => item.values);
+      const inventory = calculateD6jDInventoryForTarget_(previousRows, row);
+      const hdRule = resolveD6jDHdColumnRule_(snapshot, -1);
+      const next = buildD6jCNhapXuatRowAP_(row, context.plan, inventory, hdRule);
+      sheet.getRange(nextRowNumber, 1, 1, next.values.length).setValues([next.values]);
+      if (next.pFormulaR1C1) {
+        sheet.getRange(nextRowNumber, 16, 1, 1).setFormulaR1C1(next.pFormulaR1C1);
+      }
       return { status: 'CONFIRMED_WRITTEN', appendedCount: 1, rows: [row], idempotent: false };
     },
     async replaceDerivedRangeForRebuild() {
       throw d6jCError_('BLOCKED_D6J_C_REBUILD_FORBIDDEN');
     }
   };
+}
+
+function createD6jDNhapXuatSchemaRepairRunner_(deps) {
+  const d = deps || {};
+  const services = {
+    readProperties: d.readProperties || readD6jDProperties_,
+    buildRepairContext: d.buildRepairContext || buildD6jDRepairContextFromProductionReads_,
+    createSheetsSource: d.createSheetsSource || (context => createD6jDGasSheetsSource_(context)),
+    createJobStore: d.createJobStore || (() => createD6jCDefaultDurableJobStore_()),
+    clock: d.clock || { now: () => new Date().toISOString() },
+    logger: d.logger || (typeof Logger !== 'undefined' ? Logger : { log() {} })
+  };
+
+  async function inspect() {
+    const properties = services.readProperties();
+    const context = await services.buildRepairContext(properties);
+    const source = services.createSheetsSource({ properties, context });
+    const result = inspectD6jDMalformedPilotRow_(source.readSnapshot(), context, { includeRawCells: true });
+    const out = {
+      PHASE: 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL',
+      AUDIT_STATUS: 'PASS_MALFORMED_PILOT_ROW_LOCATED',
+      READ_ONLY_AUDIT_ENTRYPOINT: D6J_D_INSPECT_ENTRYPOINT_,
+      TARGET_ROW_NUMBER: result.targetRowNumber,
+      HEADER_SCHEMA_STATUS: result.headerSchemaStatus,
+      HD_COLUMN_RULE: result.hdRule.type,
+      ARRAYFORMULA_CONTROLS_A_OR_P: result.arrayFormulaControlsAOrP ? 'YES' : 'NO',
+      CURRENT_VALUES_AP: result.currentValues,
+      CURRENT_FORMULAS_AP: result.currentFormulas,
+      CURRENT_NUMBER_FORMATS_AP: result.currentNumberFormats,
+      EXPECTED_VALUES_AP: result.expected.values,
+      BLOCKER_CODE: '',
+      PRODUCTION_MUTATION: 'NONE',
+      SCHEMA_VERSION: D6J_D_SCHEMA_VERSION_
+    };
+    logD6jDSanitizedResult_(services.logger, out);
+    return out;
+  }
+
+  async function repair() {
+    const properties = services.readProperties();
+    if (normalizeD6jCString_(properties[D6J_D_REPAIR_APPROVAL_PROPERTY_]) !== D6J_D_REPAIR_APPROVAL_) {
+      return createD6jDRepairBlockedResult_('BLOCKED_INVALID_D6J_D_REPAIR_APPROVAL_MARKER');
+    }
+    const context = await services.buildRepairContext(properties);
+    const source = services.createSheetsSource({ properties, context });
+    const snapshot = source.readSnapshot();
+    const inspection = inspectD6jDMalformedPilotRow_(snapshot, context, { includeRawCells: false });
+    const changes = buildD6jDRepairCellChanges_(inspection);
+    if (!changes.length) throw d6jCError_('BLOCKED_D6J_D_REPAIR_NO_CHANGES_REQUIRED');
+    const beforeHash = hashPrefixD6jC_(JSON.stringify({
+      rowNumber: inspection.targetRowNumber,
+      values: inspection.currentValues,
+      formulas: inspection.currentFormulas,
+      formats: inspection.currentNumberFormats
+    }), 32);
+    let writeCompleted = false;
+    try {
+      source.updateRowCells({
+        rowNumber: inspection.targetRowNumber,
+        changes,
+        audit: {
+          originalJobId: D6J_D_ORIGINAL_JOB_ID_,
+          pilotId: D6J_D_PILOT_ID_,
+          correlationId: D6J_D_CORRELATION_ID_
+        }
+      });
+      writeCompleted = true;
+      const afterInspection = inspectD6jDRepairedPilotRow_(source.readSnapshot(), context, inspection.targetRowNumber);
+      const afterHash = hashPrefixD6jC_(JSON.stringify({
+        rowNumber: afterInspection.targetRowNumber,
+        values: afterInspection.currentValues,
+        formulas: afterInspection.currentFormulas
+      }), 32);
+      const auditResult = await recordD6jDRepairAudit_(services.createJobStore, {
+        beforeHash,
+        afterHash,
+        changedColumns: changes.map(change => change.column),
+        clock: services.clock
+      });
+      const out = {
+        PHASE: 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL',
+        REPAIR_STATUS: 'PASS_SINGLE_MALFORMED_PILOT_ROW_REPAIRED',
+        TARGET_ROW_NUMBER: inspection.targetRowNumber,
+        SHEET_ROWS_UPDATED: 1,
+        SHEET_ROWS_APPENDED: 0,
+        SHEET_ROWS_DELETED: 0,
+        DRIVE_MUTATION_COUNT: 0,
+        GMAIL_MUTATION_COUNT: 0,
+        TRIGGER_MUTATION_COUNT: 0,
+        DESTRUCTIVE_OPERATION_COUNT: 0,
+        FIRESTORE_REPAIR_AUDIT_STATUS: auditResult.status,
+        BEFORE_HASH: beforeHash,
+        AFTER_HASH: afterHash,
+        CHANGED_COLUMNS: changes.map(change => change.column).join(','),
+        ORIGINAL_JOB_ID: D6J_D_ORIGINAL_JOB_ID_,
+        PRODUCTION_MUTATION: 'SINGLE_SHEET_ROW_REPAIR_ONLY',
+        SCHEMA_VERSION: D6J_D_SCHEMA_VERSION_
+      };
+      logD6jDSanitizedResult_(services.logger, out);
+      return out;
+    } catch (error) {
+      if (writeCompleted) {
+        return {
+          PHASE: 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL',
+          REPAIR_STATUS: 'REPAIR_RECONCILIATION_REQUIRED',
+          BLOCKER_CODE: normalizeD6jCErrorCode_(error && (error.code || error.message) || 'D6J_D_REPAIR_UNKNOWN'),
+          SHEET_ROWS_UPDATED: 1,
+          SHEET_ROWS_APPENDED: 0,
+          SHEET_ROWS_DELETED: 0,
+          DRIVE_MUTATION_COUNT: 0,
+          GMAIL_MUTATION_COUNT: 0,
+          TRIGGER_MUTATION_COUNT: 0,
+          DESTRUCTIVE_OPERATION_COUNT: 0,
+          PRODUCTION_MUTATION: 'SINGLE_SHEET_ROW_REPAIR_NEEDS_RECONCILIATION',
+          SCHEMA_VERSION: D6J_D_SCHEMA_VERSION_
+        };
+      }
+      throw error;
+    }
+  }
+
+  return Object.freeze({ inspect, repair });
+}
+
+function readD6jDProperties_() {
+  const base = readD6jCScriptProperties_();
+  base[D6J_D_REPAIR_APPROVAL_PROPERTY_] = String(PropertiesService.getScriptProperties().getProperty(D6J_D_REPAIR_APPROVAL_PROPERTY_) || '').trim();
+  return base;
+}
+
+async function buildD6jDRepairContextFromProductionReads_(properties) {
+  const preflight = createD6jBProductionDryRunReadOnlyRunner_().run();
+  assertD6jCPreflightPass_(preflight);
+  const artifacts = await readD6jCPilotArtifacts_(properties, preflight);
+  assertD6jCArtifactsMatchPreflight_(artifacts, preflight);
+  const ledgerRows = await buildD6jCLedgerRowsFromXml_({ properties, preflight, artifacts });
+  const plan = buildD6jCMutationPlan_({ properties, preflight, artifacts, ledgerRows, now: new Date().toISOString() });
+  return { properties, preflight, artifacts, ledgerRows, plan };
+}
+
+function createD6jDGasSheetsSource_(context) {
+  const properties = context.properties || {};
+  const spreadsheet = SpreadsheetApp.openById(properties.D6J_SPREADSHEET_ID);
+  const sheet = spreadsheet.getSheetByName(properties.D6J_SHEET_NAME);
+  if (!sheet) throw d6jCError_('BLOCKED_D6J_D_TARGET_SHEET_MISSING');
+  return {
+    readSnapshot() {
+      return readD6jDSheetSnapshotFromSheet_(sheet);
+    },
+    updateRowCells(request) {
+      const rowNumber = Number(request && request.rowNumber || 0);
+      const changes = Array.isArray(request && request.changes) ? request.changes : [];
+      if (!Number.isInteger(rowNumber) || rowNumber < 2) throw d6jCError_('BLOCKED_D6J_D_REPAIR_ROW_NUMBER_INVALID');
+      if (!changes.length) throw d6jCError_('BLOCKED_D6J_D_REPAIR_EMPTY_CHANGESET');
+      changes.forEach(change => {
+        const column = Number(change.column);
+        if (!Number.isInteger(column) || column < 1 || column > 16) throw d6jCError_('BLOCKED_D6J_D_REPAIR_COLUMN_INVALID');
+        const cell = sheet.getRange(rowNumber, column, 1, 1);
+        if (change.formulaR1C1) cell.setFormulaR1C1(change.formulaR1C1);
+        else cell.setValue(change.value == null ? '' : change.value);
+      });
+      return { updatedRowCount: 1, updatedCellCount: changes.length };
+    }
+  };
+}
+
+function readD6jDSheetSnapshotFromSheet_(sheet) {
+  const lastRow = Math.max(1, Number(sheet.getLastRow() || 1));
+  const range = sheet.getRange(1, 1, lastRow, 16);
+  const values = range.getValues();
+  const formulas = typeof range.getFormulas === 'function' ? range.getFormulas() : values.map(row => row.map(() => ''));
+  const formulasR1C1 = typeof range.getFormulasR1C1 === 'function' ? range.getFormulasR1C1() : formulas;
+  const numberFormats = typeof range.getNumberFormats === 'function' ? range.getNumberFormats() : values.map(row => row.map(() => ''));
+  return {
+    headers: values[0] || [],
+    rows: values.slice(1).map((row, index) => ({
+      rowNumber: index + 2,
+      values: row.slice(0, 16),
+      formulas: (formulas[index + 1] || []).slice(0, 16),
+      formulasR1C1: (formulasR1C1[index + 1] || []).slice(0, 16),
+      numberFormats: (numberFormats[index + 1] || []).slice(0, 16)
+    }))
+  };
+}
+
+function inspectD6jDMalformedPilotRow_(snapshot, context, options) {
+  const source = snapshot || {};
+  assertD6jDHeaderSchema_(source.headers || []);
+  const row = ((context && context.ledgerRows) || [])[0];
+  if (!row) throw d6jCError_('BLOCKED_D6J_D_EXPECTED_ROW_MISSING');
+  const plan = context.plan || {};
+  const matches = findD6jDMalformedPilotRows_(source, context);
+  if (matches.length === 0) throw d6jCError_('BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND');
+  if (matches.length > 1) throw d6jCError_('BLOCKED_D6J_D_MALFORMED_ROW_NOT_UNIQUE');
+  const target = matches[0];
+  assertNoLaterD6jDItemTransactions_(source, target.rowNumber, row.itemCode);
+  const previousRows = source.rows.filter(item => item.rowNumber < target.rowNumber).map(item => item.values);
+  const inventory = calculateD6jDInventoryForTarget_(previousRows, row);
+  const hdRule = resolveD6jDHdColumnRule_(source, target.rowNumber);
+  const expected = buildD6jCNhapXuatRowAP_(row, plan, inventory, hdRule);
+  return {
+    targetRowNumber: target.rowNumber,
+    headerSchemaStatus: 'PASS',
+    hdRule,
+    arrayFormulaControlsAOrP: d6jDColumnHasArrayFormula_(source, 0) || d6jDColumnHasArrayFormula_(source, 15),
+    currentValues: (options && options.includeRawCells === false) ? target.values.slice(0, 16) : target.values.slice(0, 16),
+    currentFormulas: target.formulas.slice(0, 16),
+    currentFormulasR1C1: target.formulasR1C1.slice(0, 16),
+    currentNumberFormats: target.numberFormats.slice(0, 16),
+    expected,
+    expectedInventory: inventory
+  };
+}
+
+function inspectD6jDRepairedPilotRow_(snapshot, context, rowNumber) {
+  const source = snapshot || {};
+  assertD6jDHeaderSchema_(source.headers || []);
+  const target = (source.rows || []).find(row => Number(row.rowNumber) === Number(rowNumber));
+  if (!target) throw d6jCError_('BLOCKED_D6J_D_REPAIRED_ROW_NOT_FOUND');
+  const expected = ((context && context.ledgerRows) || [])[0];
+  const normalized = normalizeD6jDNhapXuatRowFromValues_(target.values);
+  assertD6jCSheetRowMatches_(normalized, expected);
+  ['averageUnitCost', 'stockQuantity', 'stockValue'].forEach(key => {
+    if (!Number.isFinite(Number(normalized[key]))) throw d6jCError_('BLOCKED_D6J_D_REPAIRED_NUMERIC_FIELD_INVALID');
+  });
+  return {
+    targetRowNumber: target.rowNumber,
+    currentValues: target.values.slice(0, 16),
+    currentFormulas: target.formulas.slice(0, 16)
+  };
+}
+
+function findD6jDMalformedPilotRows_(snapshot, context) {
+  const row = ((context && context.ledgerRows) || [])[0] || {};
+  const plan = context && context.plan || {};
+  const xmlHash = normalizeD6jCString_(plan.driveTargets && plan.driveTargets.xml && plan.driveTargets.xml.contentHash);
+  const pdfHash = normalizeD6jCString_(plan.driveTargets && plan.driveTargets.pdf && plan.driveTargets.pdf.contentHash);
+  return (snapshot.rows || []).filter(item => {
+    const v = item.values || [];
+    return normalizeD6jCComparableDate_(v[1]) === normalizeD6jCComparableDate_(row.issueDate)
+      && normalizeD6jCString_(v[4]) === normalizeD6jCString_(row.itemCode)
+      && normalizeD6jCString_(v[5]) === normalizeD6jCString_(row.itemName)
+      && normalizeD6jCString_(v[6]).toUpperCase() === normalizeD6jCString_(row.direction).toUpperCase()
+      && numbersEqualD6jD_(v[7], row.quantity)
+      && numbersEqualD6jD_(v[8], row.unitPrice)
+      && normalizeD6jCString_(v[9]) === normalizeD6jCString_(row.legacyInvoiceKey)
+      && normalizeD6jCString_(v[10]) === normalizeD6jCString_(row.transactionIdentity || row.lineIdentityV2)
+      && normalizeD6jCString_(v[11]) === xmlHash
+      && normalizeD6jCString_(v[12]) === pdfHash
+      && normalizeD6jCString_(v[13]) === normalizeD6jCString_(row.invoiceKeyV2)
+      && !normalizeD6jCString_(v[2])
+      && !normalizeD6jCString_(v[3])
+      && !normalizeD6jCString_(v[14]);
+  });
+}
+
+function buildD6jDRepairCellChanges_(inspection) {
+  const current = inspection.currentValues || [];
+  const expected = inspection.expected || {};
+  const values = expected.values || [];
+  const changes = [];
+  for (let index = 1; index < 16; index += 1) {
+    if (index === 15 && expected.pWritePolicy === 'DO_NOT_WRITE') continue;
+    if (index === 15 && expected.pFormulaR1C1) {
+      if (normalizeD6jCString_((inspection.currentFormulasR1C1 || [])[15]) !== normalizeD6jCString_(expected.pFormulaR1C1)) {
+        changes.push({ column: 16, formulaR1C1: expected.pFormulaR1C1 });
+      }
+      continue;
+    }
+    if (!d6jDCellEqual_(current[index], values[index])) {
+      changes.push({ column: index + 1, value: values[index] });
+    }
+  }
+  return changes;
+}
+
+function buildD6jCNhapXuatRowAP_(row, plan, inventory, hdRule) {
+  const expected = row || {};
+  const safeInventory = inventory || {};
+  const amount = Number.isFinite(Number(expected.amount)) ? Number(expected.amount) : Number(expected.quantity || 0) * Number(expected.unitPrice || 0);
+  const values = [
+    '',
+    expected.issueDate || '',
+    expected.invoiceNo || '',
+    expected.customerName || '',
+    expected.itemCode || '',
+    expected.itemName || '',
+    expected.direction || D6J_C_DIRECTION_,
+    Number(expected.quantity || 0),
+    Number(expected.unitPrice || 0),
+    amount,
+    Number(safeInventory.averageUnitCost || 0),
+    Number(safeInventory.stockQuantity || 0),
+    Number(safeInventory.stockValue || 0),
+    expected.legacyHashIndex || buildD6jCInvoiceItemHash_(expected),
+    expected.invoiceKeyV2 || expected.legacyInvoiceKey || '',
+    ''
+  ];
+  const rule = hdRule || { type: 'UNRESOLVED' };
+  if (rule.type === 'UNRESOLVED') throw d6jCError_('BLOCKED_HD_COLUMN_RULE_UNRESOLVED');
+  const output = { values, pWritePolicy: 'WRITE_VALUE', pFormulaR1C1: '' };
+  if (rule.type === 'ARRAYFORMULA') {
+    output.pWritePolicy = 'DO_NOT_WRITE';
+    return output;
+  }
+  if (rule.type === 'ROW_RELATIVE_FORMULA') {
+    output.pWritePolicy = 'WRITE_FORMULA_R1C1';
+    output.pFormulaR1C1 = rule.formulaR1C1;
+    return output;
+  }
+  if (rule.type === 'HYPERLINK_OR_LOOKUP') {
+    output.values[15] = rule.value || '';
+    output.pFormulaR1C1 = rule.formulaR1C1 || '';
+    output.pWritePolicy = output.pFormulaR1C1 ? 'WRITE_FORMULA_R1C1' : 'WRITE_VALUE';
+    return output;
+  }
+  throw d6jCError_('BLOCKED_HD_COLUMN_RULE_UNRESOLVED');
+}
+
+function calculateD6jDInventoryForTarget_(previousRowsAP, targetRow) {
+  let stockQuantity = 0;
+  let stockValue = 0;
+  let averageUnitCost = 0;
+  (previousRowsAP || []).forEach(row => {
+    if (normalizeD6jCString_(row[4]) !== normalizeD6jCString_(targetRow.itemCode)) return;
+    const type = normalizeD6jCString_(row[6]).toUpperCase();
+    let quantity = Number(row[7] || 0);
+    const unitPrice = Number(row[8] || 0);
+    if (type === 'NHAP') {
+      const amount = quantity * unitPrice;
+      stockQuantity += quantity;
+      stockValue += amount;
+      averageUnitCost = stockQuantity ? stockValue / stockQuantity : 0;
+    } else if (type === 'XUAT') {
+      if (quantity > stockQuantity) quantity = stockQuantity;
+      stockQuantity -= quantity;
+      stockValue = stockQuantity * averageUnitCost;
+      if (stockQuantity <= 0) {
+        stockQuantity = 0;
+        stockValue = 0;
+        averageUnitCost = 0;
+      }
+    }
+  });
+  const incomingQuantity = Number(targetRow.quantity || 0);
+  const incomingAmount = Number.isFinite(Number(targetRow.amount)) ? Number(targetRow.amount) : incomingQuantity * Number(targetRow.unitPrice || 0);
+  stockQuantity += incomingQuantity;
+  stockValue += incomingAmount;
+  averageUnitCost = stockQuantity ? stockValue / stockQuantity : 0;
+  return { amount: incomingAmount, averageUnitCost, stockQuantity, stockValue };
+}
+
+function assertNoLaterD6jDItemTransactions_(snapshot, targetRowNumber, itemCode) {
+  const later = (snapshot.rows || []).filter(row => Number(row.rowNumber) > Number(targetRowNumber)
+    && normalizeD6jCString_(row.values && row.values[4]) === normalizeD6jCString_(itemCode));
+  if (later.length) throw d6jCError_('BLOCKED_LATER_ITEM_TRANSACTIONS_REQUIRE_BOUNDED_REBUILD');
+}
+
+function resolveD6jDHdColumnRule_(snapshot, targetRowNumber) {
+  if (d6jDColumnHasArrayFormula_(snapshot, 15)) return { type: 'ARRAYFORMULA', writePolicy: 'DO_NOT_WRITE' };
+  const neighbors = (snapshot.rows || [])
+    .filter(row => Number(row.rowNumber) !== Number(targetRowNumber))
+    .map(row => normalizeD6jCString_((row.formulasR1C1 || [])[15] || (row.formulas || [])[15]))
+    .filter(Boolean)
+    .filter(formula => !/^=ARRAYFORMULA/i.test(formula));
+  const unique = Array.from(new Set(neighbors));
+  if (unique.length === 1) return { type: 'ROW_RELATIVE_FORMULA', formulaR1C1: unique[0], writePolicy: 'WRITE_FORMULA_R1C1' };
+  const hyperlink = unique.filter(formula => /(HYPERLINK|VLOOKUP|XLOOKUP|INDEX|MATCH)/i.test(formula));
+  if (hyperlink.length === 1) return { type: 'HYPERLINK_OR_LOOKUP', formulaR1C1: hyperlink[0], writePolicy: 'WRITE_FORMULA_R1C1' };
+  return { type: 'UNRESOLVED', writePolicy: 'BLOCK' };
+}
+
+function d6jDColumnHasArrayFormula_(snapshot, columnIndex) {
+  return (snapshot.rows || []).some(row => /^=ARRAYFORMULA/i.test(normalizeD6jCString_((row.formulas || [])[columnIndex] || (row.formulasR1C1 || [])[columnIndex])));
+}
+
+function assertD6jDHeaderSchema_(headers) {
+  const actual = (headers || []).slice(0, 16).map(canonicalD6jDHeader_);
+  const expected = D6J_D_TARGET_HEADERS_.map(canonicalD6jDHeader_);
+  if (actual.length !== 16 || actual.some((value, index) => value !== expected[index])) {
+    throw d6jCError_('BLOCKED_D6J_D_HEADER_SCHEMA_MISMATCH');
+  }
+}
+
+function normalizeD6jDNhapXuatRowFromValues_(row) {
+  const values = row || [];
+  return {
+    issueDate: values[1],
+    invoiceNo: values[2],
+    customerName: values[3],
+    legacyInvoiceKey: values[14],
+    invoiceKeyV2: values[14],
+    sourceLineNo: 1,
+    lineIdentityV2: values[13],
+    legacyHashIndex: values[13],
+    transactionIdentity: values[13],
+    direction: values[6],
+    itemCode: values[4],
+    itemName: values[5],
+    quantity: Number(values[7] || 0),
+    unitPrice: Number(values[8] || 0),
+    amount: Number(values[9] || 0),
+    averageUnitCost: Number(values[10] || 0),
+    stockQuantity: Number(values[11] || 0),
+    stockValue: Number(values[12] || 0)
+  };
+}
+
+async function recordD6jDRepairAudit_(createJobStore, evidence) {
+  const store = typeof createJobStore === 'function' ? createJobStore() : null;
+  if (!store || typeof store.appendAuditEvent !== 'function') return { status: 'NOT_AVAILABLE' };
+  await store.appendAuditEvent({
+    jobId: D6J_D_ORIGINAL_JOB_ID_,
+    eventType: 'D6J_D_SINGLE_ROW_REPAIR',
+    actorType: 'APPS_SCRIPT_D6J_D',
+    safeDetails: {
+      beforeHash: evidence.beforeHash,
+      afterHash: evidence.afterHash,
+      changedColumns: evidence.changedColumns,
+      repairedAt: evidence.clock && evidence.clock.now ? evidence.clock.now() : ''
+    }
+  });
+  return { status: 'RECORDED' };
+}
+
+function createD6jDRepairBlockedResult_(code) {
+  return {
+    PHASE: 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL',
+    REPAIR_STATUS: code,
+    BLOCKER_CODE: code,
+    OWNER_APPROVAL_MARKER_VALID: 'NO',
+    SHEET_ROWS_UPDATED: 0,
+    SHEET_ROWS_APPENDED: 0,
+    SHEET_ROWS_DELETED: 0,
+    DRIVE_MUTATION_COUNT: 0,
+    GMAIL_MUTATION_COUNT: 0,
+    TRIGGER_MUTATION_COUNT: 0,
+    DESTRUCTIVE_OPERATION_COUNT: 0,
+    PRODUCTION_MUTATION: 'NONE',
+    SCHEMA_VERSION: D6J_D_SCHEMA_VERSION_
+  };
+}
+
+function buildD6jCInvoiceItemHash_(values) {
+  const source = values || {};
+  if (typeof buildInvoiceItemHash_ === 'function') {
+    const hash = buildInvoiceItemHash_({
+      invoiceDate: source.issueDate || source.invoiceDate,
+      invoiceNo: source.invoiceNo,
+      customerName: source.customerName,
+      itemCode: source.itemCode,
+      itemName: source.itemName,
+      invoiceType: source.direction || source.invoiceType || D6J_C_DIRECTION_,
+      qty: source.quantity || source.qty
+    });
+    if (!hash) throw d6jCError_('BLOCKED_D6J_D_HASHINDEX_EMPTY');
+    return hash;
+  }
+  return hashPrefixD6jC_([
+    source.issueDate || source.invoiceDate,
+    source.invoiceNo,
+    source.customerName,
+    source.itemCode,
+    source.itemName,
+    source.direction || source.invoiceType || D6J_C_DIRECTION_,
+    source.quantity || source.qty
+  ].join('|'), 64);
+}
+
+function canonicalD6jDHeader_(value) {
+  return normalizeD6jCString_(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]/g, '')
+    .toLowerCase();
+}
+
+function normalizeD6jCComparableDate_(value) {
+  return normalizeD6jCString_(value).replace(/\D/g, '');
+}
+
+function numbersEqualD6jD_(a, b) {
+  return Math.abs(Number(a || 0) - Number(b || 0)) < 0.000001;
+}
+
+function d6jDCellEqual_(a, b) {
+  if (typeof a === 'number' || typeof b === 'number') return numbersEqualD6jD_(a, b);
+  return normalizeD6jCString_(a) === normalizeD6jCString_(b);
+}
+
+function logD6jDSanitizedResult_(logger, result) {
+  const text = JSON.stringify(result);
+  if (/(Bearer|Authorization|refresh_token|private_key|client_secret|<\?xml|<Invoice|JVBERi0|\b80,68,70\b)/i.test(text)) {
+    throw d6jCError_('BLOCKED_UNSAFE_D6J_D_LOG_PAYLOAD');
+  }
+  logger.log(text);
 }
 
 function createD6jCDefaultDurableJobStore_() {

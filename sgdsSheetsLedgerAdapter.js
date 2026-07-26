@@ -104,8 +104,15 @@ function createFakeSgdsSheetsLedgerAdapter_(options) {
   function record(method, request) {
     calls.push({ method, request: cloneSgdsAdapterJson_(request || {}) });
   }
-  function findIdentity(identity) {
-    return state.ledgerRows.filter(row => row.transactionIdentity === identity || row.lineIdentityV2 === identity);
+  function findIdentity(identity, request) {
+    const target = safeSgdsAdapterString_(identity);
+    const hash = safeSgdsAdapterString_(request && (request.hashIndex || request.legacyHashIndex));
+    const invoiceKey = safeSgdsAdapterString_(request && (request.invoiceKeyV2 || request.legacyInvoiceKey));
+    return state.ledgerRows.filter(row => {
+      if (target && (row.transactionIdentity === target || row.lineIdentityV2 === target)) return true;
+      if (hash && row.legacyHashIndex === hash) return true;
+      return false;
+    });
   }
   function normalizeInputRows(request) {
     const rows = Array.isArray(request.rows) ? request.rows : Array.isArray(request.lines) ? request.lines : [];
@@ -139,7 +146,7 @@ function createFakeSgdsSheetsLedgerAdapter_(options) {
     },
     async findTransactionByIdentity(request) {
       record('sheets.findTransactionByIdentity', request);
-      const matches = findIdentity(safeSgdsAdapterString_(request && request.transactionIdentity));
+      const matches = findIdentity(safeSgdsAdapterString_(request && request.transactionIdentity), request || {});
       return { status: matches.length ? 'ALREADY_PRESENT' : 'CONFIRMED_NOT_WRITTEN', rows: matches };
     },
     async readRowsForRebuild(request) {
@@ -154,7 +161,7 @@ function createFakeSgdsSheetsLedgerAdapter_(options) {
       assertNoOversell(rows);
       const newRows = [];
       rows.forEach(row => {
-        const existing = findIdentity(row.transactionIdentity);
+        const existing = findIdentity(row.transactionIdentity, { hashIndex: row.legacyHashIndex, invoiceKeyV2: row.invoiceKeyV2, legacyInvoiceKey: row.legacyInvoiceKey });
         if (existing.length) return;
         const sequence = nextSequence;
         nextSequence += 1;
@@ -191,6 +198,7 @@ function normalizeSgdsLedgerRow_(row) {
     invoiceKeyV2: safeSgdsAdapterString_(source.invoiceKeyV2),
     sourceLineNo: Number(source.sourceLineNo || 0),
     lineIdentityV2: safeSgdsAdapterString_(source.lineIdentityV2),
+    legacyHashIndex: safeSgdsAdapterString_(source.legacyHashIndex),
     transactionIdentity: safeSgdsAdapterString_(source.transactionIdentity || source.lineIdentityV2),
     transactionKind: safeSgdsAdapterString_(source.transactionKind || 'ORIGINAL'),
     direction: safeSgdsAdapterString_(source.direction || 'NHAP'),
