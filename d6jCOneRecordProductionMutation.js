@@ -872,18 +872,23 @@ function createD6jCFirestoreLeaseStore_(transport, options) {
   }
 
   function activeLease(req, now, extras) {
+    const sourceExtras = extras || {};
+    const previousLeaseGeneration = Number(sourceExtras.previousLeaseGeneration || 0);
+    const cleanExtras = { ...sourceExtras };
+    delete cleanExtras.previousLeaseGeneration;
     return {
       leaseId: req.leaseId,
       jobId: req.jobId,
       leaseOwner: req.leaseOwner,
       status: 'ACTIVE',
       fencingToken: req.fencingToken,
+      leaseGeneration: Number.isFinite(previousLeaseGeneration) && previousLeaseGeneration >= 0 ? previousLeaseGeneration + 1 : 1,
       acquiredAt: now,
       expiresAt: req.expiresAt,
       releasedAt: '',
       finalJobStatus: '',
       updatedAt: now,
-      ...(extras || {})
+      ...cleanExtras
     };
   }
 
@@ -918,6 +923,7 @@ function createD6jCFirestoreLeaseStore_(transport, options) {
           previousLeaseUpdatedAt: normalizeD6jCString_(current.updatedAt),
           previousLeaseExpiresAt: normalizeD6jCString_(current.expiresAt),
           previousFencingTokenHashPrefix: hashPrefixD6jC_(current.fencingToken || '', 8),
+          previousLeaseGeneration: Number(current.leaseGeneration || 0),
           reclaimedAt: now
         });
         await tx.updateDocument(path, reclaimed);
@@ -929,6 +935,7 @@ function createD6jCFirestoreLeaseStore_(transport, options) {
           previousLeaseStatus: currentStatus,
           previousFinalJobStatus: normalizeD6jCString_(current.finalJobStatus),
           previousReleasedAt: normalizeD6jCString_(current.releasedAt),
+          previousLeaseGeneration: Number(current.leaseGeneration || 0),
           reacquiredAt: now
         });
         await tx.updateDocument(path, reacquired);
@@ -1001,10 +1008,10 @@ function createD6jCFirestoreLeaseStore_(transport, options) {
 function createD6jCFirestoreDurableTransport_() {
   const codec = createFirestoreValueCodec_();
   async function request(method, path, body, options) {
-    const safePath = validateD6jCFirestorePath_(path);
+    const safePath = method === 'LIST' ? validateD6jCFirestoreCollectionPath_(path) : validateD6jCFirestorePath_(path);
     const url = buildD6jCFirestoreUrl_(safePath, method, options || {});
     const params = {
-      method: method.toLowerCase(),
+      method: (method === 'LIST' ? 'GET' : method).toLowerCase(),
       muteHttpExceptions: true,
       contentType: 'application/json',
       headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }
@@ -1018,17 +1025,37 @@ function createD6jCFirestoreDurableTransport_() {
     throw createD6jCFirestoreError_(status, safePath.path, text);
   }
   async function getDocument(path) {
+    const state = await readD6jCFirestoreDocumentReadState_(path);
+    return state ? cloneD6jCJson_(state.data) : null;
+  }
+  async function readD6jCFirestoreDocumentReadState_(path) {
     const doc = await request('GET', path, null, {});
-    return doc ? codec.decodeDocument(doc) : null;
+    if (!doc) return null;
+    const updateTime = normalizeD6jCString_(doc.updateTime);
+    if (!updateTime) throw d6jCError_('FIRESTORE_DOCUMENT_UPDATE_TIME_MISSING');
+    return Object.freeze({
+      data: codec.decodeDocument(doc),
+      name: normalizeD6jCString_(doc.name),
+      createTime: normalizeD6jCString_(doc.createTime),
+      updateTime
+    });
   }
   async function createDocument(path, data, options) {
     const encoded = codec.encodeDocument(data || {});
-    const doc = await request('POST', path, encoded, { ...(options || {}), create: true });
+    const doc = await request('POST', path, encoded, { ...(options || {}), create: true, currentDocument: { exists: false } });
     return codec.decodeDocument(doc);
   }
   async function updateDocument(path, data, options) {
     const fields = Object.keys(data || {}).sort();
-    const doc = await request('PATCH', path, codec.encodeDocument(data || {}), { ...(options || {}), updateMask: fields });
+    const opts = options || {};
+    const currentDocument = opts.currentDocument || {};
+    const expectedUpdateTime = normalizeD6jCString_(opts.expectedUpdateTime || currentDocument.updateTime);
+    const requestOptions = {
+      ...opts,
+      updateMask: fields,
+      currentDocument: expectedUpdateTime ? { ...currentDocument, updateTime: expectedUpdateTime } : currentDocument
+    };
+    const doc = await request('PATCH', path, codec.encodeDocument(data || {}), requestOptions);
     return codec.decodeDocument(doc);
   }
   async function appendDocument(collectionPath, data, options) {
@@ -1041,7 +1068,38 @@ function createD6jCFirestoreDurableTransport_() {
     return docs.map(item => codec.decodeDocument(item));
   }
   async function runTransaction(work) {
-    return work({ getDocument, createDocument, updateDocument, appendDocument, queryDocuments });
+    if (typeof work !== 'function') throw d6jCError_('FIRESTORE_TRANSACTION_CALLBACK_MISSING');
+    const readUpdateTimes = {};
+    const tx = Object.freeze({
+      async getDocument(path) {
+        const safePath = validateD6jCFirestorePath_(path);
+        const state = await readD6jCFirestoreDocumentReadState_(safePath.path);
+        if (state) readUpdateTimes[safePath.path] = state.updateTime;
+        return state ? cloneD6jCJson_(state.data) : null;
+      },
+      async createDocument(path, data, options) {
+        return createDocument(path, data, options || {});
+      },
+      async updateDocument(path, data, options) {
+        const safePath = validateD6jCFirestorePath_(path);
+        const opts = options || {};
+        const currentDocument = opts.currentDocument || {};
+        const expectedUpdateTime = normalizeD6jCString_(opts.expectedUpdateTime || currentDocument.updateTime || readUpdateTimes[safePath.path]);
+        if (!expectedUpdateTime) throw d6jCError_('FIRESTORE_PRECONDITION_MISSING');
+        return updateDocument(safePath.path, data, {
+          ...opts,
+          expectedUpdateTime,
+          currentDocument: { ...currentDocument, updateTime: expectedUpdateTime }
+        });
+      },
+      async appendDocument(collectionPath, data, options) {
+        return appendDocument(collectionPath, data, options || {});
+      },
+      async queryDocuments(collectionPath) {
+        return queryDocuments(collectionPath);
+      }
+    });
+    return work(tx);
   }
   return Object.freeze({ getDocument, createDocument, updateDocument, appendDocument, queryDocuments, runTransaction });
 }
@@ -1068,11 +1126,35 @@ function buildD6jCFirestoreUrl_(safePath, method, options) {
     const id = encodeURIComponent(parts[parts.length - 1]);
     return d6jCFirestoreBaseUrl_() + '/' + parent + '?documentId=' + id;
   }
+  if (method === 'LIST') {
+    return d6jCFirestoreBaseUrl_() + '/' + encodedPath + '?pageSize=100';
+  }
   if (method === 'PATCH') {
-    const mask = (options.updateMask || []).map(field => 'updateMask.fieldPaths=' + encodeURIComponent(field)).join('&');
-    return d6jCFirestoreBaseUrl_() + '/' + encodedPath + (mask ? '?' + mask : '');
+    const query = [];
+    (options.updateMask || []).forEach(field => {
+      query.push('updateMask.fieldPaths=' + encodeURIComponent(field));
+    });
+    const currentDocument = (options && options.currentDocument) || {};
+    const updateTime = normalizeD6jCString_(currentDocument.updateTime);
+    if (updateTime) query.push('currentDocument.updateTime=' + encodeURIComponent(updateTime));
+    if (typeof currentDocument.exists === 'boolean') query.push('currentDocument.exists=' + String(currentDocument.exists));
+    return d6jCFirestoreBaseUrl_() + '/' + encodedPath + (query.length ? '?' + query.join('&') : '');
   }
   return d6jCFirestoreBaseUrl_() + '/' + encodedPath;
+}
+
+function validateD6jCFirestoreCollectionPath_(path) {
+  const value = normalizeD6jCString_(path);
+  if (!value || value.indexOf('//') >= 0 || value.charAt(0) === '/' || value.charAt(value.length - 1) === '/') {
+    throw d6jCError_('FIRESTORE_REQUEST_PATH_INVALID');
+  }
+  if (/[?#\\]/.test(value)) throw d6jCError_('FIRESTORE_REQUEST_PATH_INVALID');
+  const parts = value.split('/');
+  if (parts.length < 1 || parts.length % 2 !== 1) throw d6jCError_('FIRESTORE_COLLECTION_PATH_DEPTH_UNSUPPORTED');
+  parts.forEach(part => {
+    if (!/^[A-Za-z0-9._:-]{1,180}$/.test(part)) throw d6jCError_('FIRESTORE_DOCUMENT_ID_INVALID');
+  });
+  return { path: value, parts };
 }
 
 function d6jCFirestoreBaseUrl_() {
@@ -1084,16 +1166,29 @@ function d6jCFirestoreBaseUrl_() {
 }
 
 function createD6jCFirestoreError_(status, path, text) {
+  const errorStatus = extractD6jCFirestoreErrorStatus_(text || '');
+  const code = classifyD6jCFirestoreErrorCode_(status, errorStatus);
   const error = d6jCError_([
+    code,
     'HTTP_STATUS=' + status,
     'FIRESTORE_PROJECT_ID=' + D6J_C_FIRESTORE_PROJECT_ID_,
     'FIRESTORE_DATABASE_ID=' + D6J_C_FIRESTORE_DATABASE_ID_,
     'FIRESTORE_REQUEST_PATH=' + path,
-    'FIRESTORE_ERROR_STATUS=' + extractD6jCFirestoreErrorStatus_(text || ''),
+    'FIRESTORE_ERROR_STATUS=' + errorStatus,
     'FIRESTORE_ERROR_MESSAGE=' + sanitizeD6jCLogText_(text || '')
   ].join(';'));
   error.httpStatus = Number(status || 0);
+  error.code = code;
   return error;
+}
+
+function classifyD6jCFirestoreErrorCode_(status, errorStatus) {
+  const httpStatus = Number(status || 0);
+  const firestoreStatus = normalizeD6jCString_(errorStatus).toUpperCase();
+  if ([409, 412].includes(httpStatus) || ['ABORTED', 'ALREADY_EXISTS', 'FAILED_PRECONDITION'].includes(firestoreStatus)) {
+    return 'FIRESTORE_CONCURRENT_MODIFICATION';
+  }
+  return 'FIRESTORE_HTTP_REQUEST_FAILED';
 }
 
 function extractD6jCFirestoreErrorStatus_(text) {

@@ -185,6 +185,126 @@ async function seedLeaseDocument(transport, overrides = {}) {
   return doc;
 }
 
+function createVersionedFirestoreTransport() {
+  const docs = new Map();
+  const calls = [];
+  let revision = 0;
+  function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
+  function nextUpdateTime() {
+    revision += 1;
+    return new Date(Date.UTC(2026, 6, 26, 0, 0, revision)).toISOString();
+  }
+  function concurrentError() {
+    const error = new Error('FIRESTORE_CONCURRENT_MODIFICATION');
+    error.code = 'FIRESTORE_CONCURRENT_MODIFICATION';
+    return error;
+  }
+  function missingPreconditionError() {
+    const error = new Error('FIRESTORE_PRECONDITION_MISSING');
+    error.code = 'FIRESTORE_PRECONDITION_MISSING';
+    return error;
+  }
+  function stateFor(path) {
+    const record = docs.get(path);
+    return record ? {
+      data: clone(record.data),
+      name: `projects/tonkhohd/databases/(default)/documents/${path}`,
+      createTime: record.createTime,
+      updateTime: record.updateTime
+    } : null;
+  }
+  async function getDocument(path) {
+    calls.push(['getDocument', path]);
+    const state = stateFor(path);
+    return state ? state.data : null;
+  }
+  async function createDocument(path, doc) {
+    calls.push(['createDocument', path]);
+    if (docs.has(path)) throw concurrentError();
+    const now = nextUpdateTime();
+    docs.set(path, { data: clone(doc), createTime: now, updateTime: now });
+    return clone(doc);
+  }
+  async function updateDocument(path, doc, options = {}) {
+    calls.push(['updateDocument', path, clone(options)]);
+    const record = docs.get(path);
+    if (!record) {
+      const error = new Error('DURABLE_JOB_NOT_FOUND');
+      error.code = 'DURABLE_JOB_NOT_FOUND';
+      throw error;
+    }
+    const expectedUpdateTime = options.expectedUpdateTime || (options.currentDocument && options.currentDocument.updateTime) || '';
+    if (!expectedUpdateTime) throw missingPreconditionError();
+    if (expectedUpdateTime !== record.updateTime) throw concurrentError();
+    record.data = clone(doc);
+    record.updateTime = nextUpdateTime();
+    return clone(doc);
+  }
+  async function appendDocument(collectionPath, doc) {
+    const id = doc.eventId || doc.reportId || `doc_${String(docs.size + 1).padStart(6, '0')}`;
+    return createDocument(`${collectionPath}/${id}`, doc);
+  }
+  async function queryDocuments(collectionPath) {
+    calls.push(['queryDocuments', collectionPath]);
+    const prefix = `${collectionPath}/`;
+    return [...docs.entries()]
+      .filter(([path]) => path.startsWith(prefix) && path.slice(prefix.length).indexOf('/') < 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, record]) => clone(record.data));
+  }
+  async function runTransaction(work) {
+    calls.push(['runTransaction']);
+    const readUpdateTimes = new Map();
+    const tx = {
+      async getDocument(path) {
+        const state = stateFor(path);
+        calls.push(['tx.getDocument', path]);
+        if (state) readUpdateTimes.set(path, state.updateTime);
+        return state ? clone(state.data) : null;
+      },
+      async createDocument(path, doc, options) {
+        calls.push(['tx.createDocument', path, clone(options || {})]);
+        return createDocument(path, doc, options || {});
+      },
+      async updateDocument(path, doc, options = {}) {
+        calls.push(['tx.updateDocument', path, clone(options)]);
+        const expectedUpdateTime = options.expectedUpdateTime || (options.currentDocument && options.currentDocument.updateTime) || readUpdateTimes.get(path) || '';
+        return updateDocument(path, doc, { ...options, currentDocument: { ...(options.currentDocument || {}), updateTime: expectedUpdateTime }, expectedUpdateTime });
+      },
+      appendDocument,
+      queryDocuments
+    };
+    return work(tx);
+  }
+  return {
+    calls,
+    dump() {
+      return [...docs.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([path, record]) => [path, clone(record.data), record.updateTime]);
+    },
+    getDocument,
+    createDocument,
+    updateDocument,
+    appendDocument,
+    queryDocuments,
+    runTransaction
+  };
+}
+
+function makeLeaseRequest(overrides = {}) {
+  const jobId = deriveJobId();
+  return {
+    leaseId: jobId,
+    jobId,
+    leaseOwner: 'apps_script_d6j_c',
+    fencingToken: deriveLeaseToken(jobId),
+    acquiredAt: '2026-07-26T00:00:00.000Z',
+    expiresAt: '2026-07-26T00:10:00.000Z',
+    ...overrides
+  };
+}
+
 function makeHarness(options = {}) {
   const transport = options.transport || createFakeFirestoreTransport();
   const clock = { now: () => '2026-07-26T00:00:00.000Z' };
@@ -323,6 +443,185 @@ test('production default lease store exposes full lifecycle methods', () => {
   assert.equal(typeof store.releaseLease, 'function');
   assert.equal(typeof store.markLeaseReconciliationRequired, 'function');
   assert.equal(typeof store.getLease, 'function');
+});
+
+test('D6J-C Firestore source requires server updateTime preconditions', () => {
+  const source = fs.readFileSync('d6jCOneRecordProductionMutation.js', 'utf8');
+  assert.match(source, /readD6jCFirestoreDocumentReadState_/);
+  assert.match(source, /currentDocument\.updateTime/);
+  assert.match(source, /currentDocument:\s*\{\s*exists:\s*false\s*\}/);
+  assert.match(source, /validateD6jCFirestoreCollectionPath_/);
+  assert.match(source, /method === 'LIST' \? 'GET' : method/);
+  assert.match(source, /FIRESTORE_CONCURRENT_MODIFICATION/);
+  assert.doesNotMatch(source, /return work\(\{\s*getDocument,\s*createDocument,\s*updateDocument,\s*appendDocument,\s*queryDocuments\s*\}\)/);
+});
+
+test('two writers reading the same released lease cannot both reacquire it', async () => {
+  const transport = createVersionedFirestoreTransport();
+  const store = gas.call('createD6jCFirestoreLeaseStore_', transport, { clock: { now: () => '2026-07-26T00:00:00.000Z' } });
+  const jobId = deriveJobId();
+  await seedLeaseDocument(transport, {
+    leaseId: jobId,
+    jobId,
+    status: 'RELEASED',
+    fencingToken: deriveLeaseToken(jobId),
+    leaseGeneration: 1,
+    releasedAt: '2026-07-25T23:55:00.000Z',
+    finalJobStatus: 'COMPLETED'
+  });
+  await assert.rejects(
+    () => transport.runTransaction(async tx => {
+      const staleLease = await tx.getDocument('worker_leases/' + jobId);
+      const acquired = await store.acquireLease(makeLeaseRequest({ leaseId: jobId, jobId }));
+      assert.equal(acquired.status, 'ACQUIRED_AFTER_RELEASED');
+      await tx.updateDocument('worker_leases/' + jobId, { ...staleLease, status: 'ACTIVE', updatedAt: '2026-07-26T00:00:01.000Z' });
+    }),
+    /FIRESTORE_CONCURRENT_MODIFICATION/
+  );
+  const leaseDoc = fromVm(await store.getLease({ leaseId: jobId }));
+  assert.equal(leaseDoc.status, 'ACTIVE');
+  assert.equal(leaseDoc.leaseGeneration, 2);
+});
+
+test('two writers reclaiming the same expired active lease produce exactly one winner', async () => {
+  const transport = createVersionedFirestoreTransport();
+  const store = gas.call('createD6jCFirestoreLeaseStore_', transport, { clock: { now: () => '2026-07-26T00:00:00.000Z' } });
+  const jobId = deriveJobId();
+  await seedLeaseDocument(transport, {
+    leaseId: jobId,
+    jobId: 'old-job',
+    status: 'ACTIVE',
+    fencingToken: 'old-fence',
+    leaseGeneration: 3,
+    expiresAt: '2026-07-25T23:59:00.000Z'
+  });
+  await assert.rejects(
+    () => transport.runTransaction(async tx => {
+      const staleLease = await tx.getDocument('worker_leases/' + jobId);
+      const acquired = await store.acquireLease(makeLeaseRequest({ leaseId: jobId, jobId }));
+      assert.equal(acquired.status, 'LEASE_RECLAIMED_EXPIRED');
+      await tx.updateDocument('worker_leases/' + jobId, { ...staleLease, status: 'ACTIVE', fencingToken: 'second-writer-fence', updatedAt: '2026-07-26T00:00:02.000Z' });
+    }),
+    /FIRESTORE_CONCURRENT_MODIFICATION/
+  );
+  const leaseDoc = fromVm(await store.getLease({ leaseId: jobId }));
+  assert.equal(leaseDoc.status, 'ACTIVE');
+  assert.equal(leaseDoc.jobId, jobId);
+  assert.equal(leaseDoc.leaseGeneration, 4);
+});
+
+test('stale owner cannot release a lease after it is reclaimed by a new fencing token', async () => {
+  const transport = createVersionedFirestoreTransport();
+  const store = gas.call('createD6jCFirestoreLeaseStore_', transport, { clock: { now: () => '2026-07-26T00:00:00.000Z' } });
+  const jobId = deriveJobId();
+  await seedLeaseDocument(transport, {
+    leaseId: jobId,
+    jobId: 'old-job',
+    status: 'ACTIVE',
+    fencingToken: 'old-fence',
+    leaseGeneration: 1,
+    expiresAt: '2026-07-25T23:59:00.000Z'
+  });
+  const acquired = fromVm(await store.acquireLease(makeLeaseRequest({ leaseId: jobId, jobId })));
+  assert.equal(acquired.status, 'LEASE_RECLAIMED_EXPIRED');
+  await assert.rejects(
+    () => store.releaseLease({
+      leaseId: jobId,
+      jobId: 'old-job',
+      leaseOwner: 'apps_script_d6j_c',
+      fencingToken: 'old-fence',
+      releasedAt: '2026-07-26T00:01:00.000Z',
+      finalJobStatus: 'COMPLETED'
+    }),
+    /BLOCKED_D6J_C_LEASE_JOB_CONFLICT/
+  );
+  const leaseDoc = fromVm(await store.getLease({ leaseId: jobId }));
+  assert.equal(leaseDoc.status, 'ACTIVE');
+  assert.equal(leaseDoc.fencingToken, deriveLeaseToken(jobId));
+});
+
+test('stale durable job transition fails after another transition updates the job', async () => {
+  const transport = createVersionedFirestoreTransport();
+  const clock = { now: () => '2026-07-26T00:00:00.000Z' };
+  const store = gas.call('createDurableInvoiceJobStore', transport, { clock });
+  await store.createJobIfAbsent({ jobId: 'job-transition-race', invoiceIdentityHash: 'invoice-hash', sourceThreadHash: 'thread-hash' });
+  await assert.rejects(
+    () => transport.runTransaction(async tx => {
+      const staleJob = await tx.getDocument('invoiceJobs/job-transition-race');
+      await store.transitionJob({
+        jobId: 'job-transition-race',
+        fromStatus: 'DETECTED',
+        toStatus: 'COLLECTED',
+        expectedVersion: 1,
+        idempotencyKey: 'writer-a'
+      });
+      await tx.updateDocument('invoiceJobs/job-transition-race', { ...staleJob, status: 'COLLECTED', version: 2, updatedAt: clock.now() });
+    }),
+    /FIRESTORE_CONCURRENT_MODIFICATION/
+  );
+  const job = fromVm(await store.getJob('job-transition-race'));
+  assert.equal(job.status, 'COLLECTED');
+  assert.equal(job.version, 2);
+});
+
+test('commit plan cannot be overwritten through a stale race', async () => {
+  const transport = createVersionedFirestoreTransport();
+  const clock = { now: () => '2026-07-26T00:00:00.000Z' };
+  const store = gas.call('createDurableInvoiceJobStore', transport, { clock });
+  await store.createJobIfAbsent({ jobId: 'job-plan-race', invoiceIdentityHash: 'invoice-hash', sourceThreadHash: 'thread-hash' });
+  await assert.rejects(
+    () => transport.runTransaction(async tx => {
+      const staleJob = await tx.getDocument('invoiceJobs/job-plan-race');
+      await store.saveCommitPlanIfAbsent({
+        jobId: 'job-plan-race',
+        expectedVersion: 1,
+        commitPlan: { version: 'PLAN_A', rows: [{ lineIdentityHash: 'line-a' }] }
+      });
+      await tx.updateDocument('invoiceJobs/job-plan-race', {
+        ...staleJob,
+        version: 2,
+        commitPlan: { version: 'PLAN_B', rows: [{ lineIdentityHash: 'line-b' }] },
+        commitPlanHash: 'bad-overwrite',
+        updatedAt: clock.now()
+      });
+    }),
+    /FIRESTORE_CONCURRENT_MODIFICATION/
+  );
+  const job = fromVm(await store.getJob('job-plan-race'));
+  assert.equal(job.commitPlan.version, 'PLAN_A');
+  assert.equal(job.version, 2);
+});
+
+test('reconciliation update cannot overwrite a newer completed job state', async () => {
+  const transport = createVersionedFirestoreTransport();
+  const clock = { now: () => '2026-07-26T00:00:00.000Z' };
+  const store = gas.call('createDurableInvoiceJobStore', transport, { clock });
+  await store.createJobIfAbsent({ jobId: 'job-reconciliation-race', invoiceIdentityHash: 'invoice-hash', sourceThreadHash: 'thread-hash', status: 'PROJECTIONS_COMMITTED' });
+  await assert.rejects(
+    () => transport.runTransaction(async tx => {
+      const staleJob = await tx.getDocument('invoiceJobs/job-reconciliation-race');
+      await transport.runTransaction(async freshTx => {
+        const freshJob = await freshTx.getDocument('invoiceJobs/job-reconciliation-race');
+        await freshTx.updateDocument('invoiceJobs/job-reconciliation-race', {
+          ...freshJob,
+          status: 'COMPLETED',
+          version: Number(freshJob.version) + 1,
+          completedAt: clock.now(),
+          updatedAt: clock.now()
+        });
+      });
+      await tx.updateDocument('invoiceJobs/job-reconciliation-race', {
+        ...staleJob,
+        version: Number(staleJob.version) + 1,
+        reconciliationStatus: 'RECONCILIATION_REQUIRED',
+        updatedAt: clock.now()
+      });
+    }),
+    /FIRESTORE_CONCURRENT_MODIFICATION/
+  );
+  const job = fromVm(await store.getJob('job-reconciliation-race'));
+  assert.equal(job.status, 'COMPLETED');
+  assert.equal(job.reconciliationStatus, 'NOT_RUN');
 });
 
 test('lease store reclaims expired active lease with fenced replacement', async () => {

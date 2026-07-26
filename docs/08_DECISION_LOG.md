@@ -457,3 +457,16 @@ GMAIL_MUTATION=NONE
 DRIVE_MUTATION=NONE
 GOOGLE_SHEETS_MUTATION=NONE
 NEXT_ALLOWED_PHASE=D6J_B_LIMITED_PRODUCTION_PILOT
+
+## 2026-07-26 - D6J-C2 Firestore Optimistic Concurrency Decision
+
+DECISION=Use Apps Script Firestore REST optimistic concurrency with currentDocument.updateTime for D6J-C lease and durable job updates.
+RATIONALE=The previous callback-only runTransaction wrapper gave local grouping but no server-enforced protection against concurrent lease reclaim, stale release, stale durable job transitions, commit-plan races, or reconciliation overwrite races.
+SERVER_PRECONDITION_METHOD=currentDocument.updateTime
+ATOMIC_CREATE_IF_ABSENT=YES
+FAILED_PRECONDITION_ERROR=FIRESTORE_CONCURRENT_MODIFICATION
+BLIND_RETRY_ON_CONCURRENT_MODIFICATION=NO
+OWNER_APPROVAL_MARKER_CONFIGURED=NO
+PRODUCTION_MUTATION_EXECUTED=NO
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_PHASE=OWNER_REVIEW_AND_EXPLICIT_EXECUTION_APPROVAL
