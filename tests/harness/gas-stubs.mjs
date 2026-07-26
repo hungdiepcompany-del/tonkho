@@ -106,7 +106,7 @@ export function createGasStubs(overrides = {}) {
     UrlFetchApp: { fetch: fail('UrlFetchApp.fetch') },
     DocumentApp: { openById: fail('DocumentApp.openById') },
     SlidesApp: { openById: fail('SlidesApp.openById') },
-    ScriptApp: { getProjectTriggers: fail('ScriptApp.getProjectTriggers') },
+    ScriptApp: { getProjectTriggers: fail('ScriptApp.getProjectTriggers'), getOAuthToken: fail('ScriptApp.getOAuthToken') },
     Drive: { Files: { insert: fail('Drive.Files.insert') } },
   };
   return { ...stubs, ...overrides };

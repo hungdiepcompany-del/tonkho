@@ -3,6 +3,14 @@ const D6J_B_DRY_RUN_ENTRYPOINT_ = 'runD6jBProductionDryRunReadOnly';
 const D6J_B_DRY_RUN_APPROVAL_ = 'OWNER_APPROVED_D6J_PRODUCTION_DRY_RUN';
 const D6J_B_MAX_GMAIL_CANDIDATES_ = 2;
 const D6J_B_MAX_SHEET_SCAN_ROWS_ = 2000;
+const D6J_B_FIRESTORE_PROJECT_ID_ = 'tonkhohd';
+const D6J_B_FIRESTORE_DATABASE_ID_ = '(default)';
+const D6J_B_FIRESTORE_ALLOWED_COLLECTIONS_ = Object.freeze([
+  'jobs',
+  'gmail_messages',
+  'attachments',
+  'worker_leases'
+]);
 
 const D6J_B_REQUIRED_SCRIPT_PROPERTIES_ = Object.freeze([
   'D6J_PILOT_SENDER',
@@ -35,7 +43,7 @@ function createD6jBProductionDryRunReadOnlyRunner_(deps) {
     gmailSearch: d.gmailSearch || ((query, start, max) => GmailApp.search(query, start, max)),
     driveGetFolderById: d.driveGetFolderById || (folderId => DriveApp.getFolderById(folderId)),
     openSpreadsheetById: d.openSpreadsheetById || (spreadsheetId => SpreadsheetApp.openById(spreadsheetId)),
-    firestoreReadDocument: d.firestoreReadDocument || null,
+    firestoreReadDocument: d.firestoreReadDocument || readD6jBFirestoreDocumentReadOnly_,
     logger: d.logger || (typeof Logger !== 'undefined' ? Logger : { log() {} })
   };
 
@@ -311,7 +319,7 @@ function inspectD6jBFirestoreReadOnly_(firestoreReadDocument, config, attachment
       } catch (error) {
         const code = String(error && error.code || error && error.message || '');
         if (code.indexOf('PERMISSION') >= 0 || code.indexOf('403') >= 0) throw d6jBError_('BLOCKED_PERMISSION');
-        return null;
+        throw error;
       }
     });
     const existingCount = reads.filter(Boolean).length;
@@ -323,6 +331,93 @@ function inspectD6jBFirestoreReadOnly_(firestoreReadDocument, config, attachment
   } catch (error) {
     return { ...plan, FIRESTORE_READ_ONLY_GATE: 'BLOCKED_PERMISSION', FIRESTORE_ACTIVE_LEASE_STATUS: 'UNKNOWN_PERMISSION_BLOCKED' };
   }
+}
+
+function readD6jBFirestoreDocumentReadOnly_(path) {
+  const validated = validateD6jBFirestoreDocumentPath_(path);
+  const url = 'https://firestore.googleapis.com/v1/projects/'
+    + D6J_B_FIRESTORE_PROJECT_ID_
+    + '/databases/'
+    + D6J_B_FIRESTORE_DATABASE_ID_
+    + '/documents/'
+    + encodeD6jBFirestoreDocumentPath_(validated.path);
+  const response = UrlFetchApp.fetch(url, {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Bearer ' + ScriptApp.getOAuthToken()
+    }
+  });
+  const status = Number(response && response.getResponseCode && response.getResponseCode());
+  const text = String(response && response.getContentText && response.getContentText() || '');
+  if (status === 200) return parseD6jBFirestoreJson_(text);
+  if (status === 404) return null;
+  throw createD6jBFirestoreReadError_(status, validated.path, text);
+}
+
+function validateD6jBFirestoreDocumentPath_(path) {
+  const value = normalizeD6jBString_(path);
+  if (!value || value.indexOf('//') >= 0 || value.charAt(0) === '/' || value.charAt(value.length - 1) === '/') {
+    throw d6jBError_('FIRESTORE_REQUEST_PATH_INVALID');
+  }
+  if (/[?#\\]/.test(value)) throw d6jBError_('FIRESTORE_REQUEST_PATH_INVALID');
+  const parts = value.split('/');
+  if (parts.length !== 2) throw d6jBError_('FIRESTORE_REQUEST_PATH_DEPTH_UNSUPPORTED');
+  if (D6J_B_FIRESTORE_ALLOWED_COLLECTIONS_.indexOf(parts[0]) < 0) throw d6jBError_('FIRESTORE_COLLECTION_NOT_ALLOWED');
+  if (!/^[A-Za-z0-9._:-]{1,160}$/.test(parts[1])) throw d6jBError_('FIRESTORE_DOCUMENT_ID_INVALID');
+  return Object.freeze({ collection: parts[0], documentId: parts[1], path: value });
+}
+
+function encodeD6jBFirestoreDocumentPath_(path) {
+  return path.split('/').map(part => encodeURIComponent(part)).join('/');
+}
+
+function parseD6jBFirestoreJson_(text) {
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch (error) {
+    throw d6jBError_('FIRESTORE_RESPONSE_JSON_INVALID');
+  }
+}
+
+function createD6jBFirestoreReadError_(httpStatus, requestPath, bodyText) {
+  const parsed = safeParseD6jBFirestoreError_(bodyText);
+  const errorStatus = sanitizeD6jBFirestoreDiagnostic_(parsed.status || ('HTTP_' + httpStatus));
+  const errorMessage = sanitizeD6jBFirestoreDiagnostic_(parsed.message || 'Firestore read failed');
+  const message = [
+    'HTTP_STATUS=' + String(httpStatus || 0),
+    'FIRESTORE_PROJECT_ID=' + D6J_B_FIRESTORE_PROJECT_ID_,
+    'FIRESTORE_DATABASE_ID=' + D6J_B_FIRESTORE_DATABASE_ID_,
+    'FIRESTORE_REQUEST_PATH=' + requestPath,
+    'FIRESTORE_ERROR_STATUS=' + errorStatus,
+    'FIRESTORE_ERROR_MESSAGE=' + errorMessage
+  ].join(';');
+  const error = d6jBError_(message);
+  error.httpStatus = Number(httpStatus || 0);
+  error.firestoreStatus = errorStatus;
+  return error;
+}
+
+function safeParseD6jBFirestoreError_(bodyText) {
+  try {
+    const parsed = bodyText ? JSON.parse(String(bodyText)) : {};
+    const source = parsed && parsed.error ? parsed.error : parsed;
+    return {
+      status: normalizeD6jBString_(source && source.status),
+      message: normalizeD6jBString_(source && source.message)
+    };
+  } catch (error) {
+    return { status: 'UNPARSEABLE_ERROR', message: 'Firestore error body was not JSON' };
+  }
+}
+
+function sanitizeD6jBFirestoreDiagnostic_(value) {
+  return normalizeD6jBString_(value)
+    .replace(/Bearer\s+[^\s,;)]*/ig, 'REDACTED')
+    .replace(/Authorization\s+[^\s,;)]*/ig, 'REDACTED')
+    .replace(/(refresh_token|private_key|client_secret)\s*[=:]?\s*[^\s,;)]*/ig, 'REDACTED')
+    .replace(/[^\w .:()/-]/g, ' ')
+    .slice(0, 180);
 }
 
 function buildD6jBFirestorePlan_(config, attachments) {

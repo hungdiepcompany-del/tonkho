@@ -17,6 +17,7 @@ const runner = read(runnerPath);
 const tests = read(testPath);
 const phaseDoc = read(phaseDocPath);
 const evidenceDoc = read(evidenceDocPath);
+const manifest = JSON.parse(read('appsscript.json'));
 const packageJson = JSON.parse(read('package.json'));
 
 for (const marker of [
@@ -39,6 +40,18 @@ for (const marker of [
   'SpreadsheetApp.openById',
   'D6J_B_MAX_SHEET_SCAN_ROWS_ = 2000',
   'FIRESTORE_READ_ONLY_GATE',
+  'readD6jBFirestoreDocumentReadOnly_',
+  'ScriptApp.getOAuthToken()',
+  'UrlFetchApp.fetch(url, {',
+  "method: 'get'",
+  'muteHttpExceptions: true',
+  'https://firestore.googleapis.com/v1/projects/',
+  "D6J_B_FIRESTORE_PROJECT_ID_ = 'tonkhohd'",
+  "D6J_B_FIRESTORE_DATABASE_ID_ = '(default)'",
+  'validateD6jBFirestoreDocumentPath_',
+  'FIRESTORE_REQUEST_PATH_INVALID',
+  'FIRESTORE_ERROR_STATUS',
+  'FIRESTORE_ERROR_MESSAGE',
   'BLOCKED_PERMISSION',
   'IDEMPOTENCY_KEYS_VALID',
   'ROLLBACK_OWNERSHIP_PROVABLE',
@@ -69,6 +82,11 @@ for (const marker of [
   'header mismatch blocks sheet plan',
   'Sheets duplicate detection plans zero inserts',
   'Firestore permission blocker is explicit and safe',
+  'production default Firestore reader is used when injection is omitted and five 404 reads pass',
+  'production Firestore reader returns parsed document for HTTP 200',
+  'production Firestore reader returns null for HTTP 404',
+  'production Firestore reader throws sanitized diagnostics for HTTP 403',
+  'production Firestore reader validates document paths before fetch',
   'Firestore exact read success can produce full dry-run pass',
   'idempotency, rollback ownership, and reconciliation completeness',
   'tokens and attachment bytes are not logged',
@@ -100,7 +118,6 @@ for (const forbidden of [
   '.clear(',
   'ScriptApp.newTrigger',
   'ScriptApp.deleteTrigger',
-  'UrlFetchApp.fetch',
   "method: 'POST'",
   'method: "POST"',
   "method: 'PATCH'",
@@ -154,6 +171,12 @@ assert.equal(
   packageJson.scripts['check:d6j-b-safe-exact-production-dry-run-channel'],
   'node scripts/checkers/check-d6j-b-safe-exact-production-dry-run-channel.mjs',
   'package command check:d6j-b-safe-exact-production-dry-run-channel missing or changed'
+);
+
+assert.equal(
+  manifest.oauthScopes.includes('https://www.googleapis.com/auth/datastore'),
+  true,
+  'Apps Script datastore scope required for D6J-B Firestore read-only REST calls'
 );
 
 console.log('D6J_B_SAFE_EXACT_PRODUCTION_DRY_RUN_CHANNEL_CHECK=PASS');

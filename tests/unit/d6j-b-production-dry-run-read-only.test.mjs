@@ -21,7 +21,9 @@ const gas = loadGasSource({
     'buildD6jBGmailQuery_',
     'validateD6jBConfig_',
     'sha256D6jBBytes_',
-    'logD6jBSanitizedResult_'
+    'logD6jBSanitizedResult_',
+    'readD6jBFirestoreDocumentReadOnly_',
+    'validateD6jBFirestoreDocumentPath_'
   ]
 });
 
@@ -120,16 +122,35 @@ function fakeSpreadsheet(options = {}) {
   };
 }
 
-function runWith({ props = baseProps(), threads = [fakeThread([fakeMessage()])], folder = fakeFolder(), spreadsheet = fakeSpreadsheet(), firestoreReadDocument = null, logger = { lines: [], log(value) { this.lines.push(String(value)); } } } = {}) {
-  const runner = gas.call('createD6jBProductionDryRunReadOnlyRunner_', {
+function permissionBlockedFirestoreRead() {
+  const err = new Error('403');
+  err.code = 'PERMISSION_DENIED';
+  throw err;
+}
+
+function createRunnerDeps({ props = baseProps(), threads = [fakeThread([fakeMessage()])], folder = fakeFolder(), spreadsheet = fakeSpreadsheet(), firestoreReadDocument = permissionBlockedFirestoreRead, useProductionFirestoreDefault = false, logger = { lines: [], log(value) { this.lines.push(String(value)); } } } = {}) {
+  const deps = {
     readProperties: () => props,
     gmailSearch: () => threads,
     driveGetFolderById: () => folder,
     openSpreadsheetById: () => spreadsheet,
-    firestoreReadDocument,
     logger
-  });
+  };
+  if (!useProductionFirestoreDefault) deps.firestoreReadDocument = firestoreReadDocument;
+  return { deps, logger };
+}
+
+function runWith(options = {}) {
+  const { deps, logger } = createRunnerDeps(options);
+  const runner = gas.call('createD6jBProductionDryRunReadOnlyRunner_', deps);
   return { result: fromVm(runner.run()), logger };
+}
+
+function fakeFetchResponse(status, body) {
+  return {
+    getResponseCode: () => status,
+    getContentText: () => body == null ? '' : String(body)
+  };
 }
 
 test('metadata and required property contract are canonical', () => {
@@ -139,6 +160,7 @@ test('metadata and required property contract are canonical', () => {
   assert.equal(names.length, 16);
   assert.ok(names.includes('D6J_PILOT_MESSAGE_ID'));
   assert.ok(names.includes('D6J_DRY_RUN_APPROVAL_MARKER'));
+  assert.equal(typeof gas.exports.readD6jBFirestoreDocumentReadOnly_, 'function');
 });
 
 test('missing Script Properties fail closed before reads', () => {
@@ -273,9 +295,99 @@ test('Sheets duplicate detection plans zero inserts', () => {
 });
 
 test('Firestore permission blocker is explicit and safe', () => {
-  const { result } = runWith({ firestoreReadDocument: () => { const err = new Error('403'); err.code = 'PERMISSION_DENIED'; throw err; } });
+  const { result } = runWith({ firestoreReadDocument: permissionBlockedFirestoreRead });
   assert.equal(result.FIRESTORE_READ_ONLY_GATE, 'BLOCKED_PERMISSION');
   assert.equal(result.PRODUCTION_MUTATION_COUNT, 0);
+});
+
+test('production default Firestore reader is used when injection is omitted and five 404 reads pass', () => {
+  let fetchCount = 0;
+  const requested = [];
+  gas.context.ScriptApp.getOAuthToken = () => 'test-oauth-token';
+  gas.context.UrlFetchApp.fetch = (url, params) => {
+    fetchCount += 1;
+    requested.push({ url, params });
+    return fakeFetchResponse(404, JSON.stringify({ error: { status: 'NOT_FOUND', message: 'not found' } }));
+  };
+  const { deps, logger } = createRunnerDeps({ useProductionFirestoreDefault: true });
+  const runner = gas.call('createD6jBProductionDryRunReadOnlyRunner_', deps);
+  const result = fromVm(runner.run());
+  assert.equal(fetchCount, 5);
+  assert.equal(result.FIRESTORE_READ_ONLY_GATE, 'READ_OK');
+  assert.equal(result.FIRESTORE_ACTIVE_LEASE_STATUS, 'NO_ACTIVE_LEASE_FOUND');
+  assert.equal(result.DRY_RUN_STATUS, 'PASS_EXACT_PRODUCTION_DRY_RUN_READ_ONLY');
+  assert.equal(result.GMAIL_MUTATION_COUNT, 0);
+  assert.equal(result.DRIVE_MUTATION_COUNT, 0);
+  assert.equal(result.SHEETS_MUTATION_COUNT, 0);
+  assert.equal(result.FIRESTORE_MUTATION_COUNT, 0);
+  assert.equal(result.TRIGGER_MUTATION_COUNT, 0);
+  assert.equal(result.DESTRUCTIVE_OPERATION_COUNT, 0);
+  assert.equal(result.PRODUCTION_MUTATION_COUNT, 0);
+  assert.equal(requested.every(req => req.params.method === 'get'), true);
+  assert.equal(requested.every(req => req.params.muteHttpExceptions === true), true);
+  assert.equal(requested.every(req => req.url.startsWith('https://firestore.googleapis.com/v1/projects/tonkhohd/databases/(default)/documents/')), true);
+  assert.equal(logger.lines.join('\n').includes('test-oauth-token'), false);
+});
+
+test('production Firestore reader returns parsed document for HTTP 200', () => {
+  let captured;
+  gas.context.ScriptApp.getOAuthToken = () => 'token-200-secret';
+  gas.context.UrlFetchApp.fetch = (url, params) => {
+    captured = { url, params };
+    return fakeFetchResponse(200, JSON.stringify({ name: 'projects/tonkhohd/databases/(default)/documents/jobs/job_1', fields: { status: { stringValue: 'DETECTED' } } }));
+  };
+  const document = fromVm(gas.call('readD6jBFirestoreDocumentReadOnly_', 'jobs/job_1'));
+  assert.equal(document.fields.status.stringValue, 'DETECTED');
+  assert.equal(captured.params.method, 'get');
+  assert.equal(captured.params.muteHttpExceptions, true);
+  assert.equal(captured.params.headers.Authorization, 'Bearer token-200-secret');
+  assert.equal(captured.url, 'https://firestore.googleapis.com/v1/projects/tonkhohd/databases/(default)/documents/jobs/job_1');
+});
+
+test('production Firestore reader returns null for HTTP 404', () => {
+  gas.context.ScriptApp.getOAuthToken = () => 'token-404-secret';
+  gas.context.UrlFetchApp.fetch = () => fakeFetchResponse(404, JSON.stringify({ error: { status: 'NOT_FOUND', message: 'missing' } }));
+  assert.equal(gas.call('readD6jBFirestoreDocumentReadOnly_', 'worker_leases/job_1'), null);
+});
+
+test('production Firestore reader throws sanitized diagnostics for HTTP 403', () => {
+  gas.context.ScriptApp.getOAuthToken = () => 'token-403-secret';
+  gas.context.UrlFetchApp.fetch = () => fakeFetchResponse(403, JSON.stringify({
+    error: {
+      status: 'PERMISSION_DENIED',
+      message: 'Authorization Bearer token-403-secret denied for private_key abc'
+    }
+  }));
+  assert.throws(
+    () => gas.call('readD6jBFirestoreDocumentReadOnly_', 'jobs/job_1'),
+    error => {
+      const message = String(error && error.message);
+      assert.equal(message.includes('HTTP_STATUS=403'), true);
+      assert.equal(message.includes('FIRESTORE_PROJECT_ID=tonkhohd'), true);
+      assert.equal(message.includes('FIRESTORE_DATABASE_ID=(default)'), true);
+      assert.equal(message.includes('FIRESTORE_REQUEST_PATH=jobs/job_1'), true);
+      assert.equal(message.includes('FIRESTORE_ERROR_STATUS=PERMISSION_DENIED'), true);
+      assert.equal(message.includes('token-403-secret'), false);
+      assert.equal(message.includes('Authorization'), false);
+      assert.equal(message.includes('private_key'), false);
+      return true;
+    }
+  );
+});
+
+test('production Firestore reader validates document paths before fetch', () => {
+  gas.context.ScriptApp.getOAuthToken = () => 'unused-token';
+  gas.context.UrlFetchApp.fetch = () => {
+    throw new Error('FETCH_SHOULD_NOT_RUN');
+  };
+  assert.deepEqual(fromVm(gas.call('validateD6jBFirestoreDocumentPath_', 'attachments/att_1')), {
+    collection: 'attachments',
+    documentId: 'att_1',
+    path: 'attachments/att_1'
+  });
+  for (const badPath of ['unknown/x', 'jobs/', '/jobs/x', 'jobs/x/y', 'jobs/bad?x', 'jobs/bad\\x', 'jobs/']) {
+    assert.throws(() => gas.call('readD6jBFirestoreDocumentReadOnly_', badPath), /FIRESTORE_/);
+  }
 });
 
 test('Firestore exact read success can produce full dry-run pass', () => {
