@@ -15,6 +15,18 @@ const D6J_D_REPAIR_APPROVAL_ = 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR';
 const D6J_D_ORIGINAL_JOB_ID_ = 'd6j_job_10ad66ede74a1121b0d6';
 const D6J_D_PILOT_ID_ = 'd6j_pilot_9e12d76a0f2b6c16';
 const D6J_D_CORRELATION_ID_ = 'd6j_corr_9efff2df466dd953';
+const D6J_D_REPAIR_ALLOWED_COLUMNS_ = Object.freeze([3, 4, 10, 11, 12, 13, 14, 15]);
+const D6J_D_REPAIR_PRESERVED_COLUMNS_ = Object.freeze([1, 2, 5, 6, 7, 8, 9, 16]);
+const D6J_D_REPAIR_EXACT_READBACK_BLOCKERS_ = Object.freeze({
+  C: 'BLOCKED_D6J_D_REPAIR_C_READBACK_MISMATCH',
+  D: 'BLOCKED_D6J_D_REPAIR_D_READBACK_MISMATCH',
+  J: 'BLOCKED_D6J_D_REPAIR_J_READBACK_MISMATCH',
+  K: 'BLOCKED_D6J_D_REPAIR_K_READBACK_MISMATCH',
+  L: 'BLOCKED_D6J_D_REPAIR_L_READBACK_MISMATCH',
+  M: 'BLOCKED_D6J_D_REPAIR_M_READBACK_MISMATCH',
+  N: 'BLOCKED_D6J_D_REPAIR_N_READBACK_MISMATCH',
+  O: 'BLOCKED_D6J_D_REPAIR_O_READBACK_MISMATCH'
+});
 const D6J_D_TARGET_HEADERS_ = [
   'STT',
   'Ngay',
@@ -890,6 +902,7 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
     buildRepairContext: d.buildRepairContext || buildD6jDRepairContextFromProductionReads_,
     createSheetsSource: d.createSheetsSource || (context => createD6jDGasSheetsSource_(context)),
     createJobStore: d.createJobStore || (() => createD6jCDefaultDurableJobStore_()),
+    createLock: d.createLock || (() => LockService.getScriptLock()),
     clock: d.clock || { now: () => new Date().toISOString() },
     logger: d.logger || (typeof Logger !== 'undefined' ? Logger : { log() {} })
   };
@@ -918,6 +931,8 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
       }
       throw error;
     }
+    const previewChanges = buildD6jDRepairCellChanges_(result);
+    const preview = buildD6jDRepairPlanPreview_(result, previewChanges);
     const out = {
       PHASE: 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL',
       AUDIT_STATUS: 'PASS_MALFORMED_PILOT_ROW_LOCATED',
@@ -930,6 +945,11 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
       CURRENT_FORMULAS_AP: result.currentFormulas,
       CURRENT_NUMBER_FORMATS_AP: result.currentNumberFormats,
       EXPECTED_VALUES_AP: result.expected.values,
+      PLANNED_CHANGED_COLUMNS: preview.PLANNED_CHANGED_COLUMNS,
+      PLANNED_CHANGED_CELL_COUNT: preview.PLANNED_CHANGED_CELL_COUNT,
+      PRESERVED_COLUMNS: preview.PRESERVED_COLUMNS,
+      DATE_CELL_PRESERVED: preview.DATE_CELL_PRESERVED,
+      HD_FORMULA_PRESERVED: preview.HD_FORMULA_PRESERVED,
       BLOCKER_CODE: '',
       PRODUCTION_MUTATION: 'NONE',
       SCHEMA_VERSION: D6J_D_SCHEMA_VERSION_
@@ -945,21 +965,27 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
     }
     const context = await services.buildRepairContext(properties);
     const source = services.createSheetsSource({ properties, context });
-    const snapshot = source.readSnapshot();
-    const inspection = inspectD6jDMalformedPilotRow_(snapshot, context, { includeRawCells: false });
-    const changes = buildD6jDRepairCellChanges_(inspection);
-    if (!changes.length) throw d6jCError_('BLOCKED_D6J_D_REPAIR_NO_CHANGES_REQUIRED');
-    const beforeHash = hashPrefixD6jC_(JSON.stringify({
-      rowNumber: inspection.targetRowNumber,
-      values: inspection.currentValues,
-      formulas: inspection.currentFormulas,
-      formats: inspection.currentNumberFormats
-    }), 32);
+    let lock = null;
+    let lockAcquired = false;
     let writeCompleted = false;
     try {
+      lock = services.createLock();
+      if (!lock || typeof lock.tryLock !== 'function' || !lock.tryLock(30000)) {
+        return createD6jDRepairBlockedResult_('BLOCKED_SCRIPT_LOCK_NOT_ACQUIRED');
+      }
+      lockAcquired = true;
+      const snapshot = source.readSnapshot();
+      const inspection = inspectD6jDMalformedPilotRow_(snapshot, context, { includeRawCells: false });
+      const changes = buildD6jDRepairCellChanges_(inspection);
+      assertD6jDRepairChangeAllowlist_(changes);
+      assertD6jDRepairPreservedCellsBeforeWrite_(inspection, changes);
+      if (!changes.length) throw d6jCError_('BLOCKED_D6J_D_REPAIR_NO_CHANGES_REQUIRED');
+      const beforeHash = buildD6jDRepairBeforeHash_(inspection);
+      assertD6jDRepairBeforeHash_(inspection, beforeHash);
       source.updateRowCells({
         rowNumber: inspection.targetRowNumber,
         changes,
+        expectedBeforeHash: beforeHash,
         audit: {
           originalJobId: D6J_D_ORIGINAL_JOB_ID_,
           pilotId: D6J_D_PILOT_ID_,
@@ -967,7 +993,7 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
         }
       });
       writeCompleted = true;
-      const afterInspection = inspectD6jDRepairedPilotRow_(source.readSnapshot(), context, inspection.targetRowNumber);
+      const afterInspection = inspectD6jDRepairedPilotRow_(source.readSnapshot(), context, inspection);
       const afterHash = hashPrefixD6jC_(JSON.stringify({
         rowNumber: afterInspection.targetRowNumber,
         values: afterInspection.currentValues,
@@ -983,9 +1009,13 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
         PHASE: 'D6J_D_NHAP_XUAT_SCHEMA_MAPPING_FIX_AND_SINGLE_PILOT_ROW_REPAIR_CHANNEL',
         REPAIR_STATUS: 'PASS_SINGLE_MALFORMED_PILOT_ROW_REPAIRED',
         TARGET_ROW_NUMBER: inspection.targetRowNumber,
+        CHANGED_COLUMNS: changes.map(change => columnLetterD6jD_(change.column)).join(','),
+        SHEET_CELLS_UPDATED: changes.length,
         SHEET_ROWS_UPDATED: 1,
         SHEET_ROWS_APPENDED: 0,
         SHEET_ROWS_DELETED: 0,
+        DATE_CELL_PRESERVED: 'YES',
+        HD_FORMULA_PRESERVED: 'YES',
         DRIVE_MUTATION_COUNT: 0,
         GMAIL_MUTATION_COUNT: 0,
         TRIGGER_MUTATION_COUNT: 0,
@@ -993,7 +1023,6 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
         FIRESTORE_REPAIR_AUDIT_STATUS: auditResult.status,
         BEFORE_HASH: beforeHash,
         AFTER_HASH: afterHash,
-        CHANGED_COLUMNS: changes.map(change => change.column).join(','),
         ORIGINAL_JOB_ID: D6J_D_ORIGINAL_JOB_ID_,
         PRODUCTION_MUTATION: 'SINGLE_SHEET_ROW_REPAIR_ONLY',
         SCHEMA_VERSION: D6J_D_SCHEMA_VERSION_
@@ -1018,6 +1047,8 @@ function createD6jDNhapXuatSchemaRepairRunner_(deps) {
         };
       }
       throw error;
+    } finally {
+      if (lockAcquired && lock && typeof lock.releaseLock === 'function') lock.releaseLock();
     }
   }
 
@@ -1054,13 +1085,11 @@ function createD6jDGasSheetsSource_(context) {
       const changes = Array.isArray(request && request.changes) ? request.changes : [];
       if (!Number.isInteger(rowNumber) || rowNumber < 2) throw d6jCError_('BLOCKED_D6J_D_REPAIR_ROW_NUMBER_INVALID');
       if (!changes.length) throw d6jCError_('BLOCKED_D6J_D_REPAIR_EMPTY_CHANGESET');
-      changes.forEach(change => {
-        const column = Number(change.column);
-        if (!Number.isInteger(column) || column < 1 || column > 16) throw d6jCError_('BLOCKED_D6J_D_REPAIR_COLUMN_INVALID');
-        const cell = sheet.getRange(rowNumber, column, 1, 1);
-        if (change.formulaR1C1) cell.setFormulaR1C1(change.formulaR1C1);
-        else cell.setValue(change.value == null ? '' : change.value);
-      });
+      assertD6jDRepairChangeAllowlist_(changes);
+      const byColumn = new Map(changes.map(change => [Number(change.column), change]));
+      writeD6jDAllowedRepairGroup_(sheet, rowNumber, byColumn, 3, 4);
+      writeD6jDAllowedRepairGroup_(sheet, rowNumber, byColumn, 10, 15);
+      if (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp && typeof SpreadsheetApp.flush === 'function') SpreadsheetApp.flush();
       return { updatedRowCount: 1, updatedCellCount: changes.length };
     }
   };
@@ -1119,21 +1148,21 @@ function inspectD6jDMalformedPilotRow_(snapshot, context, options) {
   };
 }
 
-function inspectD6jDRepairedPilotRow_(snapshot, context, rowNumber) {
+function inspectD6jDRepairedPilotRow_(snapshot, context, beforeInspection) {
   const source = snapshot || {};
   assertD6jDHeaderSchema_(source.headers || []);
-  const target = (source.rows || []).find(row => Number(row.rowNumber) === Number(rowNumber));
+  const before = beforeInspection || {};
+  const target = (source.rows || []).find(row => Number(row.rowNumber) === Number(before.targetRowNumber));
   if (!target) throw d6jCError_('BLOCKED_D6J_D_REPAIRED_ROW_NOT_FOUND');
   const expected = ((context && context.ledgerRows) || [])[0];
   const normalized = normalizeD6jDNhapXuatRowFromValues_(target.values);
   assertD6jCSheetRowMatches_(normalized, expected);
-  ['averageUnitCost', 'stockQuantity', 'stockValue'].forEach(key => {
-    if (!Number.isFinite(Number(normalized[key]))) throw d6jCError_('BLOCKED_D6J_D_REPAIRED_NUMERIC_FIELD_INVALID');
-  });
+  assertD6jDExactRepairReadback_(before, target);
   return {
     targetRowNumber: target.rowNumber,
     currentValues: target.values.slice(0, 16),
-    currentFormulas: target.formulas.slice(0, 16)
+    currentFormulas: target.formulas.slice(0, 16),
+    currentFormulasR1C1: target.formulasR1C1.slice(0, 16)
   };
 }
 
@@ -1297,11 +1326,118 @@ function buildD6jDRepairCellChanges_(inspection) {
       }
       continue;
     }
-    if (!d6jDCellEqual_(current[index], values[index])) {
+    if (!d6jDCellEqualForColumn_(index + 1, current[index], values[index])) {
       changes.push({ column: index + 1, value: values[index] });
     }
   }
   return changes;
+}
+
+function buildD6jDRepairPlanPreview_(inspection, changes) {
+  assertD6jDRepairChangeAllowlist_(changes);
+  return {
+    PLANNED_CHANGED_COLUMNS: changes.map(change => columnLetterD6jD_(change.column)).join(','),
+    PLANNED_CHANGED_CELL_COUNT: changes.length,
+    PRESERVED_COLUMNS: D6J_D_REPAIR_PRESERVED_COLUMNS_.map(columnLetterD6jD_).join(','),
+    DATE_CELL_PRESERVED: isD6jDDateCellPreserved_(inspection, changes) ? 'YES' : 'NO',
+    HD_FORMULA_PRESERVED: isD6jDHdFormulaPreserved_(inspection, changes) ? 'YES' : 'NO'
+  };
+}
+
+function assertD6jDRepairChangeAllowlist_(changes) {
+  const invalid = (changes || []).filter(change => !D6J_D_REPAIR_ALLOWED_COLUMNS_.includes(Number(change.column)));
+  if (invalid.length) throw d6jCError_('BLOCKED_D6J_D_REPAIR_CHANGE_OUTSIDE_ALLOWLIST');
+}
+
+function assertD6jDRepairPreservedCellsBeforeWrite_(inspection, changes) {
+  assertD6jDRepairChangeAllowlist_(changes);
+  if (!isD6jCDateObject_((inspection.currentValues || [])[1])) throw d6jCError_('BLOCKED_D6J_D_REPAIR_DATE_CELL_NOT_DATE');
+  if (!isD6jDDateCellPreserved_(inspection, changes)) throw d6jCError_('BLOCKED_D6J_D_REPAIR_DATE_CELL_NOT_PRESERVED');
+  if (!isD6jDHdFormulaPreserved_(inspection, changes)) throw d6jCError_('BLOCKED_D6J_D_REPAIR_HD_FORMULA_NOT_PRESERVED');
+}
+
+function isD6jDDateCellPreserved_(inspection, changes) {
+  if ((changes || []).some(change => Number(change.column) === 2)) return false;
+  const current = (inspection.currentValues || [])[1];
+  const expected = ((inspection.expected || {}).values || [])[1];
+  const actual = tryNormalizeD6jCComparableDate_(current);
+  const wanted = tryNormalizeD6jCComparableDate_(expected);
+  return actual.valid && wanted.valid && actual.value === wanted.value;
+}
+
+function isD6jDHdFormulaPreserved_(inspection, changes) {
+  if ((changes || []).some(change => Number(change.column) === 16)) return false;
+  const expected = (inspection.expected || {}).pFormulaR1C1 || '';
+  if (!expected) return true;
+  return normalizeD6jCString_((inspection.currentFormulasR1C1 || [])[15]) === normalizeD6jCString_(expected);
+}
+
+function buildD6jDRepairBeforeHash_(inspection) {
+  return hashPrefixD6jC_(JSON.stringify({
+    rowNumber: inspection.targetRowNumber,
+    values: inspection.currentValues,
+    formulas: inspection.currentFormulas,
+    formulasR1C1: inspection.currentFormulasR1C1,
+    formats: inspection.currentNumberFormats
+  }), 32);
+}
+
+function assertD6jDRepairBeforeHash_(inspection, expectedHash) {
+  if (buildD6jDRepairBeforeHash_(inspection) !== expectedHash) throw d6jCError_('BLOCKED_D6J_D_REPAIR_BEFORE_HASH_MISMATCH');
+}
+
+function writeD6jDAllowedRepairGroup_(sheet, rowNumber, byColumn, startColumn, endColumn) {
+  const columns = [];
+  for (let column = startColumn; column <= endColumn; column += 1) {
+    if (byColumn.has(column)) columns.push(column);
+  }
+  if (!columns.length) return;
+  if (columns.length === endColumn - startColumn + 1 && columns[0] === startColumn && columns[columns.length - 1] === endColumn) {
+    const values = columns.map(column => {
+      const change = byColumn.get(column);
+      if (change.formulaR1C1) throw d6jCError_('BLOCKED_D6J_D_REPAIR_FORMULA_WRITE_FORBIDDEN');
+      return change.value == null ? '' : change.value;
+    });
+    sheet.getRange(rowNumber, startColumn, 1, values.length).setValues([values]);
+    return;
+  }
+  columns.forEach(column => {
+    const change = byColumn.get(column);
+    if (change.formulaR1C1) throw d6jCError_('BLOCKED_D6J_D_REPAIR_FORMULA_WRITE_FORBIDDEN');
+    sheet.getRange(rowNumber, column, 1, 1).setValue(change.value == null ? '' : change.value);
+  });
+}
+
+function assertD6jDExactRepairReadback_(beforeInspection, afterRow) {
+  const before = beforeInspection || {};
+  const expected = (before.expected || {}).values || [];
+  const beforeValues = before.currentValues || [];
+  const beforeFormulasR1C1 = before.currentFormulasR1C1 || [];
+  const afterValues = (afterRow && afterRow.values) || [];
+  const afterFormulasR1C1 = (afterRow && afterRow.formulasR1C1) || [];
+  if (Number(afterRow && afterRow.rowNumber) !== Number(before.targetRowNumber)) throw d6jCError_('BLOCKED_D6J_D_REPAIR_ROW_NUMBER_CHANGED');
+  [[3, 'C'], [4, 'D'], [14, 'N'], [15, 'O']].forEach(([column, label]) => {
+    if (normalizeD6jCString_(afterValues[column - 1]) !== normalizeD6jCString_(expected[column - 1])) {
+      throw d6jCError_(D6J_D_REPAIR_EXACT_READBACK_BLOCKERS_[label]);
+    }
+  });
+  [[10, 'J'], [11, 'K'], [12, 'L'], [13, 'M']].forEach(([column, label]) => {
+    if (!numbersEqualD6jD_(afterValues[column - 1], expected[column - 1])) {
+      throw d6jCError_(D6J_D_REPAIR_EXACT_READBACK_BLOCKERS_[label]);
+    }
+  });
+  [1, 5, 6, 7, 8, 9].forEach(column => {
+    if (!d6jDCellEqual_(beforeValues[column - 1], afterValues[column - 1])) {
+      throw d6jCError_('BLOCKED_D6J_D_REPAIR_PRESERVED_COLUMN_' + columnLetterD6jD_(column) + '_MUTATED');
+    }
+  });
+  if (!isD6jCDateObject_(afterValues[1])) throw d6jCError_('BLOCKED_D6J_D_REPAIR_B_DATE_TYPE_CHANGED');
+  const beforeDate = tryNormalizeD6jCComparableDate_(beforeValues[1]);
+  const afterDate = tryNormalizeD6jCComparableDate_(afterValues[1]);
+  if (!beforeDate.valid || !afterDate.valid || beforeDate.value !== afterDate.value) throw d6jCError_('BLOCKED_D6J_D_REPAIR_B_DATE_VALUE_CHANGED');
+  if (normalizeD6jCString_(afterFormulasR1C1[15]) !== normalizeD6jCString_(beforeFormulasR1C1[15])) {
+    throw d6jCError_('BLOCKED_D6J_D_REPAIR_P_FORMULA_CHANGED');
+  }
 }
 
 function buildD6jCNhapXuatRowAP_(row, plan, inventory, hdRule) {
@@ -1600,6 +1736,21 @@ function numbersEqualD6jD_(a, b) {
 function d6jDCellEqual_(a, b) {
   if (typeof a === 'number' || typeof b === 'number') return numbersEqualD6jD_(a, b);
   return normalizeD6jCString_(a) === normalizeD6jCString_(b);
+}
+
+function d6jDCellEqualForColumn_(column, a, b) {
+  if (Number(column) === 2) {
+    const actual = tryNormalizeD6jCComparableDate_(a);
+    const expected = tryNormalizeD6jCComparableDate_(b);
+    return actual.valid && expected.valid && actual.value === expected.value;
+  }
+  return d6jDCellEqual_(a, b);
+}
+
+function columnLetterD6jD_(column) {
+  const index = Number(column);
+  if (!Number.isInteger(index) || index < 1 || index > 26) throw d6jCError_('BLOCKED_D6J_D_COLUMN_LETTER_INVALID');
+  return String.fromCharCode(64 + index);
 }
 
 function logD6jDSanitizedResult_(logger, result) {

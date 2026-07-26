@@ -47,12 +47,24 @@ const gas = loadGasSource({
     'assertD6jDHeaderSchema_',
     'canonicalD6jDHeader_',
     'normalizeD6jCComparableDate_',
+    'buildD6jDRepairCellChanges_',
+    'buildD6jDRepairPlanPreview_',
     'assertD6jCSheetRowMatches_',
     'createFakeSgdsSheetsLedgerAdapter_'
   ]
 });
 
 const fromVm = value => JSON.parse(JSON.stringify(value));
+const hdFormula = '=HYPERLINK("https://drive.example/"&RC[-1],"HD")';
+
+function cloneForSource(value) {
+  if (value instanceof Date) return new Date(value.getTime());
+  if (Array.isArray(value)) return value.map(cloneForSource);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, cloneForSource(child)]));
+  }
+  return value;
+}
 
 const headers = [
   'STT',
@@ -156,14 +168,14 @@ function priorRow() {
     'prior-hash',
     '20260101_0100000001_00000100',
     ''
-  ], 2, { 15: '=HYPERLINK("https://drive.example/"&RC[-1],"HD")' });
+  ], 2, { 15: hdFormula });
 }
 
-function malformedRow(context = makeContext()) {
+function malformedRow(context = makeContext(), overrides = {}) {
   const rowData = context.ledgerRows[0];
-  return row([
+  const item = row([
     2,
-    rowData.issueDate,
+    overrides.dateValue === undefined ? rowData.issueDate : overrides.dateValue,
     '',
     '',
     rowData.itemCode,
@@ -178,7 +190,8 @@ function malformedRow(context = makeContext()) {
     rowData.invoiceKeyV2,
     '',
     ''
-  ], 3);
+  ], overrides.rowNumber || 3, { 15: overrides.pFormulaR1C1 === undefined ? hdFormula : overrides.pFormulaR1C1 });
+  return item;
 }
 
 function makeSnapshot(options = {}) {
@@ -210,10 +223,11 @@ function makeSnapshot(options = {}) {
   return { headers: options.headers || headers, rows };
 }
 
-function makeSource(snapshot) {
+function makeSource(snapshot, options = {}) {
   const state = {
-    snapshot: fromVm(snapshot),
+    snapshot: cloneForSource(snapshot),
     updates: [],
+    readCount: 0,
     appends: 0,
     deletes: 0,
     driveMutations: 0,
@@ -225,7 +239,8 @@ function makeSource(snapshot) {
   return {
     state,
     readSnapshot() {
-      return fromVm(state.snapshot);
+      state.readCount += 1;
+      return cloneForSource(state.snapshot);
     },
     updateRowCells(request) {
       state.updates.push(fromVm(request));
@@ -235,23 +250,26 @@ function makeSource(snapshot) {
         if (change.formulaR1C1) target.formulasR1C1[index] = change.formulaR1C1;
         else target.values[index] = change.value;
       }
+      if (typeof options.afterUpdate === 'function') options.afterUpdate(state.snapshot, request);
       return { updatedRowCount: 1, updatedCellCount: request.changes.length };
     }
   };
 }
 
-function makeRunner({ props = {}, snapshot = makeSnapshot(), context = makeContext(), source = null } = {}) {
+function makeRunner({ props = {}, snapshot = makeSnapshot(), context = makeContext(), source = null, lock = null } = {}) {
   const actualSource = source || makeSource(snapshot);
   const logger = { lines: [], log(value) { this.lines.push(String(value)); } };
+  const actualLock = lock || { released: false, tryLock: () => true, releaseLock() { this.released = true; } };
   const runner = gas.call('createD6jDNhapXuatSchemaRepairRunner_', {
     readProperties: () => props,
     buildRepairContext: () => context,
     createSheetsSource: () => actualSource,
     createJobStore: () => ({ appendAuditEvent: async () => ({ status: 'RECORDED' }) }),
+    createLock: () => actualLock,
     clock: { now: () => '2026-07-26T00:00:00.000Z' },
     logger
   });
-  return { runner, source: actualSource, logger, context };
+  return { runner, source: actualSource, logger, context, lock: actualLock };
 }
 
 test('metadata and D6J-D entrypoint contract are canonical', () => {
@@ -306,6 +324,11 @@ test('read-only audit accepts production headers without repair marker and perfo
   const result = fromVm(await h.runner.inspect());
   assert.equal(result.AUDIT_STATUS, 'PASS_MALFORMED_PILOT_ROW_LOCATED');
   assert.equal(result.HEADER_SCHEMA_STATUS, 'PASS');
+  assert.equal(result.PLANNED_CHANGED_COLUMNS, 'C,D,J,K,L,M,N,O');
+  assert.equal(result.PLANNED_CHANGED_CELL_COUNT, 8);
+  assert.equal(result.PRESERVED_COLUMNS, 'A,B,E,F,G,H,I,P');
+  assert.equal(result.DATE_CELL_PRESERVED, 'YES');
+  assert.equal(result.HD_FORMULA_PRESERVED, 'YES');
   assert.equal(h.source.state.updates.length, 0);
   assert.equal(h.source.state.appends, 0);
   assert.equal(h.source.state.deletes, 0);
@@ -420,6 +443,34 @@ test('D6J-D2 canonical repaired A:P row is not classified as malformed', () => {
   assert.throws(() => gas.call('inspectD6jDMalformedPilotRow_', snapshot, context), /BLOCKED_D6J_D_MALFORMED_ROW_NOT_FOUND/);
 });
 
+test('D6J-D3 date object and ISO date string compare semantically and keep B out of repair plan', () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
+  const inspection = gas.call('inspectD6jDMalformedPilotRow_', snapshot, context, { includeRawCells: true });
+  const changes = fromVm(gas.call('buildD6jDRepairCellChanges_', inspection));
+  assert.deepEqual(changes.map(change => change.column), [3, 4, 10, 11, 12, 13, 14, 15]);
+  const preview = fromVm(gas.call('buildD6jDRepairPlanPreview_', inspection, changes));
+  assert.equal(preview.PLANNED_CHANGED_COLUMNS, 'C,D,J,K,L,M,N,O');
+  assert.equal(preview.PLANNED_CHANGED_CELL_COUNT, 8);
+  assert.equal(preview.PRESERVED_COLUMNS, 'A,B,E,F,G,H,I,P');
+  assert.equal(preview.DATE_CELL_PRESERVED, 'YES');
+  assert.equal(preview.HD_FORMULA_PRESERVED, 'YES');
+  assert.equal(changes.some(change => change.column === 2), false);
+  assert.equal(changes.some(change => change.column === 16), false);
+});
+
+test('D6J-D3 strict repair allowlist blocks any planned change outside C,D,J,K,L,M,N,O', () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
+  const inspection = gas.call('inspectD6jDMalformedPilotRow_', snapshot, context, { includeRawCells: true });
+  assert.throws(
+    () => gas.call('buildD6jDRepairPlanPreview_', inspection, [{ column: 2, value: '2026-03-09' }]),
+    /BLOCKED_D6J_D_REPAIR_CHANGE_OUTSIDE_ALLOWLIST/
+  );
+});
+
 test('read-only audit derives exact A:P mapping with invoice number, seller, amount, weighted average, hash, key, and HD formula', () => {
   const context = makeContext();
   const inspection = fromVm(gas.call('inspectD6jDMalformedPilotRow_', makeSnapshot({ context }), context, { includeRawCells: true }));
@@ -461,25 +512,145 @@ test('missing and wrong repair markers block before mutation', async () => {
   assert.equal(wrong.source.state.updates.length, 0);
 });
 
-test('successful repair updates exactly one row, appends zero rows, and preserves Drive/Gmail/trigger/destructive counters', async () => {
+test('D6J-D3 successful repair updates exactly one row and eight allowlisted cells while preserving A,B,E:I,P', async () => {
   const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
   const h = makeRunner({
     props: { D6J_D_REPAIR_APPROVAL_MARKER: 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR' },
     context,
-    snapshot: makeSnapshot({ context })
+    snapshot
   });
   const result = fromVm(await h.runner.repair());
   assert.equal(result.REPAIR_STATUS, 'PASS_SINGLE_MALFORMED_PILOT_ROW_REPAIRED');
+  assert.equal(result.CHANGED_COLUMNS, 'C,D,J,K,L,M,N,O');
+  assert.equal(result.SHEET_CELLS_UPDATED, 8);
   assert.equal(result.SHEET_ROWS_UPDATED, 1);
   assert.equal(result.SHEET_ROWS_APPENDED, 0);
   assert.equal(result.SHEET_ROWS_DELETED, 0);
+  assert.equal(result.DATE_CELL_PRESERVED, 'YES');
+  assert.equal(result.HD_FORMULA_PRESERVED, 'YES');
   assert.equal(result.DRIVE_MUTATION_COUNT, 0);
   assert.equal(result.GMAIL_MUTATION_COUNT, 0);
   assert.equal(result.TRIGGER_MUTATION_COUNT, 0);
   assert.equal(result.DESTRUCTIVE_OPERATION_COUNT, 0);
+  assert.equal(result.FIRESTORE_REPAIR_AUDIT_STATUS, 'RECORDED');
   assert.equal(h.source.state.updates.length, 1);
+  assert.equal(h.source.state.readCount, 2);
   assert.equal(h.source.state.appends, 0);
-  assert.deepEqual(h.source.state.updates[0].changes.map(change => change.column), [3, 4, 10, 11, 12, 13, 14, 15, 16]);
+  assert.equal(h.source.state.deletes, 0);
+  assert.deepEqual(h.source.state.updates[0].changes.map(change => change.column), [3, 4, 10, 11, 12, 13, 14, 15]);
+  const repaired = h.source.state.snapshot.rows[1];
+  assert.equal(repaired.values[0], 2);
+  assert.equal(repaired.values[1] instanceof Date, true);
+  assert.equal(gas.call('normalizeD6jCComparableDate_', repaired.values[1]), '20260309');
+  assert.equal(repaired.values[4], context.ledgerRows[0].itemCode);
+  assert.equal(repaired.values[5], context.ledgerRows[0].itemName);
+  assert.equal(repaired.values[6], context.ledgerRows[0].direction);
+  assert.equal(repaired.values[7], context.ledgerRows[0].quantity);
+  assert.equal(repaired.values[8], context.ledgerRows[0].unitPrice);
+  assert.equal(repaired.formulasR1C1[15], hdFormula);
+  assert.equal(h.lock.released, true);
+});
+
+test('D6J-D3 ScriptLock acquisition failure blocks before write', async () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
+  const lock = { released: false, tryLock: () => false, releaseLock() { this.released = true; } };
+  const h = makeRunner({
+    props: { D6J_D_REPAIR_APPROVAL_MARKER: 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR' },
+    context,
+    snapshot,
+    lock
+  });
+  const result = fromVm(await h.runner.repair());
+  assert.equal(result.REPAIR_STATUS, 'BLOCKED_SCRIPT_LOCK_NOT_ACQUIRED');
+  assert.equal(h.source.state.readCount, 0);
+  assert.equal(h.source.state.updates.length, 0);
+  assert.equal(lock.released, false);
+});
+
+test('D6J-D3 repair rereads the snapshot after ScriptLock acquisition before write', async () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
+  const source = makeSource(snapshot);
+  const lock = {
+    released: false,
+    tryLock() {
+      assert.equal(source.state.readCount, 0);
+      return true;
+    },
+    releaseLock() { this.released = true; }
+  };
+  const h = makeRunner({
+    props: { D6J_D_REPAIR_APPROVAL_MARKER: 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR' },
+    context,
+    source,
+    lock
+  });
+  await h.runner.repair();
+  assert.equal(source.state.readCount, 2);
+  assert.equal(lock.released, true);
+});
+
+test('D6J-D3 exact K:L:M readback verification blocks reconciliation on incorrect numeric values', async () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
+  const source = makeSource(snapshot, {
+    afterUpdate(current) {
+      current.rows[1].values[10] = 999999;
+    }
+  });
+  const h = makeRunner({
+    props: { D6J_D_REPAIR_APPROVAL_MARKER: 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR' },
+    context,
+    source
+  });
+  const result = fromVm(await h.runner.repair());
+  assert.equal(result.REPAIR_STATUS, 'REPAIR_RECONCILIATION_REQUIRED');
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D_REPAIR_K_READBACK_MISMATCH');
+  assert.equal(source.state.updates.length, 1);
+});
+
+test('D6J-D3 P formula readback verification blocks reconciliation when formula changes', async () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
+  const source = makeSource(snapshot, {
+    afterUpdate(current) {
+      current.rows[1].formulasR1C1[15] = '=BAD()';
+    }
+  });
+  const h = makeRunner({
+    props: { D6J_D_REPAIR_APPROVAL_MARKER: 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR' },
+    context,
+    source
+  });
+  const result = fromVm(await h.runner.repair());
+  assert.equal(result.REPAIR_STATUS, 'REPAIR_RECONCILIATION_REQUIRED');
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D_REPAIR_P_FORMULA_CHANGED');
+});
+
+test('D6J-D3 B date type and value readback verification blocks reconciliation when Date is replaced', async () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context });
+  snapshot.rows[1].values[1] = new Date(2026, 2, 9, 0, 0, 0);
+  const source = makeSource(snapshot, {
+    afterUpdate(current) {
+      current.rows[1].values[1] = '2026-03-09';
+    }
+  });
+  const h = makeRunner({
+    props: { D6J_D_REPAIR_APPROVAL_MARKER: 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR' },
+    context,
+    source
+  });
+  const result = fromVm(await h.runner.repair());
+  assert.equal(result.REPAIR_STATUS, 'REPAIR_RECONCILIATION_REQUIRED');
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D_REPAIR_B_DATE_TYPE_CHANGED');
 });
 
 test('future D6J-C idempotent rerun recognizes corrected row by canonical HashIndex and InvoiceKey', async () => {
