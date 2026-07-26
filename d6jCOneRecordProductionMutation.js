@@ -5,6 +5,8 @@ const D6J_C_MUTATION_APPROVAL_PROPERTY_ = 'D6J_C_MUTATION_APPROVAL_MARKER';
 const D6J_C_DIRECTION_ = 'NHAP';
 const D6J_C_FIRESTORE_PROJECT_ID_ = 'tonkhohd';
 const D6J_C_FIRESTORE_DATABASE_ID_ = '(default)';
+const D6J_C_LEASE_OWNER_ = 'apps_script_d6j_c';
+const D6J_C_LEASE_DURATION_MS_ = 10 * 60 * 1000;
 
 function runD6jCOneRecordProductionMutation() {
   const runner = createD6jCOneRecordProductionMutationRunner_();
@@ -33,6 +35,8 @@ function createD6jCOneRecordProductionMutationRunner_(deps) {
     let activePlan = null;
     let activeJobStore = null;
     let activeJob = null;
+    let activeLeaseStore = null;
+    let activeLease = null;
     try {
       const properties = validateD6jCApproval_(services.readProperties());
       result.OWNER_APPROVAL_MARKER_VALID = 'YES';
@@ -61,9 +65,13 @@ function createD6jCOneRecordProductionMutationRunner_(deps) {
       const leaseStore = services.createLeaseStore({ properties, preflight, artifacts, plan });
       const lease = await acquireD6jCLease_(leaseStore, plan, services.clock);
       result.LEASE_STATUS = lease.status;
-      if (lease.status !== 'ACQUIRED' && lease.status !== 'ALREADY_HELD_BY_SAME_JOB') {
+      result.LEASE_EXPIRES_AT = lease.expiresAt || '';
+      result.LEASE_RECLAIM_STATUS = lease.reclaimStatus || 'NOT_RECLAIMED';
+      if (!isD6jCLeaseAcquiredStatus_(lease.status)) {
         throw d6jCError_('BLOCKED_ACTIVE_LEASE');
       }
+      activeLeaseStore = leaseStore;
+      activeLease = lease;
       result.FIRESTORE_MUTATION_COUNT += lease.mutationCount;
 
       const jobCreate = await jobStore.createJobIfAbsent({
@@ -80,6 +88,12 @@ function createD6jCOneRecordProductionMutationRunner_(deps) {
       activeJob = job;
       if (!jobCreate.created && job && job.status === 'COMPLETED') {
         const resume = await verifyD6jCCompletedNoop_(jobStore, plan, services, result);
+        await closeD6jCLease_(leaseStore, lease, resume, 'COMPLETED', {
+          mode: 'release',
+          clock: services.clock,
+          mustConfirm: true
+        });
+        finalizeD6jCMutationCounts_(resume);
         logD6jCSanitizedResult_(services.logger, resume);
         return resume;
       }
@@ -151,8 +165,14 @@ function createD6jCOneRecordProductionMutationRunner_(deps) {
       });
       result.FIRESTORE_MUTATION_COUNT += 1;
 
-      result.MUTATION_STATUS = 'PASS_ONE_RECORD_PRODUCTION_MUTATION_CHANNEL_READY';
+      result.MUTATION_STATUS = 'PASS_ONE_RECORD_PRODUCTION_MUTATION_COMPLETED';
+      result.LEGACY_MUTATION_STATUS_COMPAT = 'PASS_ONE_RECORD_PRODUCTION_MUTATION_CHANNEL_READY';
       result.IDEMPOTENT_RERUN_STATUS = 'READY_FOR_IDEMPOTENT_RERUN';
+      await closeD6jCLease_(leaseStore, lease, result, 'COMPLETED', {
+        mode: 'release',
+        clock: services.clock,
+        mustConfirm: true
+      });
       finalizeD6jCMutationCounts_(result);
       logD6jCSanitizedResult_(services.logger, result);
       return result;
@@ -161,6 +181,12 @@ function createD6jCOneRecordProductionMutationRunner_(deps) {
       if (Number(error && error.sheetsMutationCount || 0) > 0) result.SHEETS_MUTATION_COUNT += Number(error.sheetsMutationCount);
       if (error && error.partialSafeResult) mergeD6jCResult_(result, error.partialSafeResult);
       await maybeMarkD6jCReconciliationRequired_(activeJobStore, activePlan, activeJob, error, result);
+      const externalMutationCount = Number(result.DRIVE_MUTATION_COUNT || 0) + Number(result.SHEETS_MUTATION_COUNT || 0);
+      await closeD6jCLease_(activeLeaseStore, activeLease, result, externalMutationCount > 0 ? 'RECONCILIATION_REQUIRED' : 'FAILED_BEFORE_EXTERNAL_MUTATION', {
+        mode: externalMutationCount > 0 ? 'reconciliation' : 'release',
+        clock: services.clock,
+        error
+      });
       const blocked = finalizeD6jCBlockedResult_(result, error);
       logD6jCSanitizedResult_(services.logger, blocked);
       return blocked;
@@ -381,22 +407,75 @@ function buildD6jCDriveTarget_(artifactType, artifact, row, preflight, correlati
 
 async function acquireD6jCLease_(leaseStore, plan, clock) {
   if (!leaseStore || typeof leaseStore.acquireLease !== 'function') throw d6jCError_('BLOCKED_D6J_C_LEASE_STORE_MISSING');
+  const acquiredAt = normalizeD6jCString_(clock.now());
+  const expiresAt = addD6jCMilliseconds_(acquiredAt, D6J_C_LEASE_DURATION_MS_);
   try {
     const lease = await leaseStore.acquireLease({
       leaseId: plan.jobId,
       jobId: plan.jobId,
-      leaseOwner: 'apps_script_d6j_c',
-      leaseExpiresAt: clock.now(),
+      leaseOwner: D6J_C_LEASE_OWNER_,
+      acquiredAt,
+      expiresAt,
       fencingToken: plan.idempotencyKeys.lease,
       idempotencyKey: plan.idempotencyKeys.lease
     });
-    return { status: lease && lease.idempotent ? 'ALREADY_HELD_BY_SAME_JOB' : 'ACQUIRED', mutationCount: lease && lease.idempotent ? 0 : 1 };
+    const status = normalizeD6jCString_(lease && lease.status) || (lease && lease.idempotent ? 'ALREADY_HELD_BY_SAME_JOB' : 'ACQUIRED');
+    return {
+      leaseId: plan.jobId,
+      jobId: plan.jobId,
+      leaseOwner: D6J_C_LEASE_OWNER_,
+      fencingToken: plan.idempotencyKeys.lease,
+      status,
+      expiresAt: normalizeD6jCString_(lease && (lease.expiresAt || lease.leaseExpiresAt)) || expiresAt,
+      reclaimStatus: normalizeD6jCString_(lease && lease.reclaimStatus) || (status === 'LEASE_RECLAIMED_EXPIRED' ? 'RECLAIMED_EXPIRED' : 'NOT_RECLAIMED'),
+      mutationCount: Number(lease && lease.mutationCount || (lease && lease.idempotent ? 0 : 1))
+    };
   } catch (error) {
     const code = normalizeD6jCString_(error && (error.code || error.message));
-    if (code.indexOf('ALREADY') >= 0 || code.indexOf('409') >= 0 || code.indexOf('CONFLICT') >= 0) {
+    if (code.indexOf('ACTIVE_LEASE_FOUND') >= 0 || code.indexOf('ALREADY') >= 0 || code.indexOf('409') >= 0 || code.indexOf('CONFLICT') >= 0) {
       return { status: 'ACTIVE_LEASE_FOUND', mutationCount: 0 };
     }
     throw error;
+  }
+}
+
+function isD6jCLeaseAcquiredStatus_(status) {
+  return [
+    'ACQUIRED',
+    'ALREADY_HELD_BY_SAME_JOB',
+    'ACQUIRED_AFTER_RELEASED',
+    'ACQUIRED_AFTER_RECONCILIATION_REQUIRED',
+    'LEASE_RECLAIMED_EXPIRED'
+  ].includes(normalizeD6jCString_(status));
+}
+
+async function closeD6jCLease_(leaseStore, lease, result, finalJobStatus, options) {
+  const opts = options || {};
+  if (!leaseStore || !lease || !lease.leaseId || lease.closeAttempted) return null;
+  lease.closeAttempted = true;
+  const now = opts.clock && typeof opts.clock.now === 'function' ? opts.clock.now() : new Date().toISOString();
+  const request = {
+    leaseId: lease.leaseId,
+    jobId: lease.jobId,
+    leaseOwner: lease.leaseOwner || D6J_C_LEASE_OWNER_,
+    fencingToken: lease.fencingToken,
+    releasedAt: now,
+    finalJobStatus,
+    errorCode: normalizeD6jCErrorCode_(opts.error && (opts.error.code || opts.error.message) || finalJobStatus)
+  };
+  result.LEASE_FINAL_STATUS = opts.mode === 'reconciliation' ? 'RECONCILIATION_REQUIRED' : 'RELEASED';
+  try {
+    const closeFn = opts.mode === 'reconciliation' ? leaseStore.markLeaseReconciliationRequired : leaseStore.releaseLease;
+    if (typeof closeFn !== 'function') throw d6jCError_('BLOCKED_D6J_C_LEASE_RELEASE_MISSING');
+    const outcome = await closeFn.call(leaseStore, request);
+    result.LEASE_RELEASE_STATUS = normalizeD6jCString_(outcome && outcome.status) || 'CONFIRMED';
+    result.FIRESTORE_MUTATION_COUNT += Number(outcome && outcome.mutationCount || 0);
+    if (outcome && outcome.lease && outcome.lease.expiresAt) result.LEASE_EXPIRES_AT = outcome.lease.expiresAt;
+    return outcome;
+  } catch (error) {
+    result.LEASE_RELEASE_STATUS = 'FAILED_' + normalizeD6jCErrorCode_(error && (error.code || error.message));
+    if (opts.mustConfirm) throw error;
+    return null;
   }
 }
 
@@ -553,7 +632,6 @@ async function verifyD6jCCompletedNoop_(jobStore, plan, services, result) {
   });
   mergeD6jCResult_(result, {
     MUTATION_STATUS: 'PASS_IDEMPOTENT_COMPLETED_NOOP',
-    LEASE_STATUS: 'ACQUIRED',
     COMMIT_PLAN_STATUS: 'IDEMPOTENT_PLAN_MATCH',
     DRIVE_XML_STATUS: 'ALREADY_PRESENT',
     DRIVE_PDF_STATUS: 'ALREADY_PRESENT',
@@ -755,19 +833,169 @@ function createD6jCDefaultDurableJobStore_() {
 }
 
 function createD6jCDefaultLeaseStore_() {
-  return {
-    async acquireLease(request) {
-      const transport = createD6jCFirestoreDurableTransport_();
-      return transport.createDocument('worker_leases/' + request.leaseId, {
-        leaseId: request.leaseId,
-        jobId: request.jobId,
-        leaseOwner: request.leaseOwner,
-        leaseExpiresAt: request.leaseExpiresAt,
-        fencingToken: request.fencingToken,
-        createdAt: new Date().toISOString()
-      }, { idempotencyKey: request.idempotencyKey });
-    }
-  };
+  return createD6jCFirestoreLeaseStore_(createD6jCFirestoreDurableTransport_(), {
+    clock: { now: () => new Date().toISOString() },
+    leaseDurationMs: D6J_C_LEASE_DURATION_MS_
+  });
+}
+
+function createD6jCFirestoreLeaseStore_(transport, options) {
+  if (!transport || typeof transport.runTransaction !== 'function') throw d6jCError_('BLOCKED_D6J_C_LEASE_TRANSPORT_MISSING');
+  const opts = options || {};
+  const clock = opts.clock && typeof opts.clock.now === 'function' ? opts.clock : { now: () => new Date().toISOString() };
+  const leaseDurationMs = Math.max(60000, Math.min(Number(opts.leaseDurationMs || D6J_C_LEASE_DURATION_MS_), 30 * 60 * 1000));
+
+  function pathFor(leaseId) {
+    const id = normalizeD6jCString_(leaseId);
+    if (!/^[A-Za-z0-9._:-]{1,180}$/.test(id)) throw d6jCError_('BLOCKED_D6J_C_LEASE_ID_INVALID');
+    return 'worker_leases/' + id;
+  }
+
+  function normalizeRequest(request) {
+    const req = request || {};
+    const leaseId = normalizeD6jCString_(req.leaseId);
+    const jobId = normalizeD6jCString_(req.jobId);
+    const fencingToken = normalizeD6jCString_(req.fencingToken);
+    if (!leaseId || !jobId || !fencingToken) throw d6jCError_('BLOCKED_D6J_C_LEASE_REQUEST_INVALID');
+    if (leaseId !== jobId) throw d6jCError_('BLOCKED_D6J_C_LEASE_JOB_CONFLICT');
+    const acquiredAt = normalizeD6jCString_(req.acquiredAt || clock.now());
+    const expiresAt = normalizeD6jCString_(req.expiresAt || addD6jCMilliseconds_(acquiredAt, leaseDurationMs));
+    assertD6jCFutureTimestamp_(expiresAt, acquiredAt);
+    return {
+      leaseId,
+      jobId,
+      leaseOwner: normalizeD6jCString_(req.leaseOwner || D6J_C_LEASE_OWNER_),
+      fencingToken,
+      acquiredAt,
+      expiresAt
+    };
+  }
+
+  function activeLease(req, now, extras) {
+    return {
+      leaseId: req.leaseId,
+      jobId: req.jobId,
+      leaseOwner: req.leaseOwner,
+      status: 'ACTIVE',
+      fencingToken: req.fencingToken,
+      acquiredAt: now,
+      expiresAt: req.expiresAt,
+      releasedAt: '',
+      finalJobStatus: '',
+      updatedAt: now,
+      ...(extras || {})
+    };
+  }
+
+  function assertSameLeaseIdentity(current, req) {
+    if (normalizeD6jCString_(current.jobId) !== req.jobId) throw d6jCError_('BLOCKED_D6J_C_LEASE_JOB_CONFLICT');
+    if (normalizeD6jCString_(current.fencingToken) !== req.fencingToken) throw d6jCError_('BLOCKED_D6J_C_LEASE_FENCING_TOKEN_MISMATCH');
+  }
+
+  async function acquireLease(request) {
+    const req = normalizeRequest(request);
+    const now = req.acquiredAt;
+    return transport.runTransaction(async tx => {
+      const path = pathFor(req.leaseId);
+      const current = await tx.getDocument(path);
+      if (!current) {
+        const created = activeLease(req, now, { createdAt: now });
+        await tx.createDocument(path, created, { idempotencyKey: req.fencingToken });
+        return { status: 'ACQUIRED', mutationCount: 1, reclaimStatus: 'CREATED', expiresAt: created.expiresAt, lease: cloneD6jCJson_(created) };
+      }
+      const currentStatus = normalizeD6jCString_(current.status || (current.releasedAt ? 'RELEASED' : 'ACTIVE'));
+      if (currentStatus === 'ACTIVE') {
+        const sameJob = normalizeD6jCString_(current.jobId) === req.jobId;
+        const sameFence = normalizeD6jCString_(current.fencingToken) === req.fencingToken;
+        if (sameJob && sameFence) {
+          return { status: 'ALREADY_HELD_BY_SAME_JOB', idempotent: true, mutationCount: 0, reclaimStatus: 'SAME_OWNER_ACTIVE', expiresAt: current.expiresAt, lease: cloneD6jCJson_(current) };
+        }
+        if (sameJob && !sameFence) throw d6jCError_('BLOCKED_D6J_C_LEASE_FENCING_TOKEN_MISMATCH');
+        if (!isD6jCTimestampExpired_(current.expiresAt, now)) throw d6jCError_('ACTIVE_LEASE_FOUND');
+        const reclaimed = activeLease(req, now, {
+          previousLeaseStatus: currentStatus,
+          previousLeaseOwner: normalizeD6jCString_(current.leaseOwner),
+          previousLeaseUpdatedAt: normalizeD6jCString_(current.updatedAt),
+          previousLeaseExpiresAt: normalizeD6jCString_(current.expiresAt),
+          previousFencingTokenHashPrefix: hashPrefixD6jC_(current.fencingToken || '', 8),
+          reclaimedAt: now
+        });
+        await tx.updateDocument(path, reclaimed);
+        return { status: 'LEASE_RECLAIMED_EXPIRED', mutationCount: 1, reclaimStatus: 'RECLAIMED_EXPIRED', expiresAt: reclaimed.expiresAt, lease: cloneD6jCJson_(reclaimed) };
+      }
+      if (currentStatus === 'RELEASED' || currentStatus === 'RECONCILIATION_REQUIRED') {
+        assertSameLeaseIdentity(current, req);
+        const reacquired = activeLease(req, now, {
+          previousLeaseStatus: currentStatus,
+          previousFinalJobStatus: normalizeD6jCString_(current.finalJobStatus),
+          previousReleasedAt: normalizeD6jCString_(current.releasedAt),
+          reacquiredAt: now
+        });
+        await tx.updateDocument(path, reacquired);
+        return {
+          status: currentStatus === 'RELEASED' ? 'ACQUIRED_AFTER_RELEASED' : 'ACQUIRED_AFTER_RECONCILIATION_REQUIRED',
+          mutationCount: 1,
+          reclaimStatus: currentStatus === 'RELEASED' ? 'REACQUIRED_RELEASED' : 'REACQUIRED_RECONCILIATION_REQUIRED',
+          expiresAt: reacquired.expiresAt,
+          lease: cloneD6jCJson_(reacquired)
+        };
+      }
+      throw d6jCError_('BLOCKED_D6J_C_LEASE_STATUS_UNSUPPORTED');
+    });
+  }
+
+  async function releaseLease(request) {
+    const req = request || {};
+    const releasedAt = normalizeD6jCString_(req.releasedAt || clock.now());
+    const finalJobStatus = normalizeD6jCString_(req.finalJobStatus || 'UNKNOWN');
+    return transport.runTransaction(async tx => {
+      const path = pathFor(req.leaseId);
+      const current = await tx.getDocument(path);
+      if (!current) throw d6jCError_('BLOCKED_D6J_C_LEASE_NOT_FOUND');
+      assertSameLeaseIdentity(current, { jobId: normalizeD6jCString_(req.jobId), fencingToken: normalizeD6jCString_(req.fencingToken) });
+      if (normalizeD6jCString_(current.status) === 'RELEASED' && normalizeD6jCString_(current.finalJobStatus) === finalJobStatus) {
+        return { status: 'CONFIRMED', mutationCount: 0, lease: cloneD6jCJson_(current) };
+      }
+      const next = {
+        ...current,
+        status: 'RELEASED',
+        releasedAt,
+        finalJobStatus,
+        updatedAt: releasedAt
+      };
+      await tx.updateDocument(path, next);
+      return { status: 'CONFIRMED', mutationCount: 1, lease: cloneD6jCJson_(next) };
+    });
+  }
+
+  async function markLeaseReconciliationRequired(request) {
+    const req = request || {};
+    const releasedAt = normalizeD6jCString_(req.releasedAt || clock.now());
+    const errorCode = normalizeD6jCErrorCode_(req.errorCode || 'D6J_C_RECONCILIATION_REQUIRED');
+    return transport.runTransaction(async tx => {
+      const path = pathFor(req.leaseId);
+      const current = await tx.getDocument(path);
+      if (!current) throw d6jCError_('BLOCKED_D6J_C_LEASE_NOT_FOUND');
+      assertSameLeaseIdentity(current, { jobId: normalizeD6jCString_(req.jobId), fencingToken: normalizeD6jCString_(req.fencingToken) });
+      const next = {
+        ...current,
+        status: 'RECONCILIATION_REQUIRED',
+        releasedAt,
+        finalJobStatus: 'RECONCILIATION_REQUIRED',
+        reconciliationErrorCode: errorCode,
+        updatedAt: releasedAt
+      };
+      await tx.updateDocument(path, next);
+      return { status: 'RECONCILIATION_REQUIRED', mutationCount: 1, lease: cloneD6jCJson_(next) };
+    });
+  }
+
+  async function getLease(request) {
+    const leaseId = normalizeD6jCString_(request && (request.leaseId || request.jobId));
+    return cloneD6jCJson_(await transport.getDocument(pathFor(leaseId)));
+  }
+
+  return Object.freeze({ acquireLease, releaseLease, markLeaseReconciliationRequired, getLease });
 }
 
 function createD6jCFirestoreDurableTransport_() {
@@ -861,10 +1089,20 @@ function createD6jCFirestoreError_(status, path, text) {
     'FIRESTORE_PROJECT_ID=' + D6J_C_FIRESTORE_PROJECT_ID_,
     'FIRESTORE_DATABASE_ID=' + D6J_C_FIRESTORE_DATABASE_ID_,
     'FIRESTORE_REQUEST_PATH=' + path,
+    'FIRESTORE_ERROR_STATUS=' + extractD6jCFirestoreErrorStatus_(text || ''),
     'FIRESTORE_ERROR_MESSAGE=' + sanitizeD6jCLogText_(text || '')
   ].join(';'));
   error.httpStatus = Number(status || 0);
   return error;
+}
+
+function extractD6jCFirestoreErrorStatus_(text) {
+  try {
+    const parsed = JSON.parse(String(text || '{}'));
+    return sanitizeD6jCLogText_(parsed && parsed.error && parsed.error.status || 'UNKNOWN');
+  } catch (_err) {
+    return 'UNKNOWN';
+  }
 }
 
 function finalizeD6jCBlockedResult_(result, error) {
@@ -893,6 +1131,10 @@ function createD6jCBaseResult_() {
     OWNER_APPROVAL_MARKER_VALID: 'NO',
     PREFLIGHT_STATUS: 'NOT_RUN',
     LEASE_STATUS: 'NOT_ATTEMPTED',
+    LEASE_FINAL_STATUS: 'NOT_ATTEMPTED',
+    LEASE_RELEASE_STATUS: 'NOT_ATTEMPTED',
+    LEASE_EXPIRES_AT: '',
+    LEASE_RECLAIM_STATUS: 'NOT_EVALUATED',
     COMMIT_PLAN_STATUS: 'NOT_ATTEMPTED',
     DRIVE_PDF_STATUS: 'NOT_ATTEMPTED',
     DRIVE_XML_STATUS: 'NOT_ATTEMPTED',
@@ -934,6 +1176,36 @@ function buildD6jCLegacyInvoiceKey_(issueDate, taxCode, invoiceNo) {
   const tax = normalizeD6jCString_(taxCode).replace(/\D/g, '') || 'UNKNOWNTAXCODE';
   const inv = normalizeD6jCString_(invoiceNo);
   return [date, tax, inv].join('_');
+}
+
+function addD6jCMilliseconds_(timestamp, durationMs) {
+  const base = parseD6jCTimestamp_(timestamp);
+  if (!Number.isFinite(base)) throw d6jCError_('BLOCKED_D6J_C_LEASE_TIMESTAMP_INVALID');
+  return new Date(base + Number(durationMs || 0)).toISOString();
+}
+
+function assertD6jCFutureTimestamp_(timestamp, referenceTimestamp) {
+  const value = parseD6jCTimestamp_(timestamp);
+  const reference = parseD6jCTimestamp_(referenceTimestamp);
+  if (!Number.isFinite(value) || !Number.isFinite(reference) || value <= reference) {
+    throw d6jCError_('BLOCKED_D6J_C_LEASE_EXPIRES_AT_NOT_FUTURE');
+  }
+}
+
+function isD6jCTimestampExpired_(timestamp, referenceTimestamp) {
+  const value = parseD6jCTimestamp_(timestamp);
+  const reference = parseD6jCTimestamp_(referenceTimestamp);
+  if (!Number.isFinite(value) || !Number.isFinite(reference)) return false;
+  return value <= reference;
+}
+
+function parseD6jCTimestamp_(value) {
+  const time = Date.parse(normalizeD6jCString_(value));
+  return Number.isFinite(time) ? time : NaN;
+}
+
+function cloneD6jCJson_(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
 }
 
 function hashPrefixD6jC_(value, length) {

@@ -36,7 +36,10 @@ const gas = loadGasSource({
     'D6J_C_MUTATION_SCHEMA_VERSION_',
     'D6J_C_MUTATION_APPROVAL_',
     'D6J_C_MUTATION_APPROVAL_PROPERTY_',
+    'D6J_C_LEASE_DURATION_MS_',
     'createD6jCOneRecordProductionMutationRunner_',
+    'createD6jCFirestoreLeaseStore_',
+    'createD6jCDefaultLeaseStore_',
     'createFakeSgdsDriveAdapter_',
     'createFakeSgdsSheetsLedgerAdapter_',
     'buildSgdsDriveArtifactIdentity_',
@@ -155,30 +158,38 @@ function fakeLock(calls = []) {
   };
 }
 
-function makeLeaseStore(options = {}) {
-  const state = { active: Boolean(options.active), createdCount: 0 };
-  return {
-    state,
-    async acquireLease(request) {
-      if (state.active && state.jobId !== request.jobId) {
-        const error = new Error('lease conflict');
-        error.code = 'ALREADY_EXISTS';
-        throw error;
-      }
-      if (state.active && state.jobId === request.jobId) return { idempotent: true };
-      state.active = true;
-      state.jobId = request.jobId;
-      state.createdCount += 1;
-      return { idempotent: false };
-    }
+function deriveJobId() {
+  return 'd6j_job_' + gas.call('hashPrefixD6jC_', ['msg-synthetic-001', 'xmlhash'].join('|'), 20);
+}
+
+function deriveLeaseToken(jobId = deriveJobId()) {
+  return 'd6jc_lease_' + jobId;
+}
+
+async function seedLeaseDocument(transport, overrides = {}) {
+  const jobId = deriveJobId();
+  const doc = {
+    leaseId: jobId,
+    jobId,
+    leaseOwner: 'apps_script_d6j_c',
+    status: 'ACTIVE',
+    fencingToken: deriveLeaseToken(jobId),
+    acquiredAt: '2026-07-26T00:00:00.000Z',
+    expiresAt: '2026-07-26T00:10:00.000Z',
+    releasedAt: '',
+    finalJobStatus: '',
+    updatedAt: '2026-07-26T00:00:00.000Z',
+    ...overrides
   };
+  await transport.createDocument('worker_leases/' + doc.leaseId, doc);
+  return doc;
 }
 
 function makeHarness(options = {}) {
   const transport = options.transport || createFakeFirestoreTransport();
   const clock = { now: () => '2026-07-26T00:00:00.000Z' };
   const store = gas.call('createDurableInvoiceJobStore', transport, { clock });
-  const leaseStore = options.leaseStore || makeLeaseStore();
+  const leaseStore = options.leaseStore || gas.call('createD6jCFirestoreLeaseStore_', transport, { clock, leaseDurationMs: gas.exports.D6J_C_LEASE_DURATION_MS_ });
   const drive = gas.call('createFakeSgdsDriveAdapter_', {
     folders: [
       { exists: true, folderKey: 'NHAP/2026/XML', folderReference: 'folder-xml' },
@@ -241,7 +252,8 @@ test('failed D6J-B preflight blocks before production mutation', async () => {
 });
 
 test('existing active lease blocks before Drive and Sheets mutation', async () => {
-  const h = makeHarness({ leaseStore: makeLeaseStore({ active: true }) });
+  const h = makeHarness();
+  await seedLeaseDocument(h.transport, { jobId: 'different-job', fencingToken: 'different-fence' });
   const result = fromVm(await h.runner.run());
   assert.equal(result.MUTATION_STATUS, 'BLOCKED_ACTIVE_LEASE');
   assert.equal(result.LEASE_STATUS, 'ACTIVE_LEASE_FOUND');
@@ -252,10 +264,15 @@ test('existing active lease blocks before Drive and Sheets mutation', async () =
 test('first successful run creates exactly two Drive files, appends one Sheet row, and completes Firestore job', async () => {
   const h = makeHarness();
   const result = fromVm(await h.runner.run());
-  assert.equal(result.MUTATION_STATUS, 'PASS_ONE_RECORD_PRODUCTION_MUTATION_CHANNEL_READY');
+  assert.equal(result.MUTATION_STATUS, 'PASS_ONE_RECORD_PRODUCTION_MUTATION_COMPLETED');
+  assert.equal(result.LEGACY_MUTATION_STATUS_COMPAT, 'PASS_ONE_RECORD_PRODUCTION_MUTATION_CHANNEL_READY');
   assert.equal(result.PREFLIGHT_STATUS, 'PASS_EXACT_PRODUCTION_DRY_RUN_READ_ONLY');
   assert.equal(result.OWNER_APPROVAL_MARKER_VALID, 'YES');
   assert.equal(result.LEASE_STATUS, 'ACQUIRED');
+  assert.equal(result.LEASE_FINAL_STATUS, 'RELEASED');
+  assert.equal(result.LEASE_RELEASE_STATUS, 'CONFIRMED');
+  assert.equal(result.LEASE_RECLAIM_STATUS, 'CREATED');
+  assert.match(result.LEASE_EXPIRES_AT, /^2026-07-26T00:10:00\.000Z$/);
   assert.equal(result.COMMIT_PLAN_STATUS, 'PLAN_SAVED');
   assert.equal(result.DRIVE_FILES_CREATED, 2);
   assert.equal(result.SHEETS_ROWS_APPENDED, 1);
@@ -263,6 +280,10 @@ test('first successful run creates exactly two Drive files, appends one Sheet ro
   assert.equal(result.RECONCILIATION_STATUS, 'CONSISTENT');
   assert.equal(h.drive.state.files.length, 2);
   assert.equal(h.sheets.state.ledgerRows.length, 1);
+  const leaseDoc = fromVm(await h.leaseStore.getLease({ leaseId: result.JOB_ID }));
+  assert.equal(leaseDoc.status, 'RELEASED');
+  assert.equal(leaseDoc.finalJobStatus, 'COMPLETED');
+  assert.equal(leaseDoc.releasedAt, '2026-07-26T00:00:00.000Z');
   assert.equal(h.lockCalls.map(call => call[0]).join(','), 'tryLock,releaseLock');
 });
 
@@ -285,11 +306,131 @@ test('second identical run creates zero Drive files and zero Sheet rows with ide
   const second = fromVm(await secondRunner.run());
   assert.equal(first.FIRESTORE_JOB_STATUS, 'COMPLETED');
   assert.equal(second.MUTATION_STATUS, 'PASS_IDEMPOTENT_COMPLETED_NOOP');
+  assert.equal(second.LEASE_STATUS, 'ACQUIRED_AFTER_RELEASED');
+  assert.equal(second.LEASE_RELEASE_STATUS, 'CONFIRMED');
   assert.equal(second.DRIVE_FILES_CREATED, 0);
   assert.equal(second.SHEETS_ROWS_APPENDED, 0);
   assert.equal(second.IDEMPOTENT_RERUN_STATUS, 'IDEMPOTENT_COMPLETE_NOOP');
+  const leaseDoc = fromVm(await h.leaseStore.getLease({ leaseId: second.JOB_ID }));
+  assert.equal(leaseDoc.status, 'RELEASED');
   assert.equal(h.drive.state.files.length, 2);
   assert.equal(h.sheets.state.ledgerRows.length, 1);
+});
+
+test('production default lease store exposes full lifecycle methods', () => {
+  const store = gas.call('createD6jCDefaultLeaseStore_');
+  assert.equal(typeof store.acquireLease, 'function');
+  assert.equal(typeof store.releaseLease, 'function');
+  assert.equal(typeof store.markLeaseReconciliationRequired, 'function');
+  assert.equal(typeof store.getLease, 'function');
+});
+
+test('lease store reclaims expired active lease with fenced replacement', async () => {
+  const transport = createFakeFirestoreTransport();
+  const clock = { now: () => '2026-07-26T00:00:00.000Z' };
+  const store = gas.call('createD6jCFirestoreLeaseStore_', transport, { clock });
+  const jobId = deriveJobId();
+  await seedLeaseDocument(transport, {
+    leaseId: jobId,
+    jobId: 'other-job',
+    fencingToken: 'other-fence',
+    expiresAt: '2026-07-25T23:59:00.000Z'
+  });
+  const result = fromVm(await store.acquireLease({
+    leaseId: jobId,
+    jobId,
+    leaseOwner: 'apps_script_d6j_c',
+    fencingToken: deriveLeaseToken(jobId),
+    acquiredAt: '2026-07-26T00:00:00.000Z',
+    expiresAt: '2026-07-26T00:10:00.000Z'
+  }));
+  assert.equal(result.status, 'LEASE_RECLAIMED_EXPIRED');
+  assert.equal(result.reclaimStatus, 'RECLAIMED_EXPIRED');
+  const leaseDoc = fromVm(await store.getLease({ leaseId: jobId }));
+  assert.equal(leaseDoc.status, 'ACTIVE');
+  assert.equal(leaseDoc.previousLeaseStatus, 'ACTIVE');
+  assert.equal(leaseDoc.previousFencingTokenHashPrefix.length, 8);
+});
+
+test('lease store blocks non-expired active lease owned by another job', async () => {
+  const transport = createFakeFirestoreTransport();
+  const store = gas.call('createD6jCFirestoreLeaseStore_', transport, { clock: { now: () => '2026-07-26T00:00:00.000Z' } });
+  const jobId = deriveJobId();
+  await seedLeaseDocument(transport, {
+    leaseId: jobId,
+    jobId: 'other-job',
+    fencingToken: 'other-fence',
+    expiresAt: '2026-07-26T00:10:00.000Z'
+  });
+  await assert.rejects(
+    () => store.acquireLease({
+      leaseId: jobId,
+      jobId,
+      leaseOwner: 'apps_script_d6j_c',
+      fencingToken: deriveLeaseToken(jobId),
+      acquiredAt: '2026-07-26T00:00:00.000Z',
+      expiresAt: '2026-07-26T00:10:00.000Z'
+    }),
+    /ACTIVE_LEASE_FOUND/
+  );
+});
+
+test('lease store blocks same-job fencing mismatch', async () => {
+  const transport = createFakeFirestoreTransport();
+  const store = gas.call('createD6jCFirestoreLeaseStore_', transport, { clock: { now: () => '2026-07-26T00:00:00.000Z' } });
+  const jobId = deriveJobId();
+  await seedLeaseDocument(transport, {
+    leaseId: jobId,
+    jobId,
+    fencingToken: 'wrong-fence',
+    expiresAt: '2026-07-25T23:59:00.000Z'
+  });
+  await assert.rejects(
+    () => store.acquireLease({
+      leaseId: jobId,
+      jobId,
+      leaseOwner: 'apps_script_d6j_c',
+      fencingToken: deriveLeaseToken(jobId),
+      acquiredAt: '2026-07-26T00:00:00.000Z',
+      expiresAt: '2026-07-26T00:10:00.000Z'
+    }),
+    /BLOCKED_D6J_C_LEASE_FENCING_TOKEN_MISMATCH/
+  );
+});
+
+test('released lease supports controlled retry and returns to released after completion', async () => {
+  const transport = createFakeFirestoreTransport();
+  const store = gas.call('createD6jCFirestoreLeaseStore_', transport, { clock: { now: () => '2026-07-26T00:00:00.000Z' } });
+  const jobId = deriveJobId();
+  await seedLeaseDocument(transport, {
+    leaseId: jobId,
+    jobId,
+    status: 'RELEASED',
+    fencingToken: deriveLeaseToken(jobId),
+    releasedAt: '2026-07-25T23:55:00.000Z',
+    finalJobStatus: 'COMPLETED'
+  });
+  const acquired = fromVm(await store.acquireLease({
+    leaseId: jobId,
+    jobId,
+    leaseOwner: 'apps_script_d6j_c',
+    fencingToken: deriveLeaseToken(jobId),
+    acquiredAt: '2026-07-26T00:00:00.000Z',
+    expiresAt: '2026-07-26T00:10:00.000Z'
+  }));
+  assert.equal(acquired.status, 'ACQUIRED_AFTER_RELEASED');
+  const released = fromVm(await store.releaseLease({
+    leaseId: jobId,
+    jobId,
+    leaseOwner: 'apps_script_d6j_c',
+    fencingToken: deriveLeaseToken(jobId),
+    releasedAt: '2026-07-26T00:01:00.000Z',
+    finalJobStatus: 'COMPLETED'
+  }));
+  assert.equal(released.status, 'CONFIRMED');
+  const leaseDoc = fromVm(await store.getLease({ leaseId: jobId }));
+  assert.equal(leaseDoc.status, 'RELEASED');
+  assert.equal(leaseDoc.finalJobStatus, 'COMPLETED');
 });
 
 test('existing Drive hash conflict blocks and marks no Drive creation', async () => {
@@ -316,6 +457,11 @@ test('existing Drive hash conflict blocks and marks no Drive creation', async ()
   const result = fromVm(await h.runner.run());
   assert.equal(result.MUTATION_STATUS, 'BLOCKED_D6J_C_DRIVE_XML_HASH_MISMATCH');
   assert.equal(result.SHEETS_ROWS_APPENDED, 0);
+  assert.equal(result.LEASE_FINAL_STATUS, 'RELEASED');
+  assert.equal(result.LEASE_RELEASE_STATUS, 'CONFIRMED');
+  const leaseDoc = fromVm(await h.leaseStore.getLease({ leaseId: result.JOB_ID }));
+  assert.equal(leaseDoc.status, 'RELEASED');
+  assert.equal(leaseDoc.finalJobStatus, 'FAILED_BEFORE_EXTERNAL_MUTATION');
 });
 
 test('existing Sheet identity conflict blocks', async () => {
@@ -349,8 +495,12 @@ test('failure after first Drive file creates reconciliation-required state', asy
   assert.equal(result.MUTATION_STATUS, 'D6J_C_SYNTHETIC_PDF_FAILURE');
   assert.equal(result.DRIVE_FILES_CREATED, 1);
   assert.equal(result.RECONCILIATION_STATUS, 'RECONCILIATION_REQUIRED');
+  assert.equal(result.LEASE_FINAL_STATUS, 'RECONCILIATION_REQUIRED');
+  assert.equal(result.LEASE_RELEASE_STATUS, 'RECONCILIATION_REQUIRED');
   const job = fromVm(await h2.store.getJob(result.JOB_ID));
   assert.equal(job.reconciliationStatus, 'RECONCILIATION_REQUIRED');
+  const leaseDoc = fromVm(await h2.leaseStore.getLease({ leaseId: result.JOB_ID }));
+  assert.equal(leaseDoc.status, 'RECONCILIATION_REQUIRED');
 });
 
 test('failure after both Drive files but before Sheet append resumes safely without duplicate Drive files', async () => {
@@ -381,6 +531,7 @@ test('failure after both Drive files but before Sheet append resumes safely with
   });
   const first = fromVm(await firstRunner.run());
   assert.equal(first.DRIVE_FILES_CREATED, 2);
+  assert.equal(first.LEASE_RELEASE_STATUS, 'RECONCILIATION_REQUIRED');
   const retryRunner = gas.call('createD6jCOneRecordProductionMutationRunner_', {
     readProperties: () => baseProps(),
     createLock: () => fakeLock([]),
@@ -395,9 +546,13 @@ test('failure after both Drive files but before Sheet append resumes safely with
     logger: { log() {} }
   });
   const retry = fromVm(await retryRunner.run());
+  assert.equal(retry.LEASE_STATUS, 'ACQUIRED_AFTER_RECONCILIATION_REQUIRED');
+  assert.equal(retry.LEASE_RELEASE_STATUS, 'CONFIRMED');
   assert.equal(retry.DRIVE_FILES_CREATED, 0);
   assert.equal(retry.DRIVE_FILES_ALREADY_PRESENT, 2);
   assert.equal(retry.SHEETS_ROWS_APPENDED, 1);
+  const leaseDoc = fromVm(await h.leaseStore.getLease({ leaseId: retry.JOB_ID }));
+  assert.equal(leaseDoc.status, 'RELEASED');
 });
 
 test('failure after Sheet append but before completion resumes without duplicate row', async () => {
@@ -425,6 +580,7 @@ test('failure after Sheet append but before completion resumes without duplicate
   });
   const first = fromVm(await firstRunner.run());
   assert.equal(first.SHEETS_ROWS_APPENDED, 1);
+  assert.equal(first.LEASE_RELEASE_STATUS, 'RECONCILIATION_REQUIRED');
   const retryRunner = gas.call('createD6jCOneRecordProductionMutationRunner_', {
     readProperties: () => baseProps(),
     createLock: () => fakeLock([]),
@@ -439,8 +595,12 @@ test('failure after Sheet append but before completion resumes without duplicate
     logger: { log() {} }
   });
   const retry = fromVm(await retryRunner.run());
+  assert.equal(retry.LEASE_STATUS, 'ACQUIRED_AFTER_RECONCILIATION_REQUIRED');
+  assert.equal(retry.LEASE_RELEASE_STATUS, 'CONFIRMED');
   assert.equal(retry.SHEETS_ROWS_APPENDED, 0);
   assert.equal(h.sheets.state.ledgerRows.length, 1);
+  const leaseDoc = fromVm(await h.leaseStore.getLease({ leaseId: retry.JOB_ID }));
+  assert.equal(leaseDoc.status, 'RELEASED');
 });
 
 test('no Gmail mutation, no trigger mutation, and no destructive operation are reported', async () => {
@@ -491,7 +651,10 @@ test('source contains no private pilot values and does not call forbidden produc
     'triggerScanInvoiceDriveFolder(',
     '.setTrashed(',
     '.deleteRow(',
-    '.clear('
+    '.clear(',
+    'deleteDocument',
+    '.deleteFile(',
+    '.removeFile('
   ]) {
     assert.equal(source.includes(forbidden), false, `forbidden source token present: ${forbidden}`);
   }
