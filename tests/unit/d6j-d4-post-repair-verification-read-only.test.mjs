@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { loadGasSource } from '../harness/load-gas-source.mjs';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
+import { findD6jD4MojibakeIndicatorsInSource } from '../../scripts/checkers/check-d6j-d4-utf8-canonical-integrity.mjs';
 
 const TEST_METADATA = defineTestMetadata({
   testClass: 'REGRESSION_INVARIANT',
@@ -31,8 +32,11 @@ const gas = loadGasSource({
   exportNames: [
     'D6J_D4_ENTRYPOINT_',
     'D6J_D4_SCHEMA_VERSION_',
+    'D6J_D4_EXPECTED_ROW_',
     'createD6jD4PostRepairVerificationReadOnlyRunner_',
     'inspectD6jD4CanonicalSheetState_',
+    'normalizeD6jD4ExactText_',
+    'evaluateD6jD4RowFieldMatches_',
     'inspectD6jD4Triggers_',
     'assertD6jD4DriveArtifacts_',
     'assertD6jD4GmailArtifacts_'
@@ -40,8 +44,10 @@ const gas = loadGasSource({
 });
 
 const fromVm = value => JSON.parse(JSON.stringify(value));
-const seller = 'CÃ”NG TY TNHH THÃ‰P HOÃ€NG ÄÃ€O';
-const itemName = 'ThÃ©p táº¥m cháº¥n mÃ£ Ä‘áº§u cá»c';
+const seller = 'C\u00D4NG TY TNHH TH\u00C9P HO\u00C0NG \u0110\u00C0O';
+const itemName = 'Th\u00E9p t\u1EA5m ch\u1EA5n m\u00E3 \u0111\u1EA7u c\u1ECDc';
+const mojibakeSeller = 'C\u00C3\u201DNG TY TNHH TH\u00C3\u2030P HO\u00C3\u20ACNG \u00C4\u0090\u00C3\u20ACO';
+const mojibakeItemName = 'Th\u00C3\u00A9p t\u00E1\u00BA\u00A5m ch\u00E1\u00BA\u00A5n m\u00C3\u00A3 \u00C4\u2018\u00E1\u00BA\u00A7u c\u00E1\u00BB\u008Dc';
 const hashIndex = 'a0b8fab983cef571272e723c155e5fa4c0c118f05ccf5a77080bee3e7b4a5472';
 const invoiceKey = '20260309_1000677957_00000248';
 const pdfHash = '7c8f7b7a577d9fd83ff1581408113b956166ed95f13704aaed2a3769d8136b07';
@@ -51,21 +57,21 @@ const formulaR1C1 = '=HYPERLINK(XLOOKUP(RC[-1],\'Hoa-Don\'!C15,\'Hoa-Don\'!C16),
 
 const headers = [
   'STT',
-  'Ngay',
-  'Hoa don so',
-  'Ten khach hang',
-  'Ma hang',
-  'Ten hang',
-  'Phan loai',
-  'So luong',
-  'Don gia',
-  'Thanh tien',
-  'Don gia BQ',
-  'So luong ton',
-  'Gia tri ton',
+  'Ngày',
+  'Hóa đơn số',
+  'Tên khách hàng',
+  'Mã hàng',
+  'Tên hàng',
+  'Phân loại',
+  'Số lượng',
+  'Đơn giá',
+  'Thành tiền',
+  'Đơn giá BQ',
+  'Số lượng tồn',
+  'Giá trị tồn',
   'HashIndex',
   'InvoiceKey',
-  'HD'
+  'HĐ'
 ];
 
 function clone(value) {
@@ -131,6 +137,9 @@ function passPreflight(overrides = {}) {
     SPREADSHEET_ID_MATCH: 'YES',
     TARGET_SHEET_MATCH: 'YES',
     HEADER_SCHEMA_STATUS: 'PASS',
+    SHEETS_INSERTS_PLANNED: 0,
+    SHEETS_UPDATES_PLANNED: 0,
+    SHEETS_DUPLICATE_STATUS: 'EXISTING_CANONICAL_MATCH',
     PRODUCTION_MUTATION_COUNT: 0,
     ...overrides
   };
@@ -178,6 +187,31 @@ test('metadata and D6J-D4 entrypoint contract are canonical', () => {
   assert.equal(gas.exports.D6J_D4_SCHEMA_VERSION_, 'D6J_D4_POST_REPAIR_READ_ONLY_VERIFICATION_AND_CHANNEL_CLOSURE_V1');
 });
 
+test('exact Vietnamese customer and item expectations are clean NFC runtime values', () => {
+  const expected = fromVm(gas.exports.D6J_D4_EXPECTED_ROW_);
+  assert.equal(expected.D, seller);
+  assert.equal(expected.F, itemName);
+  assert.equal(gas.call('normalizeD6jD4ExactText_', seller.normalize('NFD')), seller);
+  assert.equal(gas.call('normalizeD6jD4ExactText_', itemName.normalize('NFD')), itemName);
+  assert.equal([...expected.D].some(character => character.codePointAt(0) === 0x0110), true);
+  assert.equal([...expected.F].some(character => character.codePointAt(0) === 0x1EA5), true);
+  assert.notEqual(gas.call('normalizeD6jD4ExactText_', mojibakeSeller), seller);
+  assert.notEqual(gas.call('normalizeD6jD4ExactText_', mojibakeItemName), itemName);
+});
+
+test('UTF-8 integrity checker detects prior mojibake and passes clean escaped source', () => {
+  const corruptedSource = [
+    'const customer = "',
+    '\u00C3\u0192',
+    '"; const item = "',
+    '\u00C3\u00A1\u00C2\u00BA',
+    '";'
+  ].join('');
+  const cleanEscapedSource = "const customer = 'C\\u00D4NG TY TNHH TH\\u00C9P HO\\u00C0NG \\u0110\\u00C0O';";
+  assert.equal(findD6jD4MojibakeIndicatorsInSource(corruptedSource).length >= 2, true);
+  assert.equal(findD6jD4MojibakeIndicatorsInSource(cleanEscapedSource).length, 0);
+});
+
 test('exact canonical row 1337 passes and closes the D6J-D channel', async () => {
   const h = makeRunner();
   const result = fromVm(await h.runner.run());
@@ -185,6 +219,25 @@ test('exact canonical row 1337 passes and closes the D6J-D channel', async () =>
   assert.equal(result.D6J_D_CHANNEL_STATUS, 'CLOSED');
   assert.equal(result.TARGET_ROW_NUMBER, 1337);
   assert.equal(result.CANONICAL_ROW_MATCH_COUNT, 1);
+  assert.equal(result.TARGET_ROW_PRESENT, 'YES');
+  assert.deepEqual(result.TARGET_ROW_FIELD_MATCHES, {
+    A_MATCH: true,
+    B_MATCH: true,
+    C_MATCH: true,
+    D_MATCH: true,
+    E_MATCH: true,
+    F_MATCH: true,
+    G_MATCH: true,
+    H_MATCH: true,
+    I_MATCH: true,
+    J_MATCH: true,
+    K_MATCH: true,
+    L_MATCH: true,
+    M_MATCH: true,
+    N_MATCH: true,
+    O_MATCH: true,
+    P_FORMULA_MATCH: true
+  });
   assert.equal(result.CANONICAL_VALUES_MATCH, 'YES');
   assert.equal(result.PRESERVED_VALUES_MATCH, 'YES');
   assert.equal(result.DATE_CELL_STILL_DATE, 'YES');
@@ -202,6 +255,48 @@ test('exact canonical row 1337 passes and closes the D6J-D channel', async () =>
   assert.equal(result.GMAIL_SOURCE_ARTIFACTS_UNCHANGED, 'YES');
   assert.equal(result.REPAIR_APPROVAL_MARKER_PRESENT, 'NO');
   assert.equal(result.D6J_TRIGGER_COUNT, 0);
+  assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
+  assert.equal(result.SHEETS_UPDATES_PLANNED, 0);
+  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'EXISTING_CANONICAL_MATCH');
+  assert.equal(result.SHEET_VERIFICATION_STATUS, 'PASS');
+  assert.equal(result.FIRESTORE_VERIFICATION_STATUS, 'PASS');
+  assert.equal(result.DRIVE_VERIFICATION_STATUS, 'PASS');
+  assert.equal(result.GMAIL_VERIFICATION_STATUS, 'PASS');
+  assert.equal(result.TRIGGER_VERIFICATION_STATUS, 'PASS');
+  assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+});
+
+test('D mismatch returns sanitized field-level diagnostics and leaves later stages not evaluated', async () => {
+  const h = makeRunner({ snapshot: snapshot({ targetOverrides: { values: { 3: 'BAD SELLER' } } }) });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D4_CANONICAL_ROW_NOT_FOUND');
+  assert.equal(result.TARGET_ROW_PRESENT, 'YES');
+  assert.equal(result.TARGET_ROW_FIELD_MATCHES.D_MATCH, false);
+  assert.equal(result.TARGET_ROW_FIELD_MATCHES.F_MATCH, true);
+  assert.equal(result.SHEET_VERIFICATION_STATUS, 'BLOCKED');
+  assert.equal(result.FIRESTORE_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.DRIVE_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.GMAIL_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.TRIGGER_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(JSON.stringify(result).includes('BAD SELLER'), false);
+});
+
+test('F mismatch returns sanitized field-level diagnostics', async () => {
+  const h = makeRunner({ snapshot: snapshot({ targetOverrides: { values: { 5: 'BAD ITEM' } } }) });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D4_CANONICAL_ROW_NOT_FOUND');
+  assert.equal(result.TARGET_ROW_FIELD_MATCHES.D_MATCH, true);
+  assert.equal(result.TARGET_ROW_FIELD_MATCHES.F_MATCH, false);
+  assert.equal(JSON.stringify(result).includes('BAD ITEM'), false);
+});
+
+test('D6J-D4 blocks if preflight still plans inserting the existing canonical row', async () => {
+  const h = makeRunner({ preflight: { SHEETS_INSERTS_PLANNED: 1, SHEETS_DUPLICATE_STATUS: 'NO_DUPLICATE_FOUND' } });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D4_PREFLIGHT_WOULD_INSERT_EXISTING_CANONICAL_ROW');
+  assert.equal(result.SHEETS_INSERTS_PLANNED, 1);
+  assert.equal(result.SHEET_VERIFICATION_STATUS, 'BLOCKED');
+  assert.equal(result.FIRESTORE_VERIFICATION_STATUS, 'NOT_EVALUATED');
   assert.equal(result.PRODUCTION_MUTATION, 'NONE');
 });
 

@@ -24,6 +24,7 @@ for (const marker of [
   'D6J_D4_POST_REPAIR_READ_ONLY_VERIFICATION_AND_CHANNEL_CLOSURE_V1',
   'BLOCKED_D6J_D4_REPAIR_APPROVAL_MARKER_STILL_PRESENT',
   'BLOCKED_D6J_D4_CANONICAL_ROW_NOT_FOUND',
+  'BLOCKED_D6J_D4_PREFLIGHT_WOULD_INSERT_EXISTING_CANONICAL_ROW',
   'BLOCKED_D6J_D4_CANONICAL_ROW_NOT_UNIQUE',
   'BLOCKED_D6J_D4_TARGET_ROW_NUMBER_CHANGED',
   'BLOCKED_D6J_D4_DUPLICATE_ROW_FOUND',
@@ -35,6 +36,17 @@ for (const marker of [
   'inspectD6jD4DriveArtifactsReadOnly_',
   'inspectD6jD4GmailArtifactsReadOnly_',
   'inspectD6jD4Triggers_',
+  'normalizeD6jD4ExactText_',
+  'evaluateD6jD4RowFieldMatches_',
+  'TARGET_ROW_FIELD_MATCHES',
+  'NEAR_CANONICAL_CANDIDATES',
+  'SHEET_VERIFICATION_STATUS',
+  'FIRESTORE_VERIFICATION_STATUS',
+  'DRIVE_VERIFICATION_STATUS',
+  'GMAIL_VERIFICATION_STATUS',
+  'TRIGGER_VERIFICATION_STATUS',
+  'SHEETS_DUPLICATE_STATUS',
+  'EXISTING_CANONICAL_MATCH',
   'SHEETS_MUTATION_COUNT',
   'DRIVE_MUTATION_COUNT',
   'GMAIL_MUTATION_COUNT',
@@ -80,6 +92,10 @@ for (const testMarker of [
   'canonical row at another row number blocks',
   'C mismatch blocks',
   'D mismatch blocks',
+  'D mismatch returns sanitized field-level diagnostics',
+  'F mismatch returns sanitized field-level diagnostics',
+  'D6J-D4 blocks if preflight still plans inserting the existing canonical row',
+  'UTF-8 integrity checker detects prior mojibake and passes clean escaped source',
   'J numeric mismatch blocks',
   'K numeric mismatch blocks',
   'L numeric mismatch blocks',
@@ -139,6 +155,11 @@ assert.equal(
   packageJson.scripts['check:d6j-d4-post-repair-verification'],
   'node scripts/checkers/check-d6j-d4-post-repair-verification.mjs',
   'package command check:d6j-d4-post-repair-verification missing or changed'
+);
+assert.equal(
+  packageJson.scripts['check:d6j-d4-utf8-canonical-integrity'],
+  'node scripts/checkers/check-d6j-d4-utf8-canonical-integrity.mjs',
+  'package command check:d6j-d4-utf8-canonical-integrity missing or changed'
 );
 
 console.log('D6J_D4_POST_REPAIR_VERIFICATION_CHECK=PASS');

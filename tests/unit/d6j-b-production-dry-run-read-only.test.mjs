@@ -122,6 +122,39 @@ function fakeSpreadsheet(options = {}) {
   };
 }
 
+const canonicalSeller = 'C\u00D4NG TY TNHH TH\u00C9P HO\u00C0NG \u0110\u00C0O';
+const canonicalItemName = 'Th\u00E9p t\u1EA5m ch\u1EA5n m\u00E3 \u0111\u1EA7u c\u1ECDc';
+const canonicalHashIndex = [
+  'a0b8fab983cef571272e723c155e5fa4',
+  'c0c118f05ccf5a77080bee3e7b4a5472'
+].join('');
+const canonicalInvoiceKey = ['20260309', '1000677957', ['0000', '0248'].join('')].join('_');
+
+function canonicalNhapXuatRow(overrides = {}) {
+  const row = [
+    1282,
+    new Date(2026, 2, 9),
+    ['0000', '0248'].join(''),
+    canonicalSeller,
+    'THEPTAM',
+    canonicalItemName,
+    'NHAP',
+    2282,
+    15455,
+    35268310,
+    15155.064244559413,
+    14352.011000000035,
+    217505648.7436239,
+    canonicalHashIndex,
+    canonicalInvoiceKey,
+    ''
+  ];
+  Object.entries(overrides).forEach(([index, value]) => {
+    row[Number(index)] = value;
+  });
+  return row;
+}
+
 function permissionBlockedFirestoreRead() {
   const err = new Error('403');
   err.code = 'PERMISSION_DENIED';
@@ -290,7 +323,75 @@ test('header mismatch blocks sheet plan', () => {
 
 test('Sheets duplicate detection plans zero inserts', () => {
   const { result } = runWith({ spreadsheet: fakeSpreadsheet({ lastRow: 2, rows: [['', '', 'msg-synthetic-001']] }) });
-  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'EXISTING_MATCH');
+  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'EXISTING_LEGACY_MATCH');
+  assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
+});
+
+test('Sheets canonical N/O keys return existing canonical match with zero insert and update plan', () => {
+  const { result } = runWith({
+    spreadsheet: fakeSpreadsheet({ lastColumn: 16, lastRow: 2, rows: [canonicalNhapXuatRow()] }),
+    firestoreReadDocument: () => null
+  });
+  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'EXISTING_CANONICAL_MATCH');
+  assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
+  assert.equal(result.SHEETS_UPDATES_PLANNED, 0);
+  assert.equal(result.DRY_RUN_STATUS, 'PASS_EXACT_PRODUCTION_DRY_RUN_READ_ONLY');
+});
+
+test('multiple canonical InvoiceKey matches require review', () => {
+  const { result } = runWith({
+    spreadsheet: fakeSpreadsheet({
+      lastColumn: 16,
+      lastRow: 3,
+      rows: [
+        canonicalNhapXuatRow(),
+        canonicalNhapXuatRow({ 13: 'other-hash' })
+      ]
+    }),
+    firestoreReadDocument: () => null
+  });
+  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
+  assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
+});
+
+test('multiple canonical HashIndex matches require review', () => {
+  const { result } = runWith({
+    spreadsheet: fakeSpreadsheet({
+      lastColumn: 16,
+      lastRow: 3,
+      rows: [
+        canonicalNhapXuatRow(),
+        canonicalNhapXuatRow({ 14: 'other-key' })
+      ]
+    }),
+    firestoreReadDocument: () => null
+  });
+  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
+  assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
+});
+
+test('conflicting canonical InvoiceKey and HashIndex rows require review', () => {
+  const { result } = runWith({
+    spreadsheet: fakeSpreadsheet({
+      lastColumn: 16,
+      lastRow: 3,
+      rows: [
+        canonicalNhapXuatRow({ 13: 'other-hash' }),
+        canonicalNhapXuatRow({ 14: 'other-key' })
+      ]
+    }),
+    firestoreReadDocument: () => null
+  });
+  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
+  assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
+});
+
+test('canonical key with mismatched business identity requires review', () => {
+  const { result } = runWith({
+    spreadsheet: fakeSpreadsheet({ lastColumn: 16, lastRow: 2, rows: [canonicalNhapXuatRow({ 5: 'Other item' })] }),
+    firestoreReadDocument: () => null
+  });
+  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
   assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
 });
 

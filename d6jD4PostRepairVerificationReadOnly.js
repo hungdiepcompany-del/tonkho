@@ -23,9 +23,9 @@ const D6J_D4_EXPECTED_ROW_ = Object.freeze({
   A: 1282,
   B: '20260309',
   C: '00000248',
-  D: 'CÃ”NG TY TNHH THÃ‰P HOÃ€NG ÄÃ€O',
+  D: 'C\u00D4NG TY TNHH TH\u00C9P HO\u00C0NG \u0110\u00C0O',
   E: 'THEPTAM',
-  F: 'ThÃ©p táº¥m cháº¥n mÃ£ Ä‘áº§u cá»c',
+  F: 'Th\u00E9p t\u1EA5m ch\u1EA5n m\u00E3 \u0111\u1EA7u c\u1ECDc',
   G: 'NHAP',
   H: 2282,
   I: 15455,
@@ -63,19 +63,30 @@ function createD6jD4PostRepairVerificationReadOnlyRunner_(deps) {
       assertD6jD4RepairMarkerAbsent_(properties, result);
       const preflight = services.runPreflight(properties);
       assertD6jD4Preflight_(preflight, result);
+      result.LAST_COMPLETED_VERIFICATION_STAGE = 'PREFLIGHT';
       const snapshot = services.readSheetSnapshot(properties);
       const sheet = inspectD6jD4CanonicalSheetState_(snapshot);
       mergeD6jD4Result_(result, sheet);
+      result.SHEET_VERIFICATION_STATUS = 'PASS';
+      result.LAST_COMPLETED_VERIFICATION_STAGE = 'SHEET';
       const fire = await inspectD6jD4FirestoreAudit_(services);
       mergeD6jD4Result_(result, fire);
+      result.FIRESTORE_VERIFICATION_STATUS = 'PASS';
+      result.LAST_COMPLETED_VERIFICATION_STAGE = 'FIRESTORE';
       const drive = services.inspectDriveArtifacts(properties, preflight);
       assertD6jD4DriveArtifacts_(drive);
       mergeD6jD4Result_(result, drive);
+      result.DRIVE_VERIFICATION_STATUS = 'PASS';
+      result.LAST_COMPLETED_VERIFICATION_STAGE = 'DRIVE';
       const gmail = services.inspectGmailArtifacts(properties, preflight);
       assertD6jD4GmailArtifacts_(gmail);
       mergeD6jD4Result_(result, gmail);
+      result.GMAIL_VERIFICATION_STATUS = 'PASS';
+      result.LAST_COMPLETED_VERIFICATION_STAGE = 'GMAIL';
       const trigger = inspectD6jD4Triggers_(services.listTriggers());
       mergeD6jD4Result_(result, trigger);
+      result.TRIGGER_VERIFICATION_STATUS = 'PASS';
+      result.LAST_COMPLETED_VERIFICATION_STAGE = 'TRIGGER';
       result.POST_REPAIR_STATUS = 'PASS';
       result.D6J_D_CHANNEL_STATUS = 'CLOSED';
       finalizeD6jD4ReadOnlyCounts_(result);
@@ -86,6 +97,8 @@ function createD6jD4PostRepairVerificationReadOnlyRunner_(deps) {
       result.POST_REPAIR_STATUS = code.indexOf('RECONCILIATION_REQUIRED') === 0 ? 'RECONCILIATION_REQUIRED' : 'BLOCKED';
       result.D6J_D_CHANNEL_STATUS = 'NOT_CLOSED';
       result.BLOCKER_CODE = code;
+      mergeD6jD4Result_(result, error && error.diagnostics);
+      markD6jD4BlockedStage_(result, error, code);
       finalizeD6jD4ReadOnlyCounts_(result);
       logD6jD4SanitizedResult_(services.logger, result);
       return result;
@@ -120,6 +133,18 @@ function createD6jD4BaseResult_() {
     BUSINESS_IDENTITY_ROW_COUNT: 0,
     DUPLICATE_ROW_COUNT: 0,
     UNEXPECTED_DUPLICATE_APPEND_FOUND: 'NO',
+    TARGET_ROW_PRESENT: 'NOT_EVALUATED',
+    TARGET_ROW_FIELD_MATCHES: {},
+    NEAR_CANONICAL_CANDIDATES: [],
+    LAST_COMPLETED_VERIFICATION_STAGE: 'NOT_STARTED',
+    SHEET_VERIFICATION_STATUS: 'NOT_EVALUATED',
+    FIRESTORE_VERIFICATION_STATUS: 'NOT_EVALUATED',
+    DRIVE_VERIFICATION_STATUS: 'NOT_EVALUATED',
+    GMAIL_VERIFICATION_STATUS: 'NOT_EVALUATED',
+    TRIGGER_VERIFICATION_STATUS: 'NOT_EVALUATED',
+    SHEETS_INSERTS_PLANNED: 'NOT_EVALUATED',
+    SHEETS_UPDATES_PLANNED: 'NOT_EVALUATED',
+    SHEETS_DUPLICATE_STATUS: 'NOT_EVALUATED',
     FIRESTORE_REPAIR_AUDIT_COUNT: 0,
     FIRESTORE_REPAIR_AUDIT_FOUND: 'NO',
     FIRESTORE_REPAIR_AUDIT_COLUMNS_MATCH: 'NO',
@@ -155,7 +180,7 @@ function createD6jD4BaseResult_() {
 function assertD6jD4RepairMarkerAbsent_(properties, result) {
   const present = Boolean(normalizeD6jD4String_(properties && properties.D6J_D_REPAIR_APPROVAL_MARKER));
   result.REPAIR_APPROVAL_MARKER_PRESENT = present ? 'YES' : 'NO';
-  if (present) throw d6jD4Error_('BLOCKED_D6J_D4_REPAIR_APPROVAL_MARKER_STILL_PRESENT');
+  if (present) throw d6jD4Error_('BLOCKED_D6J_D4_REPAIR_APPROVAL_MARKER_STILL_PRESENT', 'PREFLIGHT');
 }
 
 function assertD6jD4Preflight_(preflight, result) {
@@ -171,8 +196,14 @@ function assertD6jD4Preflight_(preflight, result) {
     SPREADSHEET_ID_MATCH: r.SPREADSHEET_ID_MATCH || 'NO',
     TARGET_SHEET_MATCH: r.TARGET_SHEET_MATCH || 'NO',
     HEADER_SCHEMA_STATUS: r.HEADER_SCHEMA_STATUS || '',
+    SHEETS_INSERTS_PLANNED: Number(r.SHEETS_INSERTS_PLANNED || 0),
+    SHEETS_UPDATES_PLANNED: Number(r.SHEETS_UPDATES_PLANNED || 0),
+    SHEETS_DUPLICATE_STATUS: r.SHEETS_DUPLICATE_STATUS || '',
     PRODUCTION_MUTATION_COUNT: Number(r.PRODUCTION_MUTATION_COUNT || 0)
   });
+  if (r.SHEETS_DUPLICATE_STATUS === 'NO_DUPLICATE_FOUND' && Number(r.SHEETS_INSERTS_PLANNED || 0) > 0) {
+    throw d6jD4Error_('BLOCKED_D6J_D4_PREFLIGHT_WOULD_INSERT_EXISTING_CANONICAL_ROW', 'SHEET');
+  }
   const checks = [
     [r.DRY_RUN_STATUS === 'PASS_EXACT_PRODUCTION_DRY_RUN_READ_ONLY', 'BLOCKED_D6J_D4_PREFLIGHT_STATUS'],
     [r.GMAIL_MESSAGE_ID_MATCH === 'YES' && normalizeD6jD4String_(r.GMAIL_MESSAGE_ID) === D6J_D4_GMAIL_MESSAGE_ID_, 'BLOCKED_D6J_D4_GMAIL_MESSAGE_ID_MISMATCH'],
@@ -185,10 +216,13 @@ function assertD6jD4Preflight_(preflight, result) {
     [r.SPREADSHEET_ID_MATCH === 'YES', 'BLOCKED_D6J_D4_SPREADSHEET_ID_MISMATCH'],
     [r.TARGET_SHEET_MATCH === 'YES', 'BLOCKED_D6J_D4_TARGET_SHEET_MISMATCH'],
     [r.HEADER_SCHEMA_STATUS === 'PASS', 'BLOCKED_D6J_D4_HEADER_SCHEMA_STATUS'],
+    [Number(r.SHEETS_INSERTS_PLANNED || 0) === 0, 'BLOCKED_D6J_D4_PREFLIGHT_SHEET_INSERT_PLAN_NOT_ZERO'],
+    [Number(r.SHEETS_UPDATES_PLANNED || 0) === 0, 'BLOCKED_D6J_D4_PREFLIGHT_SHEET_UPDATE_PLAN_NOT_ZERO'],
+    [r.SHEETS_DUPLICATE_STATUS === 'EXISTING_CANONICAL_MATCH', 'BLOCKED_D6J_D4_PREFLIGHT_SHEET_DUPLICATE_STATUS'],
     [Number(r.PRODUCTION_MUTATION_COUNT || 0) === 0, 'BLOCKED_D6J_D4_PREFLIGHT_MUTATION_COUNT']
   ];
   checks.forEach(pair => {
-    if (!pair[0]) throw d6jD4Error_(pair[1]);
+    if (!pair[0]) throw d6jD4Error_(pair[1], 'PREFLIGHT');
   });
 }
 
@@ -197,10 +231,16 @@ function inspectD6jD4CanonicalSheetState_(snapshot) {
   assertD6jDHeaderSchema_(source.headers || []);
   const rows = source.rows || [];
   const canonicalMatches = rows.filter(isD6jD4CanonicalRowMatch_);
-  if (canonicalMatches.length === 0) throw d6jD4Error_('BLOCKED_D6J_D4_CANONICAL_ROW_NOT_FOUND');
-  if (canonicalMatches.length > 1) throw d6jD4Error_('BLOCKED_D6J_D4_CANONICAL_ROW_NOT_UNIQUE');
+  if (canonicalMatches.length === 0) {
+    throw d6jD4ErrorWithDiagnostics_('BLOCKED_D6J_D4_CANONICAL_ROW_NOT_FOUND', buildD6jD4CanonicalRowDiagnostics_(rows, canonicalMatches), 'SHEET');
+  }
+  if (canonicalMatches.length > 1) {
+    throw d6jD4ErrorWithDiagnostics_('BLOCKED_D6J_D4_CANONICAL_ROW_NOT_UNIQUE', buildD6jD4CanonicalRowDiagnostics_(rows, canonicalMatches), 'SHEET');
+  }
   const target = canonicalMatches[0];
-  if (Number(target.rowNumber) !== D6J_D4_TARGET_ROW_NUMBER_) throw d6jD4Error_('BLOCKED_D6J_D4_TARGET_ROW_NUMBER_CHANGED');
+  if (Number(target.rowNumber) !== D6J_D4_TARGET_ROW_NUMBER_) {
+    throw d6jD4ErrorWithDiagnostics_('BLOCKED_D6J_D4_TARGET_ROW_NUMBER_CHANGED', buildD6jD4CanonicalRowDiagnostics_(rows, canonicalMatches), 'SHEET');
+  }
   const v = target.values || [];
   const formats = target.numberFormats || [];
   const formulas = target.formulas || [];
@@ -209,7 +249,7 @@ function inspectD6jD4CanonicalSheetState_(snapshot) {
   assertD6jD4PreservedCells_(v, formats);
   assertD6jD4Formula_(formulas[15] || formulasR1C1[15], formulasR1C1[15] || formulas[15]);
   const counts = countD6jD4Duplicates_(rows);
-  if (counts.invoiceKey > 1 || counts.hashIndex > 1 || counts.businessIdentity > 1) throw d6jD4Error_('BLOCKED_D6J_D4_DUPLICATE_ROW_FOUND');
+  if (counts.invoiceKey > 1 || counts.hashIndex > 1 || counts.businessIdentity > 1) throw d6jD4Error_('BLOCKED_D6J_D4_DUPLICATE_ROW_FOUND', 'SHEET');
   return {
     CANONICAL_ROW_MATCH_COUNT: 1,
     TARGET_ROW_NUMBER: Number(target.rowNumber),
@@ -231,7 +271,10 @@ function inspectD6jD4CanonicalSheetState_(snapshot) {
     HASH_INDEX_ROW_COUNT: counts.hashIndex,
     BUSINESS_IDENTITY_ROW_COUNT: counts.businessIdentity,
     DUPLICATE_ROW_COUNT: 0,
-    UNEXPECTED_DUPLICATE_APPEND_FOUND: 'NO'
+    UNEXPECTED_DUPLICATE_APPEND_FOUND: 'NO',
+    TARGET_ROW_PRESENT: 'YES',
+    TARGET_ROW_FIELD_MATCHES: evaluateD6jD4RowFieldMatches_(target),
+    NEAR_CANONICAL_CANDIDATES: []
   };
 }
 
@@ -241,9 +284,9 @@ function isD6jD4CanonicalRowMatch_(row) {
     && normalizeD6jD4String_(v[13]) === D6J_D4_HASH_INDEX_
     && tryNormalizeD6jCComparableDate_(v[1]).value === D6J_D4_EXPECTED_ROW_.B
     && normalizeD6jD4String_(v[2]) === D6J_D4_EXPECTED_ROW_.C
-    && normalizeD6jD4String_(v[3]) === D6J_D4_EXPECTED_ROW_.D
+    && normalizeD6jD4ExactText_(v[3]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.D)
     && normalizeD6jD4String_(v[4]) === D6J_D4_EXPECTED_ROW_.E
-    && normalizeD6jD4String_(v[5]) === D6J_D4_EXPECTED_ROW_.F
+    && normalizeD6jD4ExactText_(v[5]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.F)
     && normalizeD6jD4String_(v[6]) === D6J_D4_EXPECTED_ROW_.G
     && numbersEqualD6jD_(v[7], D6J_D4_EXPECTED_ROW_.H)
     && numbersEqualD6jD_(v[8], D6J_D4_EXPECTED_ROW_.I);
@@ -256,7 +299,7 @@ function assertD6jD4CanonicalValues_(v) {
     [14, D6J_D4_EXPECTED_ROW_.N, 'BLOCKED_D6J_D4_N_HASH_INDEX_MISMATCH'],
     [15, D6J_D4_EXPECTED_ROW_.O, 'BLOCKED_D6J_D4_O_INVOICE_KEY_MISMATCH']
   ].forEach(([column, expected, code]) => {
-    if (normalizeD6jD4String_(v[column - 1]) !== expected) throw d6jD4Error_(code);
+    if (normalizeD6jD4ExactText_(v[column - 1]) !== normalizeD6jD4ExactText_(expected)) throw d6jD4Error_(code, 'SHEET');
   });
   [
     [10, D6J_D4_EXPECTED_ROW_.J, 'BLOCKED_D6J_D4_J_AMOUNT_MISMATCH'],
@@ -269,23 +312,23 @@ function assertD6jD4CanonicalValues_(v) {
 }
 
 function assertD6jD4PreservedCells_(v, formats) {
-  if (!numbersEqualD6jD_(v[0], D6J_D4_EXPECTED_ROW_.A)) throw d6jD4Error_('BLOCKED_D6J_D4_A_MISMATCH');
-  if (!isD6jCDateObject_(v[1])) throw d6jD4Error_('BLOCKED_D6J_D4_B_NOT_DATE_OBJECT');
+  if (!numbersEqualD6jD_(v[0], D6J_D4_EXPECTED_ROW_.A)) throw d6jD4Error_('BLOCKED_D6J_D4_A_MISMATCH', 'SHEET');
+  if (!isD6jCDateObject_(v[1])) throw d6jD4Error_('BLOCKED_D6J_D4_B_NOT_DATE_OBJECT', 'SHEET');
   const date = tryNormalizeD6jCComparableDate_(v[1]);
-  if (!date.valid || date.value !== D6J_D4_EXPECTED_ROW_.B) throw d6jD4Error_('BLOCKED_D6J_D4_B_DATE_CANONICAL_MISMATCH');
-  if (!isD6jD4DateNumberFormat_(formats && formats[1])) throw d6jD4Error_('BLOCKED_D6J_D4_B_NUMBER_FORMAT_MISMATCH');
+  if (!date.valid || date.value !== D6J_D4_EXPECTED_ROW_.B) throw d6jD4Error_('BLOCKED_D6J_D4_B_DATE_CANONICAL_MISMATCH', 'SHEET');
+  if (!isD6jD4DateNumberFormat_(formats && formats[1])) throw d6jD4Error_('BLOCKED_D6J_D4_B_NUMBER_FORMAT_MISMATCH', 'SHEET');
   [
     [5, D6J_D4_EXPECTED_ROW_.E],
     [6, D6J_D4_EXPECTED_ROW_.F],
     [7, D6J_D4_EXPECTED_ROW_.G]
   ].forEach(([column, expected]) => {
-    if (normalizeD6jD4String_(v[column - 1]) !== expected) throw d6jD4Error_('BLOCKED_D6J_D4_' + columnLetterD6jD_(column) + '_MISMATCH');
+    if (normalizeD6jD4ExactText_(v[column - 1]) !== normalizeD6jD4ExactText_(expected)) throw d6jD4Error_('BLOCKED_D6J_D4_' + columnLetterD6jD_(column) + '_MISMATCH', 'SHEET');
   });
   [
     [8, D6J_D4_EXPECTED_ROW_.H],
     [9, D6J_D4_EXPECTED_ROW_.I]
   ].forEach(([column, expected]) => {
-    if (!numbersEqualD6jD_(v[column - 1], expected)) throw d6jD4Error_('BLOCKED_D6J_D4_' + columnLetterD6jD_(column) + '_MISMATCH');
+    if (!numbersEqualD6jD_(v[column - 1], expected)) throw d6jD4Error_('BLOCKED_D6J_D4_' + columnLetterD6jD_(column) + '_MISMATCH', 'SHEET');
   });
 }
 
@@ -293,12 +336,12 @@ function assertD6jD4Formula_(formula, formulaR1C1) {
   const a1 = normalizeD6jD4Formula_(formula);
   const r1c1 = normalizeD6jD4Formula_(formulaR1C1);
   const combined = (a1 + ' ' + r1c1).trim();
-  if (!combined) throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_MISSING');
-  if (combined.indexOf('HYPERLINK') < 0) throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_HYPERLINK_MISSING');
-  if (combined.indexOf('HOA-DON') < 0 && combined.indexOf('HOADON') < 0) throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_HOA_DON_REFERENCE_MISSING');
-  if (combined.indexOf('XLOOKUP') < 0 && combined.indexOf('VLOOKUP') < 0 && combined.indexOf('INDEX') < 0) throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_LOOKUP_MISSING');
-  if (combined.indexOf('O1337') < 0 && combined.indexOf('RC[-1]') < 0 && combined.indexOf('RC[-1'.toUpperCase()) < 0) {
-    throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_ROW_REFERENCE_MISMATCH');
+  if (!combined) throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_MISSING', 'SHEET');
+  if (combined.indexOf('HYPERLINK') < 0) throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_HYPERLINK_MISSING', 'SHEET');
+  if (combined.indexOf('HOA-DON') < 0 && combined.indexOf('HOADON') < 0) throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_HOA_DON_REFERENCE_MISSING', 'SHEET');
+  if (combined.indexOf('XLOOKUP') < 0 && combined.indexOf('VLOOKUP') < 0 && combined.indexOf('INDEX') < 0) throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_LOOKUP_MISSING', 'SHEET');
+  if (combined.indexOf('O1337') < 0 && combined.indexOf('RC[-1]') < 0) {
+    throw d6jD4Error_('BLOCKED_D6J_D4_P_FORMULA_ROW_REFERENCE_MISMATCH', 'SHEET');
   }
 }
 
@@ -319,24 +362,105 @@ function countD6jD4Duplicates_(rows) {
   }, { invoiceKey: 0, hashIndex: 0, businessIdentity: 0 });
 }
 
+function buildD6jD4CanonicalRowDiagnostics_(rows, canonicalMatches) {
+  const target = (rows || []).find(row => Number(row && row.rowNumber) === D6J_D4_TARGET_ROW_NUMBER_);
+  const candidates = (rows || [])
+    .map(row => {
+      const flags = evaluateD6jD4RowFieldMatches_(row);
+      return {
+        TARGET_ROW_NUMBER: Number(row && row.rowNumber || 0),
+        FIELD_MATCH_COUNT: Object.keys(flags).filter(key => flags[key] === true).length,
+        TARGET_ROW_FIELD_MATCHES: flags
+      };
+    })
+    .filter(candidate => candidate.FIELD_MATCH_COUNT > 0)
+    .sort((a, b) => b.FIELD_MATCH_COUNT - a.FIELD_MATCH_COUNT || a.TARGET_ROW_NUMBER - b.TARGET_ROW_NUMBER)
+    .slice(0, 5);
+  return {
+    CANONICAL_ROW_MATCH_COUNT: Number((canonicalMatches || []).length),
+    TARGET_ROW_PRESENT: target ? 'YES' : 'NO',
+    TARGET_ROW_NUMBER: D6J_D4_TARGET_ROW_NUMBER_,
+    TARGET_ROW_FIELD_MATCHES: target ? evaluateD6jD4RowFieldMatches_(target) : createD6jD4EmptyFieldMatches_(),
+    NEAR_CANONICAL_CANDIDATES: candidates,
+    LAST_COMPLETED_VERIFICATION_STAGE: 'PREFLIGHT'
+  };
+}
+
+function evaluateD6jD4RowFieldMatches_(row) {
+  const source = row || {};
+  const v = source.values || [];
+  const formulas = source.formulas || [];
+  const formulasR1C1 = source.formulasR1C1 || [];
+  return {
+    A_MATCH: numbersEqualD6jD_(v[0], D6J_D4_EXPECTED_ROW_.A),
+    B_MATCH: tryNormalizeD6jCComparableDate_(v[1]).value === D6J_D4_EXPECTED_ROW_.B,
+    C_MATCH: normalizeD6jD4ExactText_(v[2]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.C),
+    D_MATCH: normalizeD6jD4ExactText_(v[3]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.D),
+    E_MATCH: normalizeD6jD4ExactText_(v[4]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.E),
+    F_MATCH: normalizeD6jD4ExactText_(v[5]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.F),
+    G_MATCH: normalizeD6jD4ExactText_(v[6]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.G),
+    H_MATCH: numbersEqualD6jD_(v[7], D6J_D4_EXPECTED_ROW_.H),
+    I_MATCH: numbersEqualD6jD_(v[8], D6J_D4_EXPECTED_ROW_.I),
+    J_MATCH: numbersEqualD6jD_(v[9], D6J_D4_EXPECTED_ROW_.J),
+    K_MATCH: numbersEqualD6jD_(v[10], D6J_D4_EXPECTED_ROW_.K),
+    L_MATCH: numbersEqualD6jD_(v[11], D6J_D4_EXPECTED_ROW_.L),
+    M_MATCH: numbersEqualD6jD_(v[12], D6J_D4_EXPECTED_ROW_.M),
+    N_MATCH: normalizeD6jD4ExactText_(v[13]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.N),
+    O_MATCH: normalizeD6jD4ExactText_(v[14]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.O),
+    P_FORMULA_MATCH: isD6jD4FormulaMatch_(formulas[15] || formulasR1C1[15], formulasR1C1[15] || formulas[15])
+  };
+}
+
+function createD6jD4EmptyFieldMatches_() {
+  return {
+    A_MATCH: false,
+    B_MATCH: false,
+    C_MATCH: false,
+    D_MATCH: false,
+    E_MATCH: false,
+    F_MATCH: false,
+    G_MATCH: false,
+    H_MATCH: false,
+    I_MATCH: false,
+    J_MATCH: false,
+    K_MATCH: false,
+    L_MATCH: false,
+    M_MATCH: false,
+    N_MATCH: false,
+    O_MATCH: false,
+    P_FORMULA_MATCH: false
+  };
+}
+
+function isD6jD4FormulaMatch_(formula, formulaR1C1) {
+  const a1 = normalizeD6jD4Formula_(formula);
+  const r1c1 = normalizeD6jD4Formula_(formulaR1C1);
+  const combined = (a1 + ' ' + r1c1).trim();
+  return Boolean(combined
+    && combined.indexOf('HYPERLINK') >= 0
+    && (combined.indexOf('HOA-DON') >= 0 || combined.indexOf('HOADON') >= 0)
+    && (combined.indexOf('XLOOKUP') >= 0 || combined.indexOf('VLOOKUP') >= 0 || combined.indexOf('INDEX') >= 0)
+    && (combined.indexOf('O1337') >= 0 || combined.indexOf('RC[-1]') >= 0));
+}
+
 async function inspectD6jD4FirestoreAudit_(services) {
   const job = await services.readFirestoreDocument('jobs/' + D6J_D4_ORIGINAL_JOB_ID_);
-  if (!job) throw d6jD4Error_('BLOCKED_D6J_D4_ORIGINAL_JOB_NOT_FOUND');
+  if (!job) throw d6jD4Error_('BLOCKED_D6J_D4_ORIGINAL_JOB_NOT_FOUND', 'FIRESTORE');
   const status = normalizeD6jD4String_(job.status).toLowerCase();
-  if (status !== 'completed') throw d6jD4Error_('BLOCKED_D6J_D4_ORIGINAL_JOB_NOT_COMPLETED');
+  if (status !== 'completed') throw d6jD4Error_('BLOCKED_D6J_D4_ORIGINAL_JOB_NOT_COMPLETED', 'FIRESTORE');
   const events = await services.queryFirestoreCollection('jobs/' + D6J_D4_ORIGINAL_JOB_ID_ + '/events');
   const matches = (events || []).filter(event => normalizeD6jD4String_(event.eventType) === 'D6J_D_SINGLE_ROW_REPAIR'
     && normalizeD6jD4String_(event.jobId || D6J_D4_ORIGINAL_JOB_ID_) === D6J_D4_ORIGINAL_JOB_ID_);
-  if (matches.length === 0) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_MISSING');
-  if (matches.length > 1) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_NOT_UNIQUE');
+  if (matches.length === 0) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_MISSING', 'FIRESTORE');
+  if (matches.length > 1) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_NOT_UNIQUE', 'FIRESTORE');
   const detail = matches[0].safeDetails || matches[0];
   const columns = normalizeD6jD4Columns_(detail.changedColumns);
   const expected = D6J_D4_EXPECTED_CHANGED_COLUMNS_.join(',');
-  if (columns.join(',') !== expected) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID');
+  if (columns.join(',') !== expected) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID', 'FIRESTORE');
   const beforeHash = normalizeD6jD4String_(detail.beforeHash);
   const afterHash = normalizeD6jD4String_(detail.afterHash);
   if (!beforeHash || !afterHash || beforeHash === afterHash || !isD6jD4ValidTimestamp_(detail.repairedAt)) {
-    throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID');
+    throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID', 'FIRESTORE');
   }
   return {
     FIRESTORE_REPAIR_AUDIT_COUNT: 1,
@@ -353,20 +477,20 @@ async function inspectD6jD4FirestoreAudit_(services) {
 
 function assertD6jD4DriveArtifacts_(drive) {
   if (!drive || drive.DRIVE_ARTIFACTS_UNCHANGED !== 'YES' || Number(drive.DRIVE_EXACT_MATCH_COUNT) !== 2) {
-    throw d6jD4Error_('BLOCKED_D6J_D4_DRIVE_ARTIFACT_MISMATCH');
+    throw d6jD4Error_('BLOCKED_D6J_D4_DRIVE_ARTIFACT_MISMATCH', 'DRIVE');
   }
 }
 
 function assertD6jD4GmailArtifacts_(gmail) {
   if (!gmail || gmail.GMAIL_SOURCE_ARTIFACTS_UNCHANGED !== 'YES' || gmail.GMAIL_MESSAGE_FOUND !== 'YES' || Number(gmail.ATTACHMENT_COUNT) !== 2) {
-    throw d6jD4Error_('BLOCKED_D6J_D4_GMAIL_ARTIFACT_MISMATCH');
+    throw d6jD4Error_('BLOCKED_D6J_D4_GMAIL_ARTIFACT_MISMATCH', 'GMAIL');
   }
 }
 
 function inspectD6jD4Triggers_(triggers) {
   const names = (triggers || []).map(trigger => normalizeD6jD4String_(typeof trigger.getHandlerFunction === 'function' ? trigger.getHandlerFunction() : trigger.handlerFunction || trigger));
   const count = names.filter(name => D6J_D4_FORBIDDEN_TRIGGERS_.indexOf(name) >= 0).length;
-  if (count) throw d6jD4Error_('BLOCKED_D6J_D4_UNEXPECTED_D6J_TRIGGER_FOUND');
+  if (count) throw d6jD4Error_('BLOCKED_D6J_D4_UNEXPECTED_D6J_TRIGGER_FOUND', 'TRIGGER');
   return { D6J_TRIGGER_COUNT: 0, UNEXPECTED_D6J_TRIGGER_FOUND: 'NO', TRIGGER_MUTATION_COUNT: 0 };
 }
 
@@ -482,12 +606,33 @@ function normalizeD6jD4String_(value) {
   return value == null ? '' : String(value).replace(/\s+/g, ' ').trim();
 }
 
+function normalizeD6jD4ExactText_(value) {
+  return normalizeD6jD4String_(value).normalize('NFC');
+}
+
 function normalizeD6jD4ErrorCode_(value) {
   return normalizeD6jD4String_(value).split(':')[0].split(';')[0].replace(/[^A-Z0-9_]/g, '_').slice(0, 100) || 'BLOCKED_D6J_D4_UNKNOWN';
 }
 
-function d6jD4Error_(code) {
+function markD6jD4BlockedStage_(result, error, code) {
+  const stage = normalizeD6jD4String_(error && error.stage);
+  const status = code.indexOf('RECONCILIATION_REQUIRED') === 0 ? 'RECONCILIATION_REQUIRED' : 'BLOCKED';
+  if (stage === 'PREFLIGHT' || stage === 'SHEET') result.SHEET_VERIFICATION_STATUS = status;
+  else if (stage === 'FIRESTORE') result.FIRESTORE_VERIFICATION_STATUS = status;
+  else if (stage === 'DRIVE') result.DRIVE_VERIFICATION_STATUS = status;
+  else if (stage === 'GMAIL') result.GMAIL_VERIFICATION_STATUS = status;
+  else if (stage === 'TRIGGER') result.TRIGGER_VERIFICATION_STATUS = status;
+}
+
+function d6jD4Error_(code, stage) {
   const error = new Error(String(code));
   error.code = normalizeD6jD4ErrorCode_(code);
+  error.stage = stage || '';
+  return error;
+}
+
+function d6jD4ErrorWithDiagnostics_(code, diagnostics, stage) {
+  const error = d6jD4Error_(code, stage);
+  error.diagnostics = diagnostics || {};
   return error;
 }

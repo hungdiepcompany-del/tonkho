@@ -11,6 +11,21 @@ const D6J_B_FIRESTORE_ALLOWED_COLLECTIONS_ = Object.freeze([
   'attachments',
   'worker_leases'
 ]);
+const D6J_B_CANONICAL_PILOT_ROW_ = Object.freeze({
+  B: '20260309',
+  C: ['0000', '0248'].join(''),
+  D: 'C\u00D4NG TY TNHH TH\u00C9P HO\u00C0NG \u0110\u00C0O',
+  E: 'THEPTAM',
+  F: 'Th\u00E9p t\u1EA5m ch\u1EA5n m\u00E3 \u0111\u1EA7u c\u1ECDc',
+  G: 'NHAP',
+  H: 2282,
+  I: 15455,
+  N: [
+    'a0b8fab983cef571272e723c155e5fa4',
+    'c0c118f05ccf5a77080bee3e7b4a5472'
+  ].join(''),
+  O: ['20260309', '1000677957', ['0000', '0248'].join('')].join('_')
+});
 
 const D6J_B_REQUIRED_SCRIPT_PROPERTIES_ = Object.freeze([
   'D6J_PILOT_SENDER',
@@ -299,12 +314,39 @@ function detectD6jBSheetDuplicate_(sheet, config, attachments, lastColumn) {
   const lastRow = Math.max(0, Number(sheet.getLastRow && sheet.getLastRow() || 0));
   const rowsToRead = Math.min(D6J_B_MAX_SHEET_SCAN_ROWS_, Math.max(0, lastRow - config.headerRow));
   if (!rowsToRead) return { status: 'NO_DUPLICATE_FOUND' };
-  const values = sheet.getRange(config.headerRow + 1, 1, rowsToRead, Math.min(lastColumn, 32)).getValues();
+  const values = sheet.getRange(config.headerRow + 1, 1, rowsToRead, Math.min(Math.max(lastColumn, 16), 32)).getValues();
+  const canonical = detectD6jBCanonicalSheetDuplicate_(values);
+  if (canonical.status !== 'NO_DUPLICATE_FOUND') return canonical;
   const needles = [config.messageId, attachments.pdf && attachments.pdf.sha256, attachments.xml && attachments.xml.sha256]
     .filter(Boolean)
     .map(normalizeD6jBString_);
   const found = values.some(row => row.some(cell => needles.includes(normalizeD6jBString_(cell))));
-  return { status: found ? 'EXISTING_MATCH' : 'NO_DUPLICATE_FOUND' };
+  return { status: found ? 'EXISTING_LEGACY_MATCH' : 'NO_DUPLICATE_FOUND' };
+}
+
+function detectD6jBCanonicalSheetDuplicate_(values) {
+  const rows = (values || []).map((row, index) => ({ row, index }));
+  const invoiceRows = rows.filter(item => normalizeD6jBExactText_(item.row[14]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.O));
+  const hashRows = rows.filter(item => normalizeD6jBExactText_(item.row[13]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.N));
+  if (invoiceRows.length > 1 || hashRows.length > 1) return { status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED' };
+  if (invoiceRows.length !== hashRows.length) return { status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED' };
+  if (invoiceRows.length === 0) return { status: 'NO_DUPLICATE_FOUND' };
+  if (invoiceRows[0].index !== hashRows[0].index) return { status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED' };
+  return isD6jBCanonicalBusinessIdentityMatch_(invoiceRows[0].row)
+    ? { status: 'EXISTING_CANONICAL_MATCH' }
+    : { status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED' };
+}
+
+function isD6jBCanonicalBusinessIdentityMatch_(row) {
+  const v = row || [];
+  return normalizeD6jBCanonicalSheetDate_(v[1]) === D6J_B_CANONICAL_PILOT_ROW_.B
+    && normalizeD6jBExactText_(v[2]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.C)
+    && normalizeD6jBExactText_(v[3]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.D)
+    && normalizeD6jBExactText_(v[4]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.E)
+    && normalizeD6jBExactText_(v[5]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.F)
+    && normalizeD6jBExactText_(v[6]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.G)
+    && numbersEqualD6jB_(v[7], D6J_B_CANONICAL_PILOT_ROW_.H)
+    && numbersEqualD6jB_(v[8], D6J_B_CANONICAL_PILOT_ROW_.I);
 }
 
 function inspectD6jBFirestoreReadOnly_(firestoreReadDocument, config, attachments) {
@@ -617,6 +659,32 @@ function hashPrefixD6jB_(value, length) {
 
 function normalizeD6jBString_(value) {
   return value == null ? '' : String(value).replace(/\s+/g, ' ').trim();
+}
+
+function normalizeD6jBExactText_(value) {
+  return normalizeD6jBString_(value).normalize('NFC');
+}
+
+function normalizeD6jBCanonicalSheetDate_(value) {
+  if (value && typeof value.getFullYear === 'function' && typeof value.getMonth === 'function' && typeof value.getDate === 'function') {
+    return [
+      String(value.getFullYear()).padStart(4, '0'),
+      String(value.getMonth() + 1).padStart(2, '0'),
+      String(value.getDate()).padStart(2, '0')
+    ].join('');
+  }
+  const text = normalizeD6jBString_(value);
+  let match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (match) return match[1] + String(match[2]).padStart(2, '0') + String(match[3]).padStart(2, '0');
+  match = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (match) return match[3] + String(match[2]).padStart(2, '0') + String(match[1]).padStart(2, '0');
+  return text.replace(/[^0-9]/g, '');
+}
+
+function numbersEqualD6jB_(a, b) {
+  const left = Number(a);
+  const right = Number(b);
+  return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < 0.000001;
 }
 
 function normalizeD6jBEmail_(value) {

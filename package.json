@@ -51,6 +51,7 @@
     "check:d6j-c1-firestore-lease-lifecycle-production-rerun-fix": "node scripts/checkers/check-d6j-c1-firestore-lease-lifecycle-production-rerun-fix.mjs",
     "check:d6j-c2-firestore-optimistic-concurrency-real-transaction-fix": "node scripts/checkers/check-d6j-c2-firestore-optimistic-concurrency-real-transaction-fix.mjs",
     "check:d6j-d-nhap-xuat-schema-mapping-repair-channel": "node scripts/checkers/check-d6j-d-nhap-xuat-schema-mapping-repair-channel.mjs",
-    "check:d6j-d4-post-repair-verification": "node scripts/checkers/check-d6j-d4-post-repair-verification.mjs"
+    "check:d6j-d4-post-repair-verification": "node scripts/checkers/check-d6j-d4-post-repair-verification.mjs",
+    "check:d6j-d4-utf8-canonical-integrity": "node scripts/checkers/check-d6j-d4-utf8-canonical-integrity.mjs"
   }
 }
