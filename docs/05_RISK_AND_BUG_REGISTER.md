@@ -1106,9 +1106,9 @@ NEXT_ALLOWED_PHASE=D6J_B_LIMITED_PRODUCTION_PILOT
 ## D6J-C2 Firestore Optimistic Concurrency Risk Status
 
 PHASE=D6J_C2_FIRESTORE_OPTIMISTIC_CONCURRENCY_AND_REAL_TRANSACTION_FIX
-STATUS=PASS_IMPLEMENTED_VALIDATED_PENDING_REMOTE_SYNC
+STATUS=PASS_IMPLEMENTED_SYNCED_NOT_EXECUTED
 RISK_REDUCED=Firestore REST updates for D6J-C lease and durable job flows now require server-side updateTime preconditions, and stale lease/job writers fail closed.
-RISK_REMAINING=Production one-record mutation is still not executed; owner approval marker remains unconfigured; remote Apps Script proof is pending until the approved normal clasp sync and isolated pull verification complete.
+RISK_REMAINING=Production one-record mutation is still not executed; owner approval marker remains unconfigured; remote Apps Script proof passed after the approved normal clasp sync and isolated pull verification.
 FIRESTORE_SERVER_PRECONDITIONS=PASS
 FIRESTORE_COLLECTION_QUERY_GET=PASS
 LEASE_CONCURRENCY_TEST=PASS
