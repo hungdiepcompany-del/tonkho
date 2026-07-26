@@ -23,7 +23,9 @@ const gas = loadGasSource({
     'sha256D6jBBytes_',
     'logD6jBSanitizedResult_',
     'readD6jBFirestoreDocumentReadOnly_',
-    'validateD6jBFirestoreDocumentPath_'
+    'validateD6jBFirestoreDocumentPath_',
+    'normalizeD6jBInvoiceNumber_',
+    'detectD6jBCanonicalSheetDuplicate_'
   ]
 });
 
@@ -113,6 +115,10 @@ function fakeSpreadsheet(options = {}) {
       getValues: () => {
         if (row === 1 && rows === 1) return [options.header || ['Date', 'No', 'Customer', 'Item', 'Qty', 'Price', 'Hash', 'InvoiceKey'].slice(0, cols)];
         return options.rows || [];
+      },
+      getDisplayValues: () => {
+        if (row === 1 && rows === 1) return [options.header || ['Date', 'No', 'Customer', 'Item', 'Qty', 'Price', 'Hash', 'InvoiceKey'].slice(0, cols)];
+        return options.displayRows || (options.rows || []).map(sourceRow => sourceRow.map(value => String(value == null ? '' : value)));
       }
     })
   };
@@ -327,14 +333,51 @@ test('Sheets duplicate detection plans zero inserts', () => {
   assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
 });
 
+test('invoice number semantic normalization accepts raw numeric and compatible display value', () => {
+  const normalized = fromVm(gas.call('normalizeD6jBInvoiceNumber_', 248, ['0000', '0248'].join(''), 8));
+  assert.equal(normalized.valid, true);
+  assert.equal(normalized.value, ['0000', '0248'].join(''));
+  assert.equal(normalized.rawAndDisplaySemanticMatch, true);
+});
+
+test('invoice number semantic normalization accepts raw string and raw numeric without display support', () => {
+  const rawString = fromVm(gas.call('normalizeD6jBInvoiceNumber_', ['0000', '0248'].join(''), '', 8));
+  const rawNumber = fromVm(gas.call('normalizeD6jBInvoiceNumber_', 248, '', 8));
+  assert.equal(rawString.valid, true);
+  assert.equal(rawNumber.valid, true);
+  assert.equal(rawString.value, ['0000', '0248'].join(''));
+  assert.equal(rawNumber.value, ['0000', '0248'].join(''));
+});
+
+test('invoice number semantic normalization rejects non-digit values', () => {
+  const badRaw = fromVm(gas.call('normalizeD6jBInvoiceNumber_', 'INV-248', ['0000', '0248'].join(''), 8));
+  const badDisplay = fromVm(gas.call('normalizeD6jBInvoiceNumber_', 248, 'INV-248', 8));
+  assert.equal(badRaw.valid, false);
+  assert.equal(badDisplay.valid, false);
+});
+
 test('Sheets canonical N/O keys return existing canonical match with zero insert and update plan', () => {
   const { result } = runWith({
-    spreadsheet: fakeSpreadsheet({ lastColumn: 16, lastRow: 2, rows: [canonicalNhapXuatRow()] }),
+    spreadsheet: fakeSpreadsheet({
+      lastColumn: 16,
+      lastRow: 2,
+      rows: [canonicalNhapXuatRow({ 2: 248 })],
+      displayRows: [canonicalNhapXuatRow()]
+    }),
     firestoreReadDocument: () => null
   });
   assert.equal(result.SHEETS_DUPLICATE_STATUS, 'EXISTING_CANONICAL_MATCH');
   assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
   assert.equal(result.SHEETS_UPDATES_PLANNED, 0);
+  assert.equal(result.CANONICAL_INVOICE_KEY_MATCH_COUNT, 1);
+  assert.deepEqual(result.CANONICAL_INVOICE_KEY_MATCH_ROWS, [2]);
+  assert.equal(result.CANONICAL_HASH_INDEX_MATCH_COUNT, 1);
+  assert.deepEqual(result.CANONICAL_HASH_INDEX_MATCH_ROWS, [2]);
+  assert.equal(result.CANONICAL_KEYS_MATCH_SAME_ROW, 'YES');
+  assert.equal(result.CANONICAL_BUSINESS_IDENTITY_MATCH, 'YES');
+  assert.equal(result.CANONICAL_DUPLICATE_CONFLICT_REASON, 'NONE');
+  assert.equal(result.CANONICAL_INVOICE_NUMBER, ['0000', '0248'].join(''));
+  assert.equal(result.RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH, 'YES');
   assert.equal(result.DRY_RUN_STATUS, 'PASS_EXACT_PRODUCTION_DRY_RUN_READ_ONLY');
 });
 
@@ -351,6 +394,8 @@ test('multiple canonical InvoiceKey matches require review', () => {
     firestoreReadDocument: () => null
   });
   assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
+  assert.equal(result.CANONICAL_DUPLICATE_CONFLICT_REASON, 'MULTIPLE_INVOICE_KEY_ROWS');
+  assert.equal(result.DRY_RUN_STATUS, 'BLOCKED_SHEET_DUPLICATE_CONFLICT_MULTIPLE_INVOICE_KEY_ROWS');
   assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
 });
 
@@ -367,6 +412,8 @@ test('multiple canonical HashIndex matches require review', () => {
     firestoreReadDocument: () => null
   });
   assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
+  assert.equal(result.CANONICAL_DUPLICATE_CONFLICT_REASON, 'MULTIPLE_HASH_INDEX_ROWS');
+  assert.equal(result.DRY_RUN_STATUS, 'BLOCKED_SHEET_DUPLICATE_CONFLICT_MULTIPLE_HASH_INDEX_ROWS');
   assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
 });
 
@@ -383,6 +430,8 @@ test('conflicting canonical InvoiceKey and HashIndex rows require review', () =>
     firestoreReadDocument: () => null
   });
   assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
+  assert.equal(result.CANONICAL_DUPLICATE_CONFLICT_REASON, 'INVOICE_HASH_ROWS_DIFFER');
+  assert.equal(result.DRY_RUN_STATUS, 'BLOCKED_SHEET_DUPLICATE_CONFLICT_INVOICE_HASH_ROWS_DIFFER');
   assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
 });
 
@@ -392,7 +441,21 @@ test('canonical key with mismatched business identity requires review', () => {
     firestoreReadDocument: () => null
   });
   assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
+  assert.equal(result.CANONICAL_DUPLICATE_CONFLICT_REASON, 'BUSINESS_IDENTITY_MISMATCH');
+  assert.equal(result.CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES.F_ITEM_NAME_MATCH, false);
+  assert.equal(result.CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES.C_INVOICE_NUMBER_MATCH, true);
+  assert.equal(result.DRY_RUN_STATUS, 'BLOCKED_SHEET_DUPLICATE_CONFLICT_BUSINESS_IDENTITY_MISMATCH');
   assert.equal(result.SHEETS_INSERTS_PLANNED, 0);
+});
+
+test('canonical key count mismatch requires exact review reason', () => {
+  const { result } = runWith({
+    spreadsheet: fakeSpreadsheet({ lastColumn: 16, lastRow: 2, rows: [canonicalNhapXuatRow({ 13: 'other-hash' })] }),
+    firestoreReadDocument: () => null
+  });
+  assert.equal(result.SHEETS_DUPLICATE_STATUS, 'DUPLICATE_CONFLICT_REVIEW_REQUIRED');
+  assert.equal(result.CANONICAL_DUPLICATE_CONFLICT_REASON, 'INVOICE_HASH_COUNTS_DIFFER');
+  assert.equal(result.DRY_RUN_STATUS, 'BLOCKED_SHEET_DUPLICATE_CONFLICT_INVOICE_HASH_COUNTS_DIFFER');
 });
 
 test('Firestore permission blocker is explicit and safe', () => {

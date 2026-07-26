@@ -1099,6 +1099,7 @@ function readD6jDSheetSnapshotFromSheet_(sheet) {
   const lastRow = Math.max(1, Number(sheet.getLastRow() || 1));
   const range = sheet.getRange(1, 1, lastRow, 16);
   const values = range.getValues();
+  const displayValues = typeof range.getDisplayValues === 'function' ? range.getDisplayValues() : values.map(row => row.map(value => String(value == null ? '' : value)));
   const formulas = typeof range.getFormulas === 'function' ? range.getFormulas() : values.map(row => row.map(() => ''));
   const formulasR1C1 = typeof range.getFormulasR1C1 === 'function' ? range.getFormulasR1C1() : formulas;
   const numberFormats = typeof range.getNumberFormats === 'function' ? range.getNumberFormats() : values.map(row => row.map(() => ''));
@@ -1107,6 +1108,7 @@ function readD6jDSheetSnapshotFromSheet_(sheet) {
     rows: values.slice(1).map((row, index) => ({
       rowNumber: index + 2,
       values: row.slice(0, 16),
+      displayValues: (displayValues[index + 1] || []).slice(0, 16),
       formulas: (formulas[index + 1] || []).slice(0, 16),
       formulasR1C1: (formulasR1C1[index + 1] || []).slice(0, 16),
       numberFormats: (numberFormats[index + 1] || []).slice(0, 16)

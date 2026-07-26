@@ -14,6 +14,7 @@ const D6J_B_FIRESTORE_ALLOWED_COLLECTIONS_ = Object.freeze([
 const D6J_B_CANONICAL_PILOT_ROW_ = Object.freeze({
   B: '20260309',
   C: ['0000', '0248'].join(''),
+  C_WIDTH: 8,
   D: 'C\u00D4NG TY TNHH TH\u00C9P HO\u00C0NG \u0110\u00C0O',
   E: 'THEPTAM',
   F: 'Th\u00E9p t\u1EA5m ch\u1EA5n m\u00E3 \u0111\u1EA7u c\u1ECDc',
@@ -303,7 +304,8 @@ function inspectD6jBSheetsReadOnly_(openSpreadsheetById, config, attachments) {
       HEADER_SCHEMA_STATUS: headerOk ? 'PASS' : 'BLOCKED_HEADER_SCHEMA_MISMATCH',
       SHEETS_INSERTS_PLANNED: headerOk && duplicate.status === 'NO_DUPLICATE_FOUND' ? Math.min(1, config.maxSheetInserts) : 0,
       SHEETS_UPDATES_PLANNED: 0,
-      SHEETS_DUPLICATE_STATUS: duplicate.status
+      SHEETS_DUPLICATE_STATUS: duplicate.status,
+      ...buildD6jBDuplicateDiagnosticsResult_(duplicate)
     };
   } catch (error) {
     return createD6jBSheetsBlockedPlan_();
@@ -314,39 +316,134 @@ function detectD6jBSheetDuplicate_(sheet, config, attachments, lastColumn) {
   const lastRow = Math.max(0, Number(sheet.getLastRow && sheet.getLastRow() || 0));
   const rowsToRead = Math.min(D6J_B_MAX_SHEET_SCAN_ROWS_, Math.max(0, lastRow - config.headerRow));
   if (!rowsToRead) return { status: 'NO_DUPLICATE_FOUND' };
-  const values = sheet.getRange(config.headerRow + 1, 1, rowsToRead, Math.min(Math.max(lastColumn, 16), 32)).getValues();
-  const canonical = detectD6jBCanonicalSheetDuplicate_(values);
+  const range = sheet.getRange(config.headerRow + 1, 1, rowsToRead, Math.min(Math.max(lastColumn, 16), 32));
+  const values = range.getValues();
+  const displayValues = typeof range.getDisplayValues === 'function' ? range.getDisplayValues() : values.map(row => row.map(value => String(value == null ? '' : value)));
+  const canonical = detectD6jBCanonicalSheetDuplicate_(values, displayValues, config.headerRow);
   if (canonical.status !== 'NO_DUPLICATE_FOUND') return canonical;
   const needles = [config.messageId, attachments.pdf && attachments.pdf.sha256, attachments.xml && attachments.xml.sha256]
     .filter(Boolean)
     .map(normalizeD6jBString_);
   const found = values.some(row => row.some(cell => needles.includes(normalizeD6jBString_(cell))));
-  return { status: found ? 'EXISTING_LEGACY_MATCH' : 'NO_DUPLICATE_FOUND' };
+  return found
+    ? { ...createD6jBEmptyDuplicateDiagnostics_(), status: 'EXISTING_LEGACY_MATCH' }
+    : { ...createD6jBEmptyDuplicateDiagnostics_(), status: 'NO_DUPLICATE_FOUND' };
 }
 
-function detectD6jBCanonicalSheetDuplicate_(values) {
-  const rows = (values || []).map((row, index) => ({ row, index }));
+function detectD6jBCanonicalSheetDuplicate_(values, displayValues, headerRow) {
+  const rows = (values || []).map((row, index) => ({
+    row,
+    displayRow: (displayValues || [])[index] || [],
+    index,
+    rowNumber: Number(headerRow || 1) + index + 1
+  }));
   const invoiceRows = rows.filter(item => normalizeD6jBExactText_(item.row[14]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.O));
   const hashRows = rows.filter(item => normalizeD6jBExactText_(item.row[13]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.N));
-  if (invoiceRows.length > 1 || hashRows.length > 1) return { status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED' };
-  if (invoiceRows.length !== hashRows.length) return { status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED' };
-  if (invoiceRows.length === 0) return { status: 'NO_DUPLICATE_FOUND' };
-  if (invoiceRows[0].index !== hashRows[0].index) return { status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED' };
-  return isD6jBCanonicalBusinessIdentityMatch_(invoiceRows[0].row)
-    ? { status: 'EXISTING_CANONICAL_MATCH' }
-    : { status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED' };
+  const base = {
+    CANONICAL_INVOICE_KEY_MATCH_COUNT: invoiceRows.length,
+    CANONICAL_INVOICE_KEY_MATCH_ROWS: invoiceRows.map(item => item.rowNumber),
+    CANONICAL_HASH_INDEX_MATCH_COUNT: hashRows.length,
+    CANONICAL_HASH_INDEX_MATCH_ROWS: hashRows.map(item => item.rowNumber),
+    CANONICAL_KEYS_MATCH_SAME_ROW: 'NO',
+    CANONICAL_BUSINESS_IDENTITY_MATCH: 'NO',
+    CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: createD6jBEmptyBusinessIdentityMatches_(),
+    CANONICAL_DUPLICATE_CONFLICT_REASON: 'NONE',
+    CANONICAL_INVOICE_NUMBER: D6J_B_CANONICAL_PILOT_ROW_.C,
+    RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: 'NO'
+  };
+  if (invoiceRows.length > 1) return { ...base, status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED', CANONICAL_DUPLICATE_CONFLICT_REASON: 'MULTIPLE_INVOICE_KEY_ROWS' };
+  if (hashRows.length > 1) return { ...base, status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED', CANONICAL_DUPLICATE_CONFLICT_REASON: 'MULTIPLE_HASH_INDEX_ROWS' };
+  if (invoiceRows.length !== hashRows.length) return { ...base, status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED', CANONICAL_DUPLICATE_CONFLICT_REASON: 'INVOICE_HASH_COUNTS_DIFFER' };
+  if (invoiceRows.length === 0) return { ...base, status: 'NO_DUPLICATE_FOUND', CANONICAL_DUPLICATE_CONFLICT_REASON: 'NONE' };
+  if (invoiceRows[0].index !== hashRows[0].index) return { ...base, status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED', CANONICAL_DUPLICATE_CONFLICT_REASON: 'INVOICE_HASH_ROWS_DIFFER' };
+  const identity = evaluateD6jBCanonicalBusinessIdentity_(invoiceRows[0].row, invoiceRows[0].displayRow);
+  const ok = Object.keys(identity.fieldMatches).every(key => identity.fieldMatches[key] === true);
+  return ok
+    ? {
+      ...base,
+      status: 'EXISTING_CANONICAL_MATCH',
+      CANONICAL_KEYS_MATCH_SAME_ROW: 'YES',
+      CANONICAL_BUSINESS_IDENTITY_MATCH: 'YES',
+      CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: identity.fieldMatches,
+      RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: identity.rawAndDisplayInvoiceNumberSemanticMatch ? 'YES' : 'NO'
+    }
+    : {
+      ...base,
+      status: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED',
+      CANONICAL_KEYS_MATCH_SAME_ROW: 'YES',
+      CANONICAL_BUSINESS_IDENTITY_MATCH: 'NO',
+      CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: identity.fieldMatches,
+      CANONICAL_DUPLICATE_CONFLICT_REASON: 'BUSINESS_IDENTITY_MISMATCH',
+      RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: identity.rawAndDisplayInvoiceNumberSemanticMatch ? 'YES' : 'NO'
+    };
 }
 
 function isD6jBCanonicalBusinessIdentityMatch_(row) {
+  const identity = evaluateD6jBCanonicalBusinessIdentity_(row, []);
+  return Object.keys(identity.fieldMatches).every(key => identity.fieldMatches[key] === true);
+}
+
+function evaluateD6jBCanonicalBusinessIdentity_(row, displayRow) {
   const v = row || [];
-  return normalizeD6jBCanonicalSheetDate_(v[1]) === D6J_B_CANONICAL_PILOT_ROW_.B
-    && normalizeD6jBExactText_(v[2]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.C)
-    && normalizeD6jBExactText_(v[3]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.D)
-    && normalizeD6jBExactText_(v[4]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.E)
-    && normalizeD6jBExactText_(v[5]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.F)
-    && normalizeD6jBExactText_(v[6]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.G)
-    && numbersEqualD6jB_(v[7], D6J_B_CANONICAL_PILOT_ROW_.H)
-    && numbersEqualD6jB_(v[8], D6J_B_CANONICAL_PILOT_ROW_.I);
+  const d = displayRow || [];
+  const invoice = normalizeD6jBInvoiceNumber_(v[2], d[2], D6J_B_CANONICAL_PILOT_ROW_.C_WIDTH);
+  return {
+    fieldMatches: {
+      B_DATE_MATCH: normalizeD6jBCanonicalSheetDate_(v[1]) === D6J_B_CANONICAL_PILOT_ROW_.B,
+      C_INVOICE_NUMBER_MATCH: invoice.valid && invoice.value === D6J_B_CANONICAL_PILOT_ROW_.C,
+      D_CUSTOMER_NAME_MATCH: normalizeD6jBExactText_(v[3]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.D),
+      E_ITEM_CODE_MATCH: normalizeD6jBExactText_(v[4]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.E),
+      F_ITEM_NAME_MATCH: normalizeD6jBExactText_(v[5]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.F),
+      G_DIRECTION_MATCH: normalizeD6jBExactText_(v[6]) === normalizeD6jBExactText_(D6J_B_CANONICAL_PILOT_ROW_.G),
+      H_QUANTITY_MATCH: numbersEqualD6jB_(v[7], D6J_B_CANONICAL_PILOT_ROW_.H),
+      I_UNIT_PRICE_MATCH: numbersEqualD6jB_(v[8], D6J_B_CANONICAL_PILOT_ROW_.I)
+    },
+    rawAndDisplayInvoiceNumberSemanticMatch: invoice.rawAndDisplaySemanticMatch
+  };
+}
+
+function createD6jBEmptyBusinessIdentityMatches_() {
+  return {
+    B_DATE_MATCH: false,
+    C_INVOICE_NUMBER_MATCH: false,
+    D_CUSTOMER_NAME_MATCH: false,
+    E_ITEM_CODE_MATCH: false,
+    F_ITEM_NAME_MATCH: false,
+    G_DIRECTION_MATCH: false,
+    H_QUANTITY_MATCH: false,
+    I_UNIT_PRICE_MATCH: false
+  };
+}
+
+function createD6jBEmptyDuplicateDiagnostics_() {
+  return {
+    CANONICAL_INVOICE_KEY_MATCH_COUNT: 0,
+    CANONICAL_INVOICE_KEY_MATCH_ROWS: [],
+    CANONICAL_HASH_INDEX_MATCH_COUNT: 0,
+    CANONICAL_HASH_INDEX_MATCH_ROWS: [],
+    CANONICAL_KEYS_MATCH_SAME_ROW: 'NO',
+    CANONICAL_BUSINESS_IDENTITY_MATCH: 'NO',
+    CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: createD6jBEmptyBusinessIdentityMatches_(),
+    CANONICAL_DUPLICATE_CONFLICT_REASON: 'NONE',
+    CANONICAL_INVOICE_NUMBER: D6J_B_CANONICAL_PILOT_ROW_.C,
+    RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: 'NO'
+  };
+}
+
+function buildD6jBDuplicateDiagnosticsResult_(duplicate) {
+  const d = duplicate || {};
+  return {
+    CANONICAL_INVOICE_KEY_MATCH_COUNT: Number(d.CANONICAL_INVOICE_KEY_MATCH_COUNT || 0),
+    CANONICAL_INVOICE_KEY_MATCH_ROWS: Array.isArray(d.CANONICAL_INVOICE_KEY_MATCH_ROWS) ? d.CANONICAL_INVOICE_KEY_MATCH_ROWS.map(Number).filter(Number.isFinite) : [],
+    CANONICAL_HASH_INDEX_MATCH_COUNT: Number(d.CANONICAL_HASH_INDEX_MATCH_COUNT || 0),
+    CANONICAL_HASH_INDEX_MATCH_ROWS: Array.isArray(d.CANONICAL_HASH_INDEX_MATCH_ROWS) ? d.CANONICAL_HASH_INDEX_MATCH_ROWS.map(Number).filter(Number.isFinite) : [],
+    CANONICAL_KEYS_MATCH_SAME_ROW: d.CANONICAL_KEYS_MATCH_SAME_ROW || 'NO',
+    CANONICAL_BUSINESS_IDENTITY_MATCH: d.CANONICAL_BUSINESS_IDENTITY_MATCH || 'NO',
+    CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: d.CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES || createD6jBEmptyBusinessIdentityMatches_(),
+    CANONICAL_DUPLICATE_CONFLICT_REASON: d.CANONICAL_DUPLICATE_CONFLICT_REASON || 'NONE',
+    CANONICAL_INVOICE_NUMBER: d.CANONICAL_INVOICE_NUMBER || D6J_B_CANONICAL_PILOT_ROW_.C,
+    RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: d.RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH || 'NO'
+  };
 }
 
 function inspectD6jBFirestoreReadOnly_(firestoreReadDocument, config, attachments) {
@@ -492,6 +589,7 @@ function finalizeD6jBResult_(base, config, gmail, drive, sheets, fire) {
     && sheets.TARGET_SHEET_MATCH === 'YES'
     && sheets.HEADER_ROW_MATCH === 'YES'
     && sheets.HEADER_SCHEMA_STATUS === 'PASS'
+    && sheets.SHEETS_DUPLICATE_STATUS !== 'DUPLICATE_CONFLICT_REVIEW_REQUIRED'
     && Number(sheets.SHEETS_INSERTS_PLANNED) <= config.maxSheetInserts
     && Number(sheets.SHEETS_UPDATES_PLANNED) === config.maxSheetUpdates
     && Number(fire.FIRESTORE_ATTACHMENT_RECORDS_PLANNED) <= config.maxFirestoreAttachments;
@@ -540,6 +638,9 @@ function classifyD6jBPlanningBlocker_(gmail, drive, sheets, fire, config) {
   if (sheets.SPREADSHEET_ID_MATCH !== 'YES') return 'BLOCKED_SPREADSHEET_ID_MISMATCH';
   if (sheets.TARGET_SHEET_MATCH !== 'YES') return 'BLOCKED_TARGET_SHEET_MISSING';
   if (sheets.HEADER_ROW_MATCH !== 'YES' || sheets.HEADER_SCHEMA_STATUS !== 'PASS') return 'BLOCKED_HEADER_SCHEMA_MISMATCH';
+  if (sheets.SHEETS_DUPLICATE_STATUS === 'DUPLICATE_CONFLICT_REVIEW_REQUIRED') {
+    return 'BLOCKED_SHEET_DUPLICATE_CONFLICT_' + sanitizeD6jBPlanningCode_(sheets.CANONICAL_DUPLICATE_CONFLICT_REASON || 'UNKNOWN');
+  }
   if (Number(sheets.SHEETS_INSERTS_PLANNED) > config.maxSheetInserts) return 'BLOCKED_SHEET_INSERT_LIMIT';
   if (Number(sheets.SHEETS_UPDATES_PLANNED) !== config.maxSheetUpdates) return 'BLOCKED_SHEET_UPDATE_PLAN_NOT_ZERO';
   if (Number(fire.FIRESTORE_ATTACHMENT_RECORDS_PLANNED) > config.maxFirestoreAttachments) return 'BLOCKED_FIRESTORE_ATTACHMENT_PLAN_LIMIT';
@@ -578,6 +679,7 @@ function createD6jBBaseResult_() {
     SHEETS_INSERTS_PLANNED: 0,
     SHEETS_UPDATES_PLANNED: 0,
     SHEETS_DUPLICATE_STATUS: 'NOT_EVALUATED',
+    ...createD6jBEmptyDuplicateDiagnostics_(),
     FIRESTORE_JOBS_PLANNED: 0,
     FIRESTORE_GMAIL_RECORDS_PLANNED: 0,
     FIRESTORE_ATTACHMENT_RECORDS_PLANNED: 0,
@@ -617,7 +719,8 @@ function createD6jBSheetsBlockedPlan_() {
     HEADER_SCHEMA_STATUS: 'BLOCKED',
     SHEETS_INSERTS_PLANNED: 0,
     SHEETS_UPDATES_PLANNED: 0,
-    SHEETS_DUPLICATE_STATUS: 'BLOCKED'
+    SHEETS_DUPLICATE_STATUS: 'BLOCKED',
+    ...createD6jBEmptyDuplicateDiagnostics_()
   };
 }
 
@@ -681,6 +784,32 @@ function normalizeD6jBCanonicalSheetDate_(value) {
   return text.replace(/[^0-9]/g, '');
 }
 
+function normalizeD6jBInvoiceNumber_(rawValue, displayValue, width) {
+  const raw = normalizeD6jBInvoiceNumberPart_(rawValue, width);
+  const displayText = normalizeD6jBString_(displayValue).normalize('NFC');
+  const display = displayText ? normalizeD6jBInvoiceNumberPart_(displayText, width) : { valid: true, value: raw.value };
+  return {
+    valid: raw.valid && display.valid && raw.value === display.value,
+    value: raw.value,
+    rawValue: raw.value,
+    displayValue: display.value,
+    rawAndDisplaySemanticMatch: raw.valid && display.valid && raw.value === display.value
+  };
+}
+
+function normalizeD6jBInvoiceNumberPart_(value, width) {
+  let text = '';
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || Math.floor(value) !== value || value < 0) return { valid: false, value: '' };
+    text = String(value);
+  } else {
+    text = normalizeD6jBString_(value).normalize('NFC');
+  }
+  if (!/^\d+$/.test(text)) return { valid: false, value: '' };
+  const normalized = text.replace(/^0+(?=\d)/, '');
+  return { valid: true, value: normalized.padStart(Number(width || text.length), '0') };
+}
+
 function numbersEqualD6jB_(a, b) {
   const left = Number(a);
   const right = Number(b);
@@ -741,6 +870,10 @@ function parseD6jBNonNegativeInteger_(value, name) {
 
 function sanitizeD6jBLogText_(value) {
   return normalizeD6jBString_(value).replace(/(Bearer|Authorization|refresh_token|private_key|client_secret)[^\s,;)]*/ig, 'REDACTED');
+}
+
+function sanitizeD6jBPlanningCode_(value) {
+  return normalizeD6jBString_(value).toUpperCase().replace(/[^A-Z0-9_]/g, '_').slice(0, 80) || 'UNKNOWN';
 }
 
 function d6jBError_(code) {

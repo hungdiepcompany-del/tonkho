@@ -103,9 +103,14 @@ function repairedRow(overrides = {}) {
   Object.entries(overrides.values || {}).forEach(([index, value]) => {
     values[Number(index)] = value;
   });
+  const displayValues = values.map(value => String(value == null ? '' : value));
+  Object.entries(overrides.displayValues || {}).forEach(([index, value]) => {
+    displayValues[Number(index)] = value;
+  });
   return {
     rowNumber: overrides.rowNumber || 1337,
     values,
+    displayValues,
     formulas: Array(16).fill('').map((_, index) => index === 15 ? (overrides.formula === undefined ? formula : overrides.formula) : ''),
     formulasR1C1: Array(16).fill('').map((_, index) => index === 15 ? (overrides.formulaR1C1 === undefined ? formulaR1C1 : overrides.formulaR1C1) : ''),
     numberFormats: Array(16).fill('').map((_, index) => index === 1 ? (overrides.dateFormat || 'yyyy-mm-dd') : '')
@@ -140,6 +145,25 @@ function passPreflight(overrides = {}) {
     SHEETS_INSERTS_PLANNED: 0,
     SHEETS_UPDATES_PLANNED: 0,
     SHEETS_DUPLICATE_STATUS: 'EXISTING_CANONICAL_MATCH',
+    CANONICAL_INVOICE_KEY_MATCH_COUNT: 1,
+    CANONICAL_INVOICE_KEY_MATCH_ROWS: [1337],
+    CANONICAL_HASH_INDEX_MATCH_COUNT: 1,
+    CANONICAL_HASH_INDEX_MATCH_ROWS: [1337],
+    CANONICAL_KEYS_MATCH_SAME_ROW: 'YES',
+    CANONICAL_BUSINESS_IDENTITY_MATCH: 'YES',
+    CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: {
+      B_DATE_MATCH: true,
+      C_INVOICE_NUMBER_MATCH: true,
+      D_CUSTOMER_NAME_MATCH: true,
+      E_ITEM_CODE_MATCH: true,
+      F_ITEM_NAME_MATCH: true,
+      G_DIRECTION_MATCH: true,
+      H_QUANTITY_MATCH: true,
+      I_UNIT_PRICE_MATCH: true
+    },
+    CANONICAL_DUPLICATE_CONFLICT_REASON: 'NONE',
+    CANONICAL_INVOICE_NUMBER: '00000248',
+    RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: 'YES',
     PRODUCTION_MUTATION_COUNT: 0,
     ...overrides
   };
@@ -297,6 +321,62 @@ test('D6J-D4 blocks if preflight still plans inserting the existing canonical ro
   assert.equal(result.SHEETS_INSERTS_PLANNED, 1);
   assert.equal(result.SHEET_VERIFICATION_STATUS, 'BLOCKED');
   assert.equal(result.FIRESTORE_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+});
+
+test('D6J-D4 proceeds to Sheet diagnostics on zero-write preflight duplicate conflict', async () => {
+  const h = makeRunner({
+    preflight: {
+      DRY_RUN_STATUS: 'BLOCKED_SHEET_DUPLICATE_CONFLICT_BUSINESS_IDENTITY_MISMATCH',
+      SHEETS_INSERTS_PLANNED: 0,
+      SHEETS_UPDATES_PLANNED: 0,
+      SHEETS_DUPLICATE_STATUS: 'DUPLICATE_CONFLICT_REVIEW_REQUIRED',
+      CANONICAL_INVOICE_KEY_MATCH_COUNT: 1,
+      CANONICAL_INVOICE_KEY_MATCH_ROWS: [1337],
+      CANONICAL_HASH_INDEX_MATCH_COUNT: 1,
+      CANONICAL_HASH_INDEX_MATCH_ROWS: [1337],
+      CANONICAL_KEYS_MATCH_SAME_ROW: 'YES',
+      CANONICAL_BUSINESS_IDENTITY_MATCH: 'NO',
+      CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: {
+        B_DATE_MATCH: true,
+        C_INVOICE_NUMBER_MATCH: false,
+        D_CUSTOMER_NAME_MATCH: true,
+        E_ITEM_CODE_MATCH: true,
+        F_ITEM_NAME_MATCH: true,
+        G_DIRECTION_MATCH: true,
+        H_QUANTITY_MATCH: true,
+        I_UNIT_PRICE_MATCH: true
+      },
+      CANONICAL_DUPLICATE_CONFLICT_REASON: 'BUSINESS_IDENTITY_MISMATCH',
+      RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: 'NO'
+    }
+  });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D4_PREFLIGHT_CLASSIFIER_DISAGREEMENT');
+  assert.equal(result.CANONICAL_ROW_MATCH_COUNT, 1);
+  assert.equal(result.TARGET_ROW_PRESENT, 'YES');
+  assert.equal(result.TARGET_ROW_FIELD_MATCHES.C_MATCH, true);
+  assert.equal(result.SHEET_VERIFICATION_STATUS, 'PASS');
+  assert.equal(result.FIRESTORE_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.DRIVE_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.GMAIL_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.TRIGGER_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.D6J_D_CHANNEL_STATUS, 'NOT_CLOSED');
+  assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+});
+
+test('D6J-D4 matches raw numeric invoice number when display value preserves leading zeroes', async () => {
+  const h = makeRunner({
+    snapshot: snapshot({
+      targetOverrides: {
+        values: { 2: 248 },
+        displayValues: { 2: '00000248' }
+      }
+    })
+  });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.POST_REPAIR_STATUS, 'PASS');
+  assert.equal(result.TARGET_ROW_FIELD_MATCHES.C_MATCH, true);
   assert.equal(result.PRODUCTION_MUTATION, 'NONE');
 });
 

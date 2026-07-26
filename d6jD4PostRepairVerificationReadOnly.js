@@ -62,13 +62,16 @@ function createD6jD4PostRepairVerificationReadOnlyRunner_(deps) {
       const properties = services.readProperties();
       assertD6jD4RepairMarkerAbsent_(properties, result);
       const preflight = services.runPreflight(properties);
-      assertD6jD4Preflight_(preflight, result);
+      const preflightState = assertD6jD4Preflight_(preflight, result);
       result.LAST_COMPLETED_VERIFICATION_STAGE = 'PREFLIGHT';
       const snapshot = services.readSheetSnapshot(properties);
       const sheet = inspectD6jD4CanonicalSheetState_(snapshot);
       mergeD6jD4Result_(result, sheet);
       result.SHEET_VERIFICATION_STATUS = 'PASS';
       result.LAST_COMPLETED_VERIFICATION_STAGE = 'SHEET';
+      if (preflightState.sheetDuplicateStatus !== 'EXISTING_CANONICAL_MATCH') {
+        throw d6jD4Error_('BLOCKED_D6J_D4_PREFLIGHT_CLASSIFIER_DISAGREEMENT', 'CLASSIFIER');
+      }
       const fire = await inspectD6jD4FirestoreAudit_(services);
       mergeD6jD4Result_(result, fire);
       result.FIRESTORE_VERIFICATION_STATUS = 'PASS';
@@ -145,6 +148,16 @@ function createD6jD4BaseResult_() {
     SHEETS_INSERTS_PLANNED: 'NOT_EVALUATED',
     SHEETS_UPDATES_PLANNED: 'NOT_EVALUATED',
     SHEETS_DUPLICATE_STATUS: 'NOT_EVALUATED',
+    CANONICAL_INVOICE_KEY_MATCH_COUNT: 0,
+    CANONICAL_INVOICE_KEY_MATCH_ROWS: [],
+    CANONICAL_HASH_INDEX_MATCH_COUNT: 0,
+    CANONICAL_HASH_INDEX_MATCH_ROWS: [],
+    CANONICAL_KEYS_MATCH_SAME_ROW: 'NOT_EVALUATED',
+    CANONICAL_BUSINESS_IDENTITY_MATCH: 'NOT_EVALUATED',
+    CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: {},
+    CANONICAL_DUPLICATE_CONFLICT_REASON: 'NOT_EVALUATED',
+    CANONICAL_INVOICE_NUMBER: '',
+    RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: 'NOT_EVALUATED',
     FIRESTORE_REPAIR_AUDIT_COUNT: 0,
     FIRESTORE_REPAIR_AUDIT_FOUND: 'NO',
     FIRESTORE_REPAIR_AUDIT_COLUMNS_MATCH: 'NO',
@@ -199,13 +212,23 @@ function assertD6jD4Preflight_(preflight, result) {
     SHEETS_INSERTS_PLANNED: Number(r.SHEETS_INSERTS_PLANNED || 0),
     SHEETS_UPDATES_PLANNED: Number(r.SHEETS_UPDATES_PLANNED || 0),
     SHEETS_DUPLICATE_STATUS: r.SHEETS_DUPLICATE_STATUS || '',
+    CANONICAL_INVOICE_KEY_MATCH_COUNT: Number(r.CANONICAL_INVOICE_KEY_MATCH_COUNT || 0),
+    CANONICAL_INVOICE_KEY_MATCH_ROWS: Array.isArray(r.CANONICAL_INVOICE_KEY_MATCH_ROWS) ? r.CANONICAL_INVOICE_KEY_MATCH_ROWS.map(Number).filter(Number.isFinite) : [],
+    CANONICAL_HASH_INDEX_MATCH_COUNT: Number(r.CANONICAL_HASH_INDEX_MATCH_COUNT || 0),
+    CANONICAL_HASH_INDEX_MATCH_ROWS: Array.isArray(r.CANONICAL_HASH_INDEX_MATCH_ROWS) ? r.CANONICAL_HASH_INDEX_MATCH_ROWS.map(Number).filter(Number.isFinite) : [],
+    CANONICAL_KEYS_MATCH_SAME_ROW: r.CANONICAL_KEYS_MATCH_SAME_ROW || 'NO',
+    CANONICAL_BUSINESS_IDENTITY_MATCH: r.CANONICAL_BUSINESS_IDENTITY_MATCH || 'NO',
+    CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES: r.CANONICAL_BUSINESS_IDENTITY_FIELD_MATCHES || {},
+    CANONICAL_DUPLICATE_CONFLICT_REASON: r.CANONICAL_DUPLICATE_CONFLICT_REASON || 'NONE',
+    CANONICAL_INVOICE_NUMBER: r.CANONICAL_INVOICE_NUMBER || '',
+    RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH: r.RAW_AND_DISPLAY_INVOICE_NUMBER_SEMANTIC_MATCH || 'NO',
     PRODUCTION_MUTATION_COUNT: Number(r.PRODUCTION_MUTATION_COUNT || 0)
   });
   if (r.SHEETS_DUPLICATE_STATUS === 'NO_DUPLICATE_FOUND' && Number(r.SHEETS_INSERTS_PLANNED || 0) > 0) {
     throw d6jD4Error_('BLOCKED_D6J_D4_PREFLIGHT_WOULD_INSERT_EXISTING_CANONICAL_ROW', 'SHEET');
   }
   const checks = [
-    [r.DRY_RUN_STATUS === 'PASS_EXACT_PRODUCTION_DRY_RUN_READ_ONLY', 'BLOCKED_D6J_D4_PREFLIGHT_STATUS'],
+    [r.DRY_RUN_STATUS === 'PASS_EXACT_PRODUCTION_DRY_RUN_READ_ONLY' || r.SHEETS_DUPLICATE_STATUS === 'DUPLICATE_CONFLICT_REVIEW_REQUIRED', 'BLOCKED_D6J_D4_PREFLIGHT_STATUS'],
     [r.GMAIL_MESSAGE_ID_MATCH === 'YES' && normalizeD6jD4String_(r.GMAIL_MESSAGE_ID) === D6J_D4_GMAIL_MESSAGE_ID_, 'BLOCKED_D6J_D4_GMAIL_MESSAGE_ID_MISMATCH'],
     [Number(r.ATTACHMENT_COUNT) === 2, 'BLOCKED_D6J_D4_ATTACHMENT_COUNT'],
     [r.PDF_FILENAME_MATCH === 'YES' && normalizeD6jD4String_(r.PDF_SHA256) === D6J_D4_PDF_SHA256_, 'BLOCKED_D6J_D4_PDF_PREFLIGHT_MISMATCH'],
@@ -218,12 +241,13 @@ function assertD6jD4Preflight_(preflight, result) {
     [r.HEADER_SCHEMA_STATUS === 'PASS', 'BLOCKED_D6J_D4_HEADER_SCHEMA_STATUS'],
     [Number(r.SHEETS_INSERTS_PLANNED || 0) === 0, 'BLOCKED_D6J_D4_PREFLIGHT_SHEET_INSERT_PLAN_NOT_ZERO'],
     [Number(r.SHEETS_UPDATES_PLANNED || 0) === 0, 'BLOCKED_D6J_D4_PREFLIGHT_SHEET_UPDATE_PLAN_NOT_ZERO'],
-    [r.SHEETS_DUPLICATE_STATUS === 'EXISTING_CANONICAL_MATCH', 'BLOCKED_D6J_D4_PREFLIGHT_SHEET_DUPLICATE_STATUS'],
+    [r.SHEETS_DUPLICATE_STATUS === 'EXISTING_CANONICAL_MATCH' || r.SHEETS_DUPLICATE_STATUS === 'DUPLICATE_CONFLICT_REVIEW_REQUIRED', 'BLOCKED_D6J_D4_PREFLIGHT_SHEET_DUPLICATE_STATUS'],
     [Number(r.PRODUCTION_MUTATION_COUNT || 0) === 0, 'BLOCKED_D6J_D4_PREFLIGHT_MUTATION_COUNT']
   ];
   checks.forEach(pair => {
     if (!pair[0]) throw d6jD4Error_(pair[1], 'PREFLIGHT');
   });
+  return { sheetDuplicateStatus: r.SHEETS_DUPLICATE_STATUS || '' };
 }
 
 function inspectD6jD4CanonicalSheetState_(snapshot) {
@@ -242,10 +266,11 @@ function inspectD6jD4CanonicalSheetState_(snapshot) {
     throw d6jD4ErrorWithDiagnostics_('BLOCKED_D6J_D4_TARGET_ROW_NUMBER_CHANGED', buildD6jD4CanonicalRowDiagnostics_(rows, canonicalMatches), 'SHEET');
   }
   const v = target.values || [];
+  const displayValues = target.displayValues || [];
   const formats = target.numberFormats || [];
   const formulas = target.formulas || [];
   const formulasR1C1 = target.formulasR1C1 || [];
-  assertD6jD4CanonicalValues_(v);
+  assertD6jD4CanonicalValues_(v, displayValues);
   assertD6jD4PreservedCells_(v, formats);
   assertD6jD4Formula_(formulas[15] || formulasR1C1[15], formulasR1C1[15] || formulas[15]);
   const counts = countD6jD4Duplicates_(rows);
@@ -280,10 +305,11 @@ function inspectD6jD4CanonicalSheetState_(snapshot) {
 
 function isD6jD4CanonicalRowMatch_(row) {
   const v = row && row.values || [];
+  const d = row && row.displayValues || [];
   return normalizeD6jD4String_(v[14]) === D6J_D4_INVOICE_KEY_
     && normalizeD6jD4String_(v[13]) === D6J_D4_HASH_INDEX_
     && tryNormalizeD6jCComparableDate_(v[1]).value === D6J_D4_EXPECTED_ROW_.B
-    && normalizeD6jD4String_(v[2]) === D6J_D4_EXPECTED_ROW_.C
+    && normalizeD6jD4InvoiceNumber_(v[2], d[2]).valid
     && normalizeD6jD4ExactText_(v[3]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.D)
     && normalizeD6jD4String_(v[4]) === D6J_D4_EXPECTED_ROW_.E
     && normalizeD6jD4ExactText_(v[5]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.F)
@@ -292,9 +318,10 @@ function isD6jD4CanonicalRowMatch_(row) {
     && numbersEqualD6jD_(v[8], D6J_D4_EXPECTED_ROW_.I);
 }
 
-function assertD6jD4CanonicalValues_(v) {
+function assertD6jD4CanonicalValues_(v, displayValues) {
+  const invoice = normalizeD6jD4InvoiceNumber_(v[2], displayValues && displayValues[2]);
+  if (!invoice.valid) throw d6jD4Error_('BLOCKED_D6J_D4_C_MISMATCH', 'SHEET');
   [
-    [3, D6J_D4_EXPECTED_ROW_.C, 'BLOCKED_D6J_D4_C_MISMATCH'],
     [4, D6J_D4_EXPECTED_ROW_.D, 'BLOCKED_D6J_D4_D_MISMATCH'],
     [14, D6J_D4_EXPECTED_ROW_.N, 'BLOCKED_D6J_D4_N_HASH_INDEX_MISMATCH'],
     [15, D6J_D4_EXPECTED_ROW_.O, 'BLOCKED_D6J_D4_O_INVOICE_KEY_MISMATCH']
@@ -389,12 +416,13 @@ function buildD6jD4CanonicalRowDiagnostics_(rows, canonicalMatches) {
 function evaluateD6jD4RowFieldMatches_(row) {
   const source = row || {};
   const v = source.values || [];
+  const d = source.displayValues || [];
   const formulas = source.formulas || [];
   const formulasR1C1 = source.formulasR1C1 || [];
   return {
     A_MATCH: numbersEqualD6jD_(v[0], D6J_D4_EXPECTED_ROW_.A),
     B_MATCH: tryNormalizeD6jCComparableDate_(v[1]).value === D6J_D4_EXPECTED_ROW_.B,
-    C_MATCH: normalizeD6jD4ExactText_(v[2]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.C),
+    C_MATCH: normalizeD6jD4InvoiceNumber_(v[2], d[2]).valid,
     D_MATCH: normalizeD6jD4ExactText_(v[3]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.D),
     E_MATCH: normalizeD6jD4ExactText_(v[4]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.E),
     F_MATCH: normalizeD6jD4ExactText_(v[5]) === normalizeD6jD4ExactText_(D6J_D4_EXPECTED_ROW_.F),
@@ -608,6 +636,30 @@ function normalizeD6jD4String_(value) {
 
 function normalizeD6jD4ExactText_(value) {
   return normalizeD6jD4String_(value).normalize('NFC');
+}
+
+function normalizeD6jD4InvoiceNumber_(rawValue, displayValue) {
+  const raw = normalizeD6jD4InvoiceNumberPart_(rawValue);
+  const displayText = normalizeD6jD4String_(displayValue).normalize('NFC');
+  const display = displayText ? normalizeD6jD4InvoiceNumberPart_(displayText) : { valid: true, value: raw.value };
+  return {
+    valid: raw.valid && display.valid && raw.value === display.value && raw.value === D6J_D4_EXPECTED_ROW_.C,
+    value: raw.value,
+    rawAndDisplaySemanticMatch: raw.valid && display.valid && raw.value === display.value
+  };
+}
+
+function normalizeD6jD4InvoiceNumberPart_(value) {
+  let text = '';
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || Math.floor(value) !== value || value < 0) return { valid: false, value: '' };
+    text = String(value);
+  } else {
+    text = normalizeD6jD4String_(value).normalize('NFC');
+  }
+  if (!/^\d+$/.test(text)) return { valid: false, value: '' };
+  const normalized = text.replace(/^0+(?=\d)/, '');
+  return { valid: true, value: normalized.padStart(D6J_D4_EXPECTED_ROW_.C.length, '0') };
 }
 
 function normalizeD6jD4ErrorCode_(value) {
