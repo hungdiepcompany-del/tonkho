@@ -697,3 +697,23 @@ PRODUCTION_MUTATION=NONE
 NEXT_ALLOWED_BUNDLE=RESOLVE_D6J_B_CLASP_PUSH_SKIPPED_REMOTE_SOURCE_MISSING_WITHOUT_FORCE
 NEXT_ALLOWED_PHASE=RESOLVE_D6J_B_CLASP_PUSH_SKIPPED_REMOTE_SOURCE_MISSING_WITHOUT_FORCE
 NEXT_AI_FIRST_ACTION=Resolve why normal clasp push returns "Skipping push." while read-only remote clone proves runD6jBProductionDryRunReadOnly is absent. Do not use --force, public deployment, clasp pull into the repo, triggers, production dry-run execution, or any Gmail/Drive/Sheets/Firestore mutation.
+
+## SGDS D6J-C Controlled One-Record Production Mutation Channel Handoff
+
+CURRENT_BUNDLE=D6J_C_CONTROLLED_ONE_RECORD_PRODUCTION_MUTATION_CHANNEL
+STATUS=IMPLEMENTED_NOT_EXECUTED
+START_HEAD=9323bb1e1cb6f177fd86156521256a1866880499
+ENTRYPOINT=runD6jCOneRecordProductionMutation
+RUNNER_SOURCE=d6jCOneRecordProductionMutation.js
+UNIT_TESTS=tests/unit/d6j-c-one-record-production-mutation.test.mjs
+STATIC_CHECKER=scripts/checkers/check-d6j-c-controlled-one-record-production-mutation-channel.mjs
+PHASE_DOC=docs/phases/D6J_C_CONTROLLED_ONE_RECORD_PRODUCTION_MUTATION_CHANNEL.md
+EVIDENCE_DOC=docs/evidence/D6J_C_CONTROLLED_ONE_RECORD_PRODUCTION_MUTATION_CHANNEL_EVIDENCE.md
+OWNER_APPROVAL_MARKER=OWNER_APPROVED_D6J_C_ONE_RECORD_PRODUCTION_MUTATION
+OWNER_APPROVAL_PROPERTY=D6J_C_MUTATION_APPROVAL_MARKER
+OWNER_APPROVAL_MARKER_CONFIGURED=NO
+D6J_B_EXACT_PREFLIGHT_REQUIRED=YES
+PRODUCTION_MUTATION_EXECUTED=NO
+PRODUCTION_MUTATION=NONE
+NEXT_ALLOWED_PHASE=OWNER_REVIEW_AND_EXPLICIT_ONE_RECORD_EXECUTION_APPROVAL
+NEXT_AI_FIRST_ACTION=Run full validation, commit, push, normal clasp push, and remote source proof for D6J-C without executing runD6jCOneRecordProductionMutation or configuring the owner approval marker.

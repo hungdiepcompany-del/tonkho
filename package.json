@@ -46,6 +46,7 @@
     "check:d6j-a-limited-production-pilot-readiness": "node scripts/checkers/check-d6j-a-limited-production-pilot-readiness.mjs",
     "check:d6j-b-safe-exact-production-dry-run-channel": "node scripts/checkers/check-d6j-b-safe-exact-production-dry-run-channel.mjs",
     "check:d6j-b-pilot-dry-run-blocker": "node scripts/checkers/check-d6j-b-pilot-dry-run-blocker.mjs",
-    "check:d6j-b-clasp-source-sync-proof": "node scripts/checkers/check-d6j-b-clasp-source-sync-proof.mjs"
+    "check:d6j-b-clasp-source-sync-proof": "node scripts/checkers/check-d6j-b-clasp-source-sync-proof.mjs",
+    "check:d6j-c-controlled-one-record-production-mutation-channel": "node scripts/checkers/check-d6j-c-controlled-one-record-production-mutation-channel.mjs"
   }
 }
