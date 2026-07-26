@@ -1258,10 +1258,24 @@ function d6jDColumnHasArrayFormula_(snapshot, columnIndex) {
 }
 
 function assertD6jDHeaderSchema_(headers) {
-  const actual = (headers || []).slice(0, 16).map(canonicalD6jDHeader_);
+  const rawHeaders = (headers || []).slice(0, 16);
+  const actual = rawHeaders.map(canonicalD6jDHeader_);
   const expected = D6J_D_TARGET_HEADERS_.map(canonicalD6jDHeader_);
-  if (actual.length !== 16 || actual.some((value, index) => value !== expected[index])) {
-    throw d6jCError_('BLOCKED_D6J_D_HEADER_SCHEMA_MISMATCH');
+  const mismatchIndex = actual.length !== 16
+    ? Math.min(actual.length, 15)
+    : actual.findIndex((value, index) => value !== expected[index]);
+  if (mismatchIndex !== -1) {
+    const column = mismatchIndex + 1;
+    const actualText = sanitizeD6jDHeaderDiagnostic_(rawHeaders[mismatchIndex]);
+    const expectedText = sanitizeD6jDHeaderDiagnostic_(D6J_D_TARGET_HEADERS_[mismatchIndex]);
+    throw d6jCError_([
+      'BLOCKED_D6J_D_HEADER_SCHEMA_MISMATCH',
+      'HEADER_MISMATCH_COLUMN=' + column,
+      'HEADER_ACTUAL_TEXT=' + actualText,
+      'HEADER_ACTUAL_CANONICAL=' + (actual[mismatchIndex] || ''),
+      'HEADER_EXPECTED_TEXT=' + expectedText,
+      'HEADER_EXPECTED_CANONICAL=' + (expected[mismatchIndex] || '')
+    ].join(':'));
   }
 }
 
@@ -1352,10 +1366,17 @@ function buildD6jCInvoiceItemHash_(values) {
 
 function canonicalD6jDHeader_(value) {
   return normalizeD6jCString_(value)
+    .replace(/[Đđ]/g, character => character === 'Đ' ? 'D' : 'd')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^A-Za-z0-9]/g, '')
     .toLowerCase();
+}
+
+function sanitizeD6jDHeaderDiagnostic_(value) {
+  return normalizeD6jCString_(value)
+    .replace(/[^A-Za-z0-9À-ỹ .:_/-]/g, ' ')
+    .slice(0, 80);
 }
 
 function normalizeD6jCComparableDate_(value) {

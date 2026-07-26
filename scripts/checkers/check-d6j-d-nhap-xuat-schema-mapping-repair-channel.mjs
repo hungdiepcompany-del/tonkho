@@ -37,6 +37,18 @@ for (const marker of [
 }
 
 for (const marker of [
+  'canonicalD6jDHeader_',
+  ".replace(/[Đđ]/g",
+  'HEADER_MISMATCH_COLUMN=',
+  'HEADER_ACTUAL_TEXT=',
+  'HEADER_ACTUAL_CANONICAL=',
+  'HEADER_EXPECTED_TEXT=',
+  'HEADER_EXPECTED_CANONICAL='
+]) {
+  assert.equal(runner.includes(marker), true, `runner missing D6J-D1 header marker: ${marker}`);
+}
+
+for (const marker of [
   'legacyHashIndex',
   'hashIndex',
   'invoiceKeyV2',
@@ -53,6 +65,9 @@ for (const marker of [
   'successful repair updates exactly one row',
   'future D6J-C idempotent rerun recognizes corrected row',
   'malformed J:N layout can never pass D6J-C readback semantics',
+  'Vietnamese header canonicalization handles D stroke',
+  'header schema mismatch reports sanitized column diagnostics',
+  'read-only audit accepts production headers without repair marker',
   'D6J_D_REPAIR_APPROVAL_MARKER'
 ]) {
   assert.equal(tests.includes(marker), true, `tests missing D6J-D marker: ${marker}`);
@@ -63,6 +78,9 @@ for (const docMarker of [
   'FUTURE_COLUMN_MAPPING_FIX=PASS',
   'READ_ONLY_AUDIT_ENTRYPOINT=PASS',
   'SINGLE_ROW_REPAIR_ENTRYPOINT=PASS',
+  'VIETNAMESE_D_STROKE_NORMALIZATION=PASS',
+  'EXACT_PRODUCTION_HEADER_TEST=PASS',
+  'READ_ONLY_AUDIT_SAFETY=PASS',
   'REPAIR_APPROVAL_MARKER_CONFIGURED=NO',
   'READ_ONLY_AUDIT_EXECUTED=NO',
   'PILOT_ROW_REPAIR_EXECUTED=NO',

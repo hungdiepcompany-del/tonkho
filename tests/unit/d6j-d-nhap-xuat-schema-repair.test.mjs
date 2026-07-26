@@ -44,6 +44,8 @@ const gas = loadGasSource({
     'calculateD6jDInventoryForTarget_',
     'buildD6jCInvoiceItemHash_',
     'normalizeD6jDNhapXuatRowFromValues_',
+    'assertD6jDHeaderSchema_',
+    'canonicalD6jDHeader_',
     'assertD6jCSheetRowMatches_',
     'createFakeSgdsSheetsLedgerAdapter_'
   ]
@@ -68,6 +70,25 @@ const headers = [
   'HashIndex',
   'InvoiceKey',
   'HD'
+];
+
+const productionHeaders = [
+  'STT',
+  'Ngày',
+  'Hóa đơn số',
+  'Tên khách hàng',
+  'Mã hàng',
+  'Tên hàng',
+  'Phân loại',
+  'Số lượng',
+  'Đơn giá',
+  'Thành tiền',
+  'Đơn giá BQ',
+  'Số lượng tồn',
+  'Giá trị tồn',
+  'HashIndex',
+  'InvoiceKey',
+  'HĐ'
 ];
 
 function expectedLedgerRow(overrides = {}) {
@@ -184,7 +205,7 @@ function makeSnapshot(options = {}) {
       ''
     ], 4, { 15: '=HYPERLINK("https://drive.example/"&RC[-1],"HD")' }));
   }
-  return { headers, rows };
+  return { headers: options.headers || headers, rows };
 }
 
 function makeSource(snapshot) {
@@ -236,6 +257,59 @@ test('metadata and D6J-D entrypoint contract are canonical', () => {
   assert.equal(gas.exports.D6J_D_REPAIR_ENTRYPOINT_, 'runD6jDRepairSingleMalformedPilotRow');
   assert.equal(gas.exports.D6J_D_REPAIR_APPROVAL_PROPERTY_, 'D6J_D_REPAIR_APPROVAL_MARKER');
   assert.equal(gas.exports.D6J_D_REPAIR_APPROVAL_, 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR');
+});
+
+test('Vietnamese header canonicalization handles D stroke, accents, whitespace, and exact production row', () => {
+  const cases = [
+    ['Hóa đơn số', 'hoadonso'],
+    ['Ho\u0301a \u0111o\u031bn so\u0301', 'hoadonso'],
+    ['Đơn giá', 'dongia'],
+    ['Đơn giá BQ', 'dongiabq'],
+    ['HĐ', 'hd'],
+    ['Tên khách hàng', 'tenkhachhang'],
+    ['Giá trị tồn', 'giatriton'],
+    ['  Đơn   giá  ', 'dongia'],
+    ['Đơn\ngiá', 'dongia'],
+    ['đơn giá', 'dongia'],
+    ['ĐƠN GIÁ', 'dongia']
+  ];
+  for (const [input, expected] of cases) {
+    assert.equal(gas.call('canonicalD6jDHeader_', input), expected, input);
+  }
+  assert.doesNotThrow(() => gas.call('assertD6jDHeaderSchema_', productionHeaders));
+});
+
+test('header schema mismatch reports sanitized column diagnostics and remains fail-closed', () => {
+  const badHeaders = productionHeaders.slice();
+  badHeaders[8] = 'Sai đơn giá';
+  assert.throws(
+    () => gas.call('assertD6jDHeaderSchema_', badHeaders),
+    error => {
+      assert.equal(error.code, 'BLOCKED_D6J_D_HEADER_SCHEMA_MISMATCH');
+      assert.match(error.message, /HEADER_MISMATCH_COLUMN=9/);
+      assert.match(error.message, /HEADER_ACTUAL_TEXT=Sai đơn giá/);
+      assert.match(error.message, /HEADER_ACTUAL_CANONICAL=saidongia/);
+      assert.match(error.message, /HEADER_EXPECTED_TEXT=Don gia/);
+      assert.match(error.message, /HEADER_EXPECTED_CANONICAL=dongia/);
+      return true;
+    }
+  );
+});
+
+test('read-only audit accepts production headers without repair marker and performs zero mutations', async () => {
+  const context = makeContext();
+  const snapshot = makeSnapshot({ context, headers: productionHeaders });
+  const h = makeRunner({ context, snapshot, props: {} });
+  const result = fromVm(await h.runner.inspect());
+  assert.equal(result.AUDIT_STATUS, 'PASS_MALFORMED_PILOT_ROW_LOCATED');
+  assert.equal(result.HEADER_SCHEMA_STATUS, 'PASS');
+  assert.equal(h.source.state.updates.length, 0);
+  assert.equal(h.source.state.appends, 0);
+  assert.equal(h.source.state.deletes, 0);
+  assert.equal(h.source.state.driveMutations, 0);
+  assert.equal(h.source.state.gmailMutations, 0);
+  assert.equal(h.source.state.triggerMutations, 0);
+  assert.equal(h.source.state.destructiveOperations, 0);
 });
 
 test('read-only audit derives exact A:P mapping with invoice number, seller, amount, weighted average, hash, key, and HD formula', () => {
