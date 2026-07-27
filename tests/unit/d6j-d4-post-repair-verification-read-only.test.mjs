@@ -34,9 +34,14 @@ const gas = loadGasSource({
     'D6J_D4_SCHEMA_VERSION_',
     'D6J_D4C_ENTRYPOINT_',
     'D6J_D4C_SCHEMA_VERSION_',
+    'D6J_D4D_PREVIEW_ENTRYPOINT_',
+    'D6J_D4D_MUTATION_ENTRYPOINT_',
+    'D6J_D4D_SCHEMA_VERSION_',
     'D6J_D4_EXPECTED_ROW_',
     'createD6jD4PostRepairVerificationReadOnlyRunner_',
     'createD6jD4CFirestoreEvidenceDiagnosticsReadOnlyRunner_',
+    'createD6jD4DReconciliationPreviewReadOnlyRunner_',
+    'createD6jD4DRecordPostHocReconciliationEvidenceRunner_',
     'buildD6jD4CPaths_',
     'recomputeD6jD4CJobId_',
     'inspectD6jD4CanonicalSheetState_',
@@ -44,7 +49,11 @@ const gas = loadGasSource({
     'evaluateD6jD4RowFieldMatches_',
     'inspectD6jD4Triggers_',
     'assertD6jD4DriveArtifacts_',
-    'assertD6jD4GmailArtifacts_'
+    'assertD6jD4GmailArtifacts_',
+    'durableJobPath',
+    'durableJobEventsPath',
+    'workerLeasePath',
+    'buildD6jD4DDeterministicEventId_'
   ]
 });
 
@@ -187,6 +196,13 @@ function firestore(overrides = {}) {
   };
   return {
     job: { jobId: 'd6j_job_10ad66ede74a1121b0d6', status: 'COMPLETED' },
+    lease: {
+      jobId: 'd6j_job_10ad66ede74a1121b0d6',
+      status: 'RELEASED',
+      finalJobStatus: 'COMPLETED',
+      releasedAt: '2026-07-26T00:00:00.000Z',
+      leaseGeneration: 1
+    },
     events: [event],
     ...overrides
   };
@@ -200,14 +216,120 @@ function makeRunner(options = {}) {
     readProperties: () => ({ D6J_D_REPAIR_APPROVAL_MARKER: options.repairMarker || '' }),
     runPreflight: () => passPreflight(options.preflight || {}),
     readSheetSnapshot: () => clone(options.snapshot || snapshot()),
-    readFirestoreDocument: async () => clone(fire.job),
-    queryFirestoreCollection: async () => clone(fire.events),
+    readFirestoreDocument: async path => {
+      if (String(path || '').startsWith('worker_leases/')) return clone(fire.lease);
+      if (String(path || '').startsWith('invoiceJobs/')) return clone(fire.job);
+      return null;
+    },
+    queryFirestoreCollection: async path => {
+      if (String(path || '').startsWith('invoiceJobs/') && String(path || '').endsWith('/events')) return clone(fire.events);
+      return [];
+    },
     inspectDriveArtifacts: () => options.drive || { DRIVE_ARTIFACTS_UNCHANGED: 'YES', DRIVE_EXPECTED_FILE_COUNT: 2, DRIVE_EXACT_MATCH_COUNT: 2, DRIVE_MUTATION_COUNT: 0 },
     inspectGmailArtifacts: () => options.gmail || { GMAIL_MESSAGE_ID: '19cd03f07ebbd84e', GMAIL_MESSAGE_FOUND: 'YES', ATTACHMENT_COUNT: 2, GMAIL_SOURCE_ARTIFACTS_UNCHANGED: 'YES', GMAIL_MUTATION_COUNT: 0 },
     listTriggers: () => options.triggers || [],
     logger
   });
   return { runner, state, logger };
+}
+
+function makeD4DPreviewRunner(options = {}) {
+  const fire = firestore(options.firestore || {});
+  const calls = [];
+  const logger = { lines: [], log(value) { this.lines.push(String(value)); } };
+  const runner = gas.call('createD6jD4DReconciliationPreviewReadOnlyRunner_', {
+    readProperties: () => ({
+      D6J_D_REPAIR_APPROVAL_MARKER: options.repairMarker || '',
+      D6J_D4D_RECONCILIATION_APPROVAL_MARKER: options.reconciliationApprovalMarker || ''
+    }),
+    runPreflight: () => passPreflight(options.preflight || {}),
+    readSheetSnapshot: () => clone(options.snapshot || snapshot()),
+    readFirestoreDocument: async path => {
+      calls.push(['GET', path]);
+      if (String(path || '').startsWith('worker_leases/')) return clone(fire.lease);
+      if (String(path || '').startsWith('invoiceJobs/')) return clone(fire.job);
+      return null;
+    },
+    queryFirestoreCollection: async path => {
+      calls.push(['LIST', path]);
+      if (String(path || '').startsWith('invoiceJobs/') && String(path || '').endsWith('/events')) {
+        const events = [...(fire.events || [])];
+        if (options.existingEvent) events.push(options.existingEvent);
+        if (options.conflictingEvent) events.push(options.conflictingEvent);
+        return clone(events);
+      }
+      return [];
+    },
+    inspectDriveArtifacts: () => options.drive || { DRIVE_ARTIFACTS_UNCHANGED: 'YES', DRIVE_EXPECTED_FILE_COUNT: 2, DRIVE_EXACT_MATCH_COUNT: 2, DRIVE_MUTATION_COUNT: 0 },
+    inspectGmailArtifacts: () => options.gmail || { GMAIL_MESSAGE_ID: '19cd03f07ebbd84e', GMAIL_MESSAGE_FOUND: 'YES', ATTACHMENT_COUNT: 2, GMAIL_SOURCE_ARTIFACTS_UNCHANGED: 'YES', GMAIL_MUTATION_COUNT: 0 },
+    listTriggers: () => options.triggers || [],
+    logger
+  });
+  return { runner, calls, fire, logger };
+}
+
+function makeD4DMutationRunner(options = {}) {
+  const fire = firestore(options.firestore || {});
+  let createdEvent = null;
+  const transportCalls = [];
+  const lockState = { tries: 0, releases: 0 };
+  const logger = { lines: [], log(value) { this.lines.push(String(value)); } };
+  const lock = {
+    tryLock() {
+      lockState.tries += 1;
+      return options.lockAcquired !== false;
+    },
+    releaseLock() {
+      lockState.releases += 1;
+    }
+  };
+  const transport = {
+    async runTransaction(work) {
+      return work({
+        getDocument: async path => {
+          transportCalls.push(['GET', path]);
+          if (options.conflictingEvent && String(path).endsWith(options.conflictingEvent.eventId || '')) return clone(options.conflictingEvent);
+          if (createdEvent && String(path).endsWith(createdEvent.eventId)) return clone(createdEvent);
+          if (options.existingEvent && String(path).endsWith(options.existingEvent.eventId)) return clone(options.existingEvent);
+          return null;
+        },
+        createDocument: async (path, data) => {
+          transportCalls.push(['CREATE', path]);
+          createdEvent = clone(data);
+          return clone(data);
+        }
+      });
+    }
+  };
+  const runner = gas.call('createD6jD4DRecordPostHocReconciliationEvidenceRunner_', {
+    readProperties: () => ({
+      D6J_D_REPAIR_APPROVAL_MARKER: options.repairMarker || '',
+      D6J_D4D_RECONCILIATION_APPROVAL_MARKER: options.reconciliationApprovalMarker || ''
+    }),
+    createLock: () => lock,
+    createTransport: () => transport,
+    runPreflight: () => passPreflight(options.preflight || {}),
+    readSheetSnapshot: () => clone(options.snapshot || snapshot()),
+    readFirestoreDocument: async path => {
+      if (String(path || '').startsWith('worker_leases/')) return clone(fire.lease);
+      if (String(path || '').startsWith('invoiceJobs/')) return clone(fire.job);
+      return null;
+    },
+    queryFirestoreCollection: async path => {
+      if (String(path || '').startsWith('invoiceJobs/') && String(path || '').endsWith('/events')) {
+        const events = [...(fire.events || [])];
+        if (options.existingEvent) events.push(options.existingEvent);
+        if (options.conflictingEvent) events.push(options.conflictingEvent);
+        return clone(events);
+      }
+      return [];
+    },
+    inspectDriveArtifacts: () => options.drive || { DRIVE_ARTIFACTS_UNCHANGED: 'YES', DRIVE_EXPECTED_FILE_COUNT: 2, DRIVE_EXACT_MATCH_COUNT: 2, DRIVE_MUTATION_COUNT: 0 },
+    inspectGmailArtifacts: () => options.gmail || { GMAIL_MESSAGE_ID: '19cd03f07ebbd84e', GMAIL_MESSAGE_FOUND: 'YES', ATTACHMENT_COUNT: 2, GMAIL_SOURCE_ARTIFACTS_UNCHANGED: 'YES', GMAIL_MUTATION_COUNT: 0 },
+    listTriggers: () => options.triggers || [],
+    logger
+  });
+  return { runner, fire, transportCalls, lockState, logger, getCreatedEvent: () => createdEvent };
 }
 
 function documentState(data, httpStatus = data ? 200 : 404) {
@@ -277,12 +399,47 @@ function repairEvent(overrides = {}) {
   };
 }
 
+function d4dExpectedEvent(overrides = {}) {
+  const sheet = fromVm(gas.call('inspectD6jD4CanonicalSheetState_', snapshot()));
+  const base = {
+    eventType: 'D6J_D_POST_HOC_RECONCILIATION_EVIDENCE',
+    schemaVersion: 'D6J_D4D_DURABLE_JOB_PATH_FIX_AND_POST_HOC_RECONCILIATION_EVIDENCE_V1',
+    phase: 'D6J_D4D_DURABLE_JOB_PATH_FIX_AND_POST_HOC_RECONCILIATION_EVIDENCE',
+    jobId: 'd6j_job_10ad66ede74a1121b0d6',
+    targetRowNumber: 1337,
+    invoiceKeyHashPrefix: '67dc57fd',
+    hashIndexHashPrefix: 'f71ca915',
+    expectedChangedColumns: [3, 4, 10, 11, 12, 13, 14, 15],
+    canonicalRowVerified: true,
+    preservedCellsVerified: true,
+    dateCellPreserved: true,
+    formulaPreserved: true,
+    duplicateCount: 0,
+    durableJobStatus: 'COMPLETED',
+    leaseStatus: 'RELEASED',
+    leaseFinalJobStatus: 'COMPLETED',
+    originalRepairAuditStatus: 'MISSING',
+    originalRepairAuditMatchCount: 0,
+    reconciliationReason: 'ORIGINAL_REPAIR_AUDIT_NOT_RECORDED_AFTER_CONFIRMED_SHEET_REPAIR',
+    verificationSource: 'INDEPENDENT_POST_REPAIR_READ_ONLY_VERIFICATION',
+    verifiedCurrentRowHash: sheet.VERIFIED_CURRENT_ROW_HASH,
+    d4cEvidenceStatus: 'RECONCILIATION_REQUIRED_JOB_PRESENT_AUDIT_MISSING',
+    recordedAt: '2026-07-26T00:00:00.000Z'
+  };
+  const merged = { ...base, ...overrides };
+  merged.eventId = merged.eventId || gas.call('buildD6jD4DDeterministicEventId_', merged);
+  return merged;
+}
+
 test('metadata and D6J-D4 entrypoint contract are canonical', () => {
   assert.equal(TEST_METADATA.runtimeMutation, 'NONE');
   assert.equal(gas.exports.D6J_D4_ENTRYPOINT_, 'runD6jD4PostRepairVerificationReadOnly');
   assert.equal(gas.exports.D6J_D4_SCHEMA_VERSION_, 'D6J_D4_POST_REPAIR_READ_ONLY_VERIFICATION_AND_CHANNEL_CLOSURE_V1');
   assert.equal(gas.exports.D6J_D4C_ENTRYPOINT_, 'runD6jD4CFirestoreEvidenceDiagnosticsReadOnly');
   assert.equal(gas.exports.D6J_D4C_SCHEMA_VERSION_, 'D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS_V1');
+  assert.equal(gas.exports.D6J_D4D_PREVIEW_ENTRYPOINT_, 'runD6jD4DReconciliationPreviewReadOnly');
+  assert.equal(gas.exports.D6J_D4D_MUTATION_ENTRYPOINT_, 'runD6jD4DRecordPostHocReconciliationEvidenceOnce');
+  assert.equal(gas.exports.D6J_D4D_SCHEMA_VERSION_, 'D6J_D4D_DURABLE_JOB_PATH_FIX_AND_POST_HOC_RECONCILIATION_EVIDENCE_V1');
 });
 
 test('exact Vietnamese customer and item expectations are clean NFC runtime values', () => {
@@ -458,7 +615,7 @@ test('D6J-D4 missing original job returns reconciliation required after Sheet ve
   const h = makeRunner({ firestore: { job: null } });
   const result = fromVm(await h.runner.run());
   assert.equal(result.POST_REPAIR_STATUS, 'RECONCILIATION_REQUIRED');
-  assert.equal(result.BLOCKER_CODE, 'RECONCILIATION_REQUIRED_D6J_D4_ORIGINAL_JOB_NOT_FOUND');
+  assert.equal(result.BLOCKER_CODE, 'RECONCILIATION_REQUIRED_D6J_D4_DURABLE_JOB_NOT_FOUND');
   assert.equal(result.SHEET_VERIFICATION_STATUS, 'PASS');
   assert.equal(result.FIRESTORE_VERIFICATION_STATUS, 'RECONCILIATION_REQUIRED');
   assert.equal(result.DRIVE_VERIFICATION_STATUS, 'NOT_EVALUATED');
@@ -586,6 +743,129 @@ test('D6J-D4C Firestore diagnostics use GET/LIST only and logs are sanitized', a
   assert.equal(/Bearer|Authorization|refresh_token|private_key|client_secret|"fields"\s*:/.test(log), false);
 });
 
+test('D6J-D4D preview uses invoiceJobs and worker_leases with GET/LIST only and plans one event create', async () => {
+  const h = makeD4DPreviewRunner({ firestore: { events: [] } });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.RECONCILIATION_PREVIEW_STATUS, 'PASS_READY_FOR_EXPLICIT_APPROVAL');
+  assert.equal(result.DURABLE_JOB_COLLECTION, 'invoiceJobs');
+  assert.equal(result.LEGACY_JOB_COLLECTION, 'jobs');
+  assert.equal(result.LEGACY_JOB_PATH_USED_FOR_D6J_D4_CLOSURE, 'NO');
+  assert.equal(result.DURABLE_JOB_FOUND, 'YES');
+  assert.equal(result.DURABLE_JOB_STATUS, 'COMPLETED');
+  assert.equal(result.LEASE_FOUND, 'YES');
+  assert.equal(result.LEASE_STATUS, 'RELEASED');
+  assert.equal(result.LEASE_FINAL_JOB_STATUS, 'COMPLETED');
+  assert.equal(result.ORIGINAL_REPAIR_AUDIT_STATUS, 'MISSING');
+  assert.equal(result.ORIGINAL_REPAIR_AUDIT_MATCH_COUNT, 0);
+  assert.equal(result.POST_HOC_RECONCILIATION_EVENT_STATUS, 'NOT_FOUND');
+  assert.equal(result.POST_HOC_RECONCILIATION_EVENT_MATCH_COUNT, 0);
+  assert.equal(result.FIRESTORE_EVENT_CREATE_PLANNED, 1);
+  assert.equal(result.CURRENT_ENTRYPOINT_EXECUTED, 'YES');
+  assert.equal(result.D6J_D4D_PREVIEW_ENTRYPOINT_EXECUTED, 'YES');
+  assert.equal(result.D6J_D4_ENTRYPOINT_EXECUTED, 'NO');
+  assert.equal(result.PROHIBITED_D6J_D4_ENTRYPOINT_EXECUTED, 'NO');
+  assert.equal(result.REPAIR_FUNCTION_EXECUTED, 'NO');
+  assert.equal(result.D6J_C_FUNCTION_EXECUTED, 'NO');
+  assert.equal(h.calls.every(call => call[0] === 'GET' || call[0] === 'LIST'), true);
+});
+
+test('D6J-D4D mutation blocks without the exact approval marker', async () => {
+  const h = makeD4DMutationRunner({ firestore: { events: [] } });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.RECONCILIATION_MUTATION_STATUS, 'BLOCKED');
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_INVALID_D6J_D4D_RECONCILIATION_APPROVAL_MARKER');
+  assert.equal(result.FIRESTORE_MUTATION_COUNT, 0);
+  assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+  assert.equal(h.lockState.tries, 0);
+});
+
+test('D6J-D4D mutation creates exactly one deterministic post-hoc event and releases the lock', async () => {
+  const h = makeD4DMutationRunner({
+    firestore: { events: [] },
+    reconciliationApprovalMarker: 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE'
+  });
+  const result = fromVm(await h.runner.run());
+  const created = fromVm(h.getCreatedEvent());
+  assert.equal(result.RECONCILIATION_MUTATION_STATUS, 'PASS_POST_HOC_RECONCILIATION_EVIDENCE_CREATED');
+  assert.equal(result.FIRESTORE_EVENT_CREATE_COUNT, 1);
+  assert.equal(result.FIRESTORE_MUTATION_COUNT, 1);
+  assert.equal(result.PRODUCTION_MUTATION, 'ONE_DETERMINISTIC_FIRESTORE_RECONCILIATION_EVENT_ONLY');
+  assert.equal(result.SHEETS_MUTATION_COUNT, 0);
+  assert.equal(result.DRIVE_MUTATION_COUNT, 0);
+  assert.equal(result.GMAIL_MUTATION_COUNT, 0);
+  assert.equal(result.SCRIPT_PROPERTIES_MUTATION_COUNT, 0);
+  assert.equal(result.TRIGGER_MUTATION_COUNT, 0);
+  assert.equal(result.DESTRUCTIVE_OPERATION_COUNT, 0);
+  assert.equal(result.CURRENT_ENTRYPOINT_EXECUTED, 'YES');
+  assert.equal(result.D6J_D4D_MUTATION_ENTRYPOINT_EXECUTED, 'YES');
+  assert.equal(h.lockState.tries, 1);
+  assert.equal(h.lockState.releases, 1);
+  assert.equal(created.eventType, 'D6J_D_POST_HOC_RECONCILIATION_EVIDENCE');
+  assert.equal(created.originalRepairAuditStatus, 'MISSING');
+  assert.equal(created.originalRepairAuditMatchCount, 0);
+  assert.equal(Object.prototype.hasOwnProperty.call(created, 'originalAfterHash'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(created, 'originalBeforeHash'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(created, 'repairAfterHash'), false);
+  assert.equal(h.transportCalls.some(call => call[0] === 'CREATE'), true);
+});
+
+test('D6J-D4D mutation is a zero-write idempotent pass for an existing exact deterministic event', async () => {
+  const first = makeD4DMutationRunner({
+    firestore: { events: [] },
+    reconciliationApprovalMarker: 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE'
+  });
+  const firstResult = fromVm(await first.runner.run());
+  assert.equal(firstResult.RECONCILIATION_MUTATION_STATUS, 'PASS_POST_HOC_RECONCILIATION_EVIDENCE_CREATED');
+  const exactEvent = fromVm(first.getCreatedEvent());
+  const second = makeD4DMutationRunner({
+    firestore: { events: [] },
+    existingEvent: exactEvent,
+    reconciliationApprovalMarker: 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE'
+  });
+  const result = fromVm(await second.runner.run());
+  assert.equal(result.RECONCILIATION_MUTATION_STATUS, 'PASS_IDEMPOTENT_EXISTING_EXACT_MATCH');
+  assert.equal(result.FIRESTORE_EVENT_CREATE_COUNT, 0);
+  assert.equal(result.FIRESTORE_MUTATION_COUNT, 0);
+  assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+  assert.equal(second.transportCalls.some(call => call[0] === 'CREATE'), false);
+});
+
+test('D6J-D4D mutation blocks on a conflicting deterministic event without updating it', async () => {
+  const first = makeD4DMutationRunner({
+    firestore: { events: [] },
+    reconciliationApprovalMarker: 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE'
+  });
+  await first.runner.run();
+  const conflictingEvent = { ...fromVm(first.getCreatedEvent()), verificationSource: 'OTHER_SOURCE' };
+  const h = makeD4DMutationRunner({
+    firestore: { events: [] },
+    conflictingEvent,
+    reconciliationApprovalMarker: 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE'
+  });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.RECONCILIATION_MUTATION_STATUS, 'BLOCKED');
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D4D_RECONCILIATION_EVENT_CONFLICT');
+  assert.equal(result.FIRESTORE_MUTATION_COUNT, 0);
+  assert.equal(h.transportCalls.some(call => call[0] === 'CREATE'), false);
+});
+
+test('D6J-D4 closes with PASS_RECONCILED when the exact post-hoc reconciliation event exists', async () => {
+  const first = makeD4DMutationRunner({
+    firestore: { events: [] },
+    reconciliationApprovalMarker: 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE'
+  });
+  await first.runner.run();
+  const exactEvent = fromVm(first.getCreatedEvent());
+  const h = makeRunner({ firestore: { events: [exactEvent] } });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.POST_REPAIR_STATUS, 'PASS_RECONCILED');
+  assert.equal(result.FIRESTORE_EVIDENCE_MODE, 'POST_HOC_RECONCILIATION');
+  assert.equal(result.POST_HOC_RECONCILIATION_EVENT_FOUND, 'YES');
+  assert.equal(result.D6J_D_CHANNEL_STATUS, 'CLOSED_WITH_RECONCILIATION');
+  assert.equal(result.CURRENT_ENTRYPOINT_EXECUTED, 'YES');
+  assert.equal(result.D6J_D4_ENTRYPOINT_EXECUTED, 'YES');
+});
+
 const blockedCases = [
   ['zero canonical rows block', { snapshot: snapshot({ target: false }) }, 'BLOCKED_D6J_D4_CANONICAL_ROW_NOT_FOUND'],
   ['multiple canonical rows block', { snapshot: snapshot({ extraRows: [repairedRow({ rowNumber: 1400 })] }) }, 'BLOCKED_D6J_D4_CANONICAL_ROW_NOT_UNIQUE'],
@@ -617,7 +897,7 @@ const blockedCases = [
   ['wrong changedColumns returns reconciliation required', { firestore: { events: [{ ...firestore().events[0], safeDetails: { ...firestore().events[0].safeDetails, changedColumns: [3] } }] } }, 'RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID'],
   ['missing beforeHash returns reconciliation required', { firestore: { events: [{ ...firestore().events[0], safeDetails: { ...firestore().events[0].safeDetails, beforeHash: '' } }] } }, 'RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID'],
   ['missing afterHash returns reconciliation required', { firestore: { events: [{ ...firestore().events[0], safeDetails: { ...firestore().events[0].safeDetails, afterHash: '' } }] } }, 'RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID'],
-  ['original job not completed blocks closure', { firestore: { job: { jobId: 'd6j_job_10ad66ede74a1121b0d6', status: 'VALIDATED' } } }, 'BLOCKED_D6J_D4_ORIGINAL_JOB_NOT_COMPLETED'],
+  ['original job not completed blocks closure', { firestore: { job: { jobId: 'd6j_job_10ad66ede74a1121b0d6', status: 'VALIDATED' } } }, 'BLOCKED_D6J_D4_DURABLE_JOB_NOT_COMPLETED'],
   ['Drive artifact hash mismatch blocks', { drive: { DRIVE_ARTIFACTS_UNCHANGED: 'NO', DRIVE_EXPECTED_FILE_COUNT: 2, DRIVE_EXACT_MATCH_COUNT: 1, DRIVE_MUTATION_COUNT: 0 } }, 'BLOCKED_D6J_D4_DRIVE_ARTIFACT_MISMATCH'],
   ['Gmail artifact hash mismatch blocks', { gmail: { GMAIL_MESSAGE_ID: '19cd03f07ebbd84e', GMAIL_MESSAGE_FOUND: 'YES', ATTACHMENT_COUNT: 2, GMAIL_SOURCE_ARTIFACTS_UNCHANGED: 'NO', GMAIL_MUTATION_COUNT: 0 } }, 'BLOCKED_D6J_D4_GMAIL_ARTIFACT_MISMATCH'],
   ['repair approval marker present blocks', { repairMarker: 'OWNER_APPROVED_D6J_D_SINGLE_PILOT_ROW_REPAIR' }, 'BLOCKED_D6J_D4_REPAIR_APPROVAL_MARKER_STILL_PRESENT'],

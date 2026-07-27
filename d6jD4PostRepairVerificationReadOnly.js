@@ -4,10 +4,23 @@ const D6J_D4_PHASE_ = 'D6J_D4_POST_REPAIR_READ_ONLY_VERIFICATION_AND_CHANNEL_CLO
 const D6J_D4C_SCHEMA_VERSION_ = 'D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS_V1';
 const D6J_D4C_ENTRYPOINT_ = 'runD6jD4CFirestoreEvidenceDiagnosticsReadOnly';
 const D6J_D4C_PHASE_ = 'D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS';
+const D6J_D4D_SCHEMA_VERSION_ = 'D6J_D4D_DURABLE_JOB_PATH_FIX_AND_POST_HOC_RECONCILIATION_EVIDENCE_V1';
+const D6J_D4D_PREVIEW_ENTRYPOINT_ = 'runD6jD4DReconciliationPreviewReadOnly';
+const D6J_D4D_MUTATION_ENTRYPOINT_ = 'runD6jD4DRecordPostHocReconciliationEvidenceOnce';
+const D6J_D4D_PHASE_ = 'D6J_D4D_DURABLE_JOB_PATH_FIX_AND_POST_HOC_RECONCILIATION_EVIDENCE';
+const D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_ = 'D6J_D4D_RECONCILIATION_APPROVAL_MARKER';
+const D6J_D4D_RECONCILIATION_APPROVAL_ = 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE';
+const D6J_D4D_EVENT_TYPE_ = 'D6J_D_POST_HOC_RECONCILIATION_EVIDENCE';
+const D6J_D4D_EVENT_ID_PREFIX_ = 'd6j_d4d_reconciliation_';
+const D6J_D4D_RECONCILIATION_REASON_ = 'ORIGINAL_REPAIR_AUDIT_NOT_RECORDED_AFTER_CONFIRMED_SHEET_REPAIR';
+const D6J_D4D_VERIFICATION_SOURCE_ = 'INDEPENDENT_POST_REPAIR_READ_ONLY_VERIFICATION';
+const D6J_D4D_EXPECTED_D4C_STATUS_ = 'RECONCILIATION_REQUIRED_JOB_PRESENT_AUDIT_MISSING';
 const D6J_D4C_JOBS_SCAN_LIMIT_ = 100;
 const D6J_D4C_ALTERNATE_CANDIDATE_LIMIT_ = 5;
-const D6J_D4C_LEGACY_JOB_COLLECTION_ = 'jobs';
-const D6J_D4C_DURABLE_JOB_COLLECTION_ = 'invoiceJobs';
+const D6J_D_LEGACY_JOB_COLLECTION_ = 'jobs';
+const D6J_DURABLE_JOB_COLLECTION_ = 'invoiceJobs';
+const D6J_D4C_LEGACY_JOB_COLLECTION_ = D6J_D_LEGACY_JOB_COLLECTION_;
+const D6J_D4C_DURABLE_JOB_COLLECTION_ = D6J_DURABLE_JOB_COLLECTION_;
 const D6J_D4_TARGET_ROW_NUMBER_ = 1337;
 const D6J_D4_ORIGINAL_JOB_ID_ = 'd6j_job_10ad66ede74a1121b0d6';
 const D6J_D4_GMAIL_MESSAGE_ID_ = '19cd03f07ebbd84e';
@@ -54,6 +67,16 @@ function runD6jD4CFirestoreEvidenceDiagnosticsReadOnly() {
   return runner.run();
 }
 
+function runD6jD4DReconciliationPreviewReadOnly() {
+  const runner = createD6jD4DReconciliationPreviewReadOnlyRunner_();
+  return runner.run();
+}
+
+function runD6jD4DRecordPostHocReconciliationEvidenceOnce() {
+  const runner = createD6jD4DRecordPostHocReconciliationEvidenceRunner_();
+  return runner.run();
+}
+
 function createD6jD4PostRepairVerificationReadOnlyRunner_(deps) {
   const d = deps || {};
   const services = {
@@ -84,8 +107,12 @@ function createD6jD4PostRepairVerificationReadOnlyRunner_(deps) {
       if (preflightState.sheetDuplicateStatus !== 'EXISTING_CANONICAL_MATCH') {
         throw d6jD4Error_('BLOCKED_D6J_D4_PREFLIGHT_CLASSIFIER_DISAGREEMENT', 'CLASSIFIER');
       }
-      const fire = await inspectD6jD4FirestoreAudit_(services);
+      const fire = await inspectD6jD4FirestoreEvidence_(services, { properties, sheet });
       mergeD6jD4Result_(result, fire);
+      if (fire.FIRESTORE_EVIDENCE_MODE === 'POST_HOC_RECONCILIATION'
+        && result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT === 'YES') {
+        throw d6jD4Error_('BLOCKED_D6J_D4D_RECONCILIATION_APPROVAL_MARKER_STILL_PRESENT', 'FIRESTORE');
+      }
       result.FIRESTORE_VERIFICATION_STATUS = 'PASS';
       result.LAST_COMPLETED_VERIFICATION_STAGE = 'FIRESTORE';
       const drive = services.inspectDriveArtifacts(properties, preflight);
@@ -102,8 +129,13 @@ function createD6jD4PostRepairVerificationReadOnlyRunner_(deps) {
       mergeD6jD4Result_(result, trigger);
       result.TRIGGER_VERIFICATION_STATUS = 'PASS';
       result.LAST_COMPLETED_VERIFICATION_STAGE = 'TRIGGER';
-      result.POST_REPAIR_STATUS = 'PASS';
-      result.D6J_D_CHANNEL_STATUS = 'CLOSED';
+      if (fire.FIRESTORE_EVIDENCE_MODE === 'POST_HOC_RECONCILIATION') {
+        result.POST_REPAIR_STATUS = 'PASS_RECONCILED';
+        result.D6J_D_CHANNEL_STATUS = 'CLOSED_WITH_RECONCILIATION';
+      } else {
+        result.POST_REPAIR_STATUS = 'PASS';
+        result.D6J_D_CHANNEL_STATUS = 'CLOSED';
+      }
       finalizeD6jD4ReadOnlyCounts_(result);
       logD6jD4SanitizedResult_(services.logger, result);
       return result;
@@ -187,8 +219,19 @@ function createD6jD4BaseResult_() {
     GMAIL_MESSAGE_FOUND: 'NO',
     ATTACHMENT_COUNT: 0,
     REPAIR_APPROVAL_MARKER_PRESENT: 'UNKNOWN',
+    D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT: 'UNKNOWN',
     D6J_TRIGGER_COUNT: 0,
     UNEXPECTED_D6J_TRIGGER_FOUND: 'UNKNOWN',
+    DURABLE_JOB_COLLECTION: D6J_DURABLE_JOB_COLLECTION_,
+    LEGACY_JOB_COLLECTION: D6J_D_LEGACY_JOB_COLLECTION_,
+    LEGACY_JOB_PATH_USED_FOR_D6J_D4_CLOSURE: 'NO',
+    FIRESTORE_EVIDENCE_MODE: 'NOT_EVALUATED',
+    ORIGINAL_REPAIR_AUDIT_STATUS: 'NOT_EVALUATED',
+    ORIGINAL_REPAIR_AUDIT_MATCH_COUNT: 0,
+    POST_HOC_RECONCILIATION_EVENT_STATUS: 'NOT_EVALUATED',
+    POST_HOC_RECONCILIATION_EVENT_MATCH_COUNT: 0,
+    POST_HOC_RECONCILIATION_EVENT_FOUND: 'NO',
+    VERIFIED_CURRENT_ROW_HASH: '',
     SHEETS_MUTATION_COUNT: 0,
     DRIVE_MUTATION_COUNT: 0,
     GMAIL_MUTATION_COUNT: 0,
@@ -197,6 +240,14 @@ function createD6jD4BaseResult_() {
     DESTRUCTIVE_OPERATION_COUNT: 0,
     PRODUCTION_MUTATION: 'NONE',
     D6J_D_CHANNEL_STATUS: 'NOT_CLOSED',
+    CURRENT_ENTRYPOINT_EXECUTED: 'NO',
+    PROHIBITED_D6J_D4_ENTRYPOINT_EXECUTED: 'NO',
+    D6J_D4_ENTRYPOINT_EXECUTED: 'NO',
+    D6J_D4C_ENTRYPOINT_EXECUTED: 'NO',
+    D6J_D4D_PREVIEW_ENTRYPOINT_EXECUTED: 'NO',
+    D6J_D4D_MUTATION_ENTRYPOINT_EXECUTED: 'NO',
+    REPAIR_FUNCTION_EXECUTED: 'NO',
+    D6J_C_FUNCTION_EXECUTED: 'NO',
     BLOCKER_CODE: '',
     SCHEMA_VERSION: D6J_D4_SCHEMA_VERSION_
   };
@@ -311,7 +362,8 @@ function inspectD6jD4CanonicalSheetState_(snapshot) {
     UNEXPECTED_DUPLICATE_APPEND_FOUND: 'NO',
     TARGET_ROW_PRESENT: 'YES',
     TARGET_ROW_FIELD_MATCHES: evaluateD6jD4RowFieldMatches_(target),
-    NEAR_CANONICAL_CANDIDATES: []
+    NEAR_CANONICAL_CANDIDATES: [],
+    VERIFIED_CURRENT_ROW_HASH: buildD6jD4VerifiedCurrentRowHash_(target)
   };
 }
 
@@ -483,35 +535,70 @@ function isD6jD4FormulaMatch_(formula, formulaR1C1) {
     && (combined.indexOf('O1337') >= 0 || combined.indexOf('RC[-1]') >= 0));
 }
 
-async function inspectD6jD4FirestoreAudit_(services) {
-  const job = await services.readFirestoreDocument('jobs/' + D6J_D4_ORIGINAL_JOB_ID_);
-  if (!job) throw d6jD4Error_('RECONCILIATION_REQUIRED_D6J_D4_ORIGINAL_JOB_NOT_FOUND', 'FIRESTORE');
+function durableJobPath(jobId) {
+  return D6J_DURABLE_JOB_COLLECTION_ + '/' + normalizeD6jD4String_(jobId);
+}
+
+function durableJobEventsPath(jobId) {
+  return durableJobPath(jobId) + '/events';
+}
+
+function workerLeasePath(jobId) {
+  return 'worker_leases/' + normalizeD6jD4String_(jobId);
+}
+
+async function inspectD6jD4FirestoreEvidence_(services, context) {
+  const jobPath = durableJobPath(D6J_D4_ORIGINAL_JOB_ID_);
+  const eventsPath = durableJobEventsPath(D6J_D4_ORIGINAL_JOB_ID_);
+  const leasePath = workerLeasePath(D6J_D4_ORIGINAL_JOB_ID_);
+  const job = await services.readFirestoreDocument(jobPath);
+  if (!job) throw d6jD4Error_('RECONCILIATION_REQUIRED_D6J_D4_DURABLE_JOB_NOT_FOUND', 'FIRESTORE');
   const status = normalizeD6jD4String_(job.status).toLowerCase();
-  if (status !== 'completed') throw d6jD4Error_('BLOCKED_D6J_D4_ORIGINAL_JOB_NOT_COMPLETED', 'FIRESTORE');
-  const events = await services.queryFirestoreCollection('jobs/' + D6J_D4_ORIGINAL_JOB_ID_ + '/events');
-  const matches = (events || []).filter(event => normalizeD6jD4String_(event.eventType) === 'D6J_D_SINGLE_ROW_REPAIR'
-    && normalizeD6jD4String_(event.jobId || D6J_D4_ORIGINAL_JOB_ID_) === D6J_D4_ORIGINAL_JOB_ID_);
-  if (matches.length === 0) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_MISSING', 'FIRESTORE');
-  if (matches.length > 1) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_NOT_UNIQUE', 'FIRESTORE');
-  const detail = matches[0].safeDetails || matches[0];
-  const columns = normalizeD6jD4Columns_(detail.changedColumns);
-  const expected = D6J_D4_EXPECTED_CHANGED_COLUMNS_.join(',');
-  if (columns.join(',') !== expected) throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID', 'FIRESTORE');
-  const beforeHash = normalizeD6jD4String_(detail.beforeHash);
-  const afterHash = normalizeD6jD4String_(detail.afterHash);
-  if (!beforeHash || !afterHash || beforeHash === afterHash || !isD6jD4ValidTimestamp_(detail.repairedAt)) {
-    throw d6jD4Error_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID', 'FIRESTORE');
+  if (status !== 'completed') throw d6jD4Error_('BLOCKED_D6J_D4_DURABLE_JOB_NOT_COMPLETED', 'FIRESTORE');
+  const lease = await services.readFirestoreDocument(leasePath);
+  const leaseState = inspectD6jD4DLeaseReadState_(lease);
+  if (leaseState.LEASE_FOUND !== 'YES') throw d6jD4Error_('BLOCKED_D6J_D4_DURABLE_LEASE_NOT_FOUND', 'FIRESTORE');
+  if (leaseState.LEASE_JOB_ID_MATCH !== 'YES') throw d6jD4Error_('BLOCKED_D6J_D4_DURABLE_LEASE_JOB_ID_MISMATCH', 'FIRESTORE');
+  if (leaseState.LEASE_STATUS !== 'RELEASED') throw d6jD4Error_('BLOCKED_D6J_D4_DURABLE_LEASE_STATUS', 'FIRESTORE');
+  if (leaseState.LEASE_FINAL_JOB_STATUS !== 'COMPLETED') throw d6jD4Error_('BLOCKED_D6J_D4_DURABLE_LEASE_FINAL_STATUS', 'FIRESTORE');
+  const events = await services.queryFirestoreCollection(eventsPath);
+  const eventEvidence = buildD6jD4EventEvidence_(events, {
+    job,
+    lease,
+    sheet: context && context.sheet,
+    phase: D6J_D4_PHASE_
+  });
+  if (eventEvidence.BLOCKER_CODE) throw d6jD4ErrorWithDiagnostics_(eventEvidence.BLOCKER_CODE, omitD6jD4DInternalEvidenceFields_(eventEvidence), 'FIRESTORE');
+  if (eventEvidence.FIRESTORE_EVIDENCE_MODE === 'RECONCILIATION_PENDING_POST_HOC') {
+    throw d6jD4ErrorWithDiagnostics_('RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_MISSING', omitD6jD4DInternalEvidenceFields_(eventEvidence), 'FIRESTORE');
   }
   return {
-    FIRESTORE_REPAIR_AUDIT_COUNT: 1,
-    FIRESTORE_REPAIR_AUDIT_FOUND: 'YES',
-    FIRESTORE_REPAIR_AUDIT_COLUMNS_MATCH: 'YES',
-    FIRESTORE_BEFORE_HASH_PRESENT: 'YES',
-    FIRESTORE_AFTER_HASH_PRESENT: 'YES',
-    FIRESTORE_BEFORE_AFTER_HASH_DIFFER: 'YES',
+    FIRESTORE_REPAIR_AUDIT_COUNT: Number(eventEvidence.FIRESTORE_REPAIR_AUDIT_COUNT || 0),
+    FIRESTORE_REPAIR_AUDIT_FOUND: eventEvidence.FIRESTORE_REPAIR_AUDIT_FOUND || 'NO',
+    FIRESTORE_REPAIR_AUDIT_COLUMNS_MATCH: eventEvidence.FIRESTORE_REPAIR_AUDIT_COLUMNS_MATCH || 'NO',
+    FIRESTORE_BEFORE_HASH_PRESENT: eventEvidence.FIRESTORE_BEFORE_HASH_PRESENT || 'NO',
+    FIRESTORE_AFTER_HASH_PRESENT: eventEvidence.FIRESTORE_AFTER_HASH_PRESENT || 'NO',
+    FIRESTORE_BEFORE_AFTER_HASH_DIFFER: eventEvidence.FIRESTORE_BEFORE_AFTER_HASH_DIFFER || 'NO',
     ORIGINAL_JOB_FOUND: 'YES',
     ORIGINAL_JOB_STATUS: 'completed',
-    ORIGINAL_JOB_HISTORY_PRESERVED: 'YES'
+    ORIGINAL_JOB_HISTORY_PRESERVED: 'YES',
+    DURABLE_JOB_COLLECTION: D6J_DURABLE_JOB_COLLECTION_,
+    LEGACY_JOB_COLLECTION: D6J_D_LEGACY_JOB_COLLECTION_,
+    LEGACY_JOB_PATH_USED_FOR_D6J_D4_CLOSURE: 'NO',
+    FIRESTORE_EVIDENCE_MODE: eventEvidence.FIRESTORE_EVIDENCE_MODE,
+    ORIGINAL_REPAIR_AUDIT_STATUS: eventEvidence.ORIGINAL_REPAIR_AUDIT_STATUS,
+    ORIGINAL_REPAIR_AUDIT_MATCH_COUNT: eventEvidence.ORIGINAL_REPAIR_AUDIT_MATCH_COUNT,
+    POST_HOC_RECONCILIATION_EVENT_STATUS: eventEvidence.POST_HOC_RECONCILIATION_EVENT_STATUS,
+    POST_HOC_RECONCILIATION_EVENT_MATCH_COUNT: eventEvidence.POST_HOC_RECONCILIATION_EVENT_MATCH_COUNT,
+    POST_HOC_RECONCILIATION_EVENT_FOUND: eventEvidence.POST_HOC_RECONCILIATION_EVENT_FOUND,
+    DURABLE_JOB_FOUND: 'YES',
+    DURABLE_JOB_STATUS: 'COMPLETED',
+    LEASE_FOUND: leaseState.LEASE_FOUND,
+    LEASE_JOB_ID_MATCH: leaseState.LEASE_JOB_ID_MATCH,
+    LEASE_STATUS: leaseState.LEASE_STATUS,
+    LEASE_FINAL_JOB_STATUS: leaseState.LEASE_FINAL_JOB_STATUS,
+    LEASE_RELEASED_AT_PRESENT: leaseState.LEASE_RELEASED_AT_PRESENT,
+    LEASE_GENERATION_PRESENT: leaseState.LEASE_GENERATION_PRESENT
   };
 }
 
@@ -538,6 +625,7 @@ function readD6jD4PropertiesReadOnly_() {
   const props = PropertiesService.getScriptProperties();
   const out = readD6jBScriptProperties_();
   out.D6J_D_REPAIR_APPROVAL_MARKER = String(props.getProperty('D6J_D_REPAIR_APPROVAL_MARKER') || '').trim();
+  out[D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_] = String(props.getProperty(D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_) || '').trim();
   return out;
 }
 
@@ -554,6 +642,464 @@ function readD6jD4FirestoreDocumentReadOnly_(path) {
 
 function queryD6jD4FirestoreCollectionReadOnly_(path) {
   return createD6jCFirestoreDurableTransport_().queryDocuments(path);
+}
+
+function createD6jD4DReconciliationPreviewReadOnlyRunner_(deps) {
+  const d = deps || {};
+  const services = {
+    readProperties: d.readProperties || readD6jD4PropertiesReadOnly_,
+    runPreflight: d.runPreflight || (() => createD6jBProductionDryRunReadOnlyRunner_().run()),
+    readSheetSnapshot: d.readSheetSnapshot || readD6jD4SheetSnapshotReadOnly_,
+    readFirestoreDocument: d.readFirestoreDocument || readD6jD4FirestoreDocumentReadOnly_,
+    queryFirestoreCollection: d.queryFirestoreCollection || queryD6jD4FirestoreCollectionReadOnly_,
+    inspectDriveArtifacts: d.inspectDriveArtifacts || inspectD6jD4DriveArtifactsReadOnly_,
+    inspectGmailArtifacts: d.inspectGmailArtifacts || inspectD6jD4GmailArtifactsReadOnly_,
+    listTriggers: d.listTriggers || listD6jD4TriggersReadOnly_,
+    logger: d.logger || (typeof Logger !== 'undefined' ? Logger : { log() {} })
+  };
+
+  async function run() {
+    const result = createD6jD4DBaseResult_();
+    try {
+      const properties = services.readProperties();
+      result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT = normalizeD6jD4String_(properties[D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_]) ? 'YES' : 'NO';
+      assertD6jD4RepairMarkerAbsent_(properties, result);
+      await collectD6jD4DReconciliationVerification_(services, properties, result);
+      result.RECONCILIATION_PREVIEW_STATUS = result.POST_HOC_RECONCILIATION_EVENT_FOUND === 'YES'
+        ? 'PASS_EXISTING_POST_HOC_RECONCILIATION_EXACT_MATCH'
+        : 'PASS_READY_FOR_EXPLICIT_APPROVAL';
+    } catch (error) {
+      result.RECONCILIATION_PREVIEW_STATUS = 'BLOCKED';
+      result.BLOCKER_CODE = normalizeD6jD4ErrorCode_(error && (error.code || error.message) || 'BLOCKED_D6J_D4D_PREVIEW_UNKNOWN');
+      mergeD6jD4Result_(result, error && error.diagnostics);
+      markD6jD4BlockedStage_(result, error, result.BLOCKER_CODE);
+    }
+    finalizeD6jD4DPreviewResult_(result);
+    logD6jD4SanitizedResult_(services.logger, result);
+    return result;
+  }
+
+  return Object.freeze({ run });
+}
+
+function createD6jD4DRecordPostHocReconciliationEvidenceRunner_(deps) {
+  const d = deps || {};
+  const services = {
+    readProperties: d.readProperties || readD6jD4PropertiesReadOnly_,
+    createLock: d.createLock || (() => LockService.getScriptLock()),
+    createTransport: d.createTransport || createD6jCFirestoreDurableTransport_,
+    runPreflight: d.runPreflight || (() => createD6jBProductionDryRunReadOnlyRunner_().run()),
+    readSheetSnapshot: d.readSheetSnapshot || readD6jD4SheetSnapshotReadOnly_,
+    readFirestoreDocument: d.readFirestoreDocument || readD6jD4FirestoreDocumentReadOnly_,
+    queryFirestoreCollection: d.queryFirestoreCollection || queryD6jD4FirestoreCollectionReadOnly_,
+    inspectDriveArtifacts: d.inspectDriveArtifacts || inspectD6jD4DriveArtifactsReadOnly_,
+    inspectGmailArtifacts: d.inspectGmailArtifacts || inspectD6jD4GmailArtifactsReadOnly_,
+    listTriggers: d.listTriggers || listD6jD4TriggersReadOnly_,
+    logger: d.logger || (typeof Logger !== 'undefined' ? Logger : { log() {} })
+  };
+
+  async function run() {
+    const result = createD6jD4DBaseResult_();
+    let lock = null;
+    let lockAcquired = false;
+    try {
+      const properties = services.readProperties();
+      result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT = normalizeD6jD4String_(properties[D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_]) ? 'YES' : 'NO';
+      assertD6jD4RepairMarkerAbsent_(properties, result);
+      if (normalizeD6jD4String_(properties[D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_]) !== D6J_D4D_RECONCILIATION_APPROVAL_) {
+        throw d6jD4Error_('BLOCKED_INVALID_D6J_D4D_RECONCILIATION_APPROVAL_MARKER', 'PREFLIGHT');
+      }
+      lock = services.createLock();
+      if (!lock || typeof lock.tryLock !== 'function' || !lock.tryLock(30000)) {
+        throw d6jD4Error_('BLOCKED_SCRIPT_LOCK_NOT_ACQUIRED', 'PREFLIGHT');
+      }
+      lockAcquired = true;
+      result.SCRIPT_LOCK_ACQUIRED = 'YES';
+      await collectD6jD4DReconciliationVerification_(services, properties, result);
+      const expectedPayload = result._EXPECTED_POST_HOC_RECONCILIATION_EVENT;
+      const eventPath = result._EXPECTED_POST_HOC_RECONCILIATION_EVENT_PATH;
+      const transport = services.createTransport();
+      if (!transport || typeof transport.runTransaction !== 'function') {
+        throw d6jD4Error_('BLOCKED_D6J_D4D_FIRESTORE_TRANSPORT_MISSING', 'FIRESTORE');
+      }
+      let createCount = 0;
+      let mutationCount = 0;
+      let mutationStatus = '';
+      await transport.runTransaction(async tx => {
+        const existing = await tx.getDocument(eventPath);
+        if (existing) {
+          if (isD6jD4DPostHocEventExactMatch_(existing, expectedPayload)) {
+            mutationStatus = 'PASS_IDEMPOTENT_EXISTING_EXACT_MATCH';
+            return;
+          }
+          throw d6jD4ErrorWithDiagnostics_(
+            'BLOCKED_D6J_D4D_RECONCILIATION_EVENT_CONFLICT',
+            {
+              POST_HOC_RECONCILIATION_EVENT_STATUS: 'CONFLICT',
+              POST_HOC_RECONCILIATION_EVENT_MATCH_COUNT: 0,
+              POST_HOC_RECONCILIATION_EVENT_FOUND: 'YES'
+            },
+            'FIRESTORE'
+          );
+        }
+        await tx.createDocument(eventPath, expectedPayload, { idempotencyKey: expectedPayload.eventId });
+        createCount = 1;
+        mutationCount = 1;
+        const created = await tx.getDocument(eventPath);
+        if (!isD6jD4DPostHocEventExactMatch_(created, expectedPayload)) {
+          throw d6jD4Error_('BLOCKED_D6J_D4D_RECONCILIATION_EVENT_READBACK_MISMATCH', 'FIRESTORE');
+        }
+        mutationStatus = 'PASS_POST_HOC_RECONCILIATION_EVIDENCE_CREATED';
+      });
+      result.RECONCILIATION_MUTATION_STATUS = mutationStatus || 'BLOCKED';
+      result.FIRESTORE_EVENT_CREATE_COUNT = createCount;
+      result.FIRESTORE_EVENT_CREATE_PLANNED = createCount ? 1 : 0;
+      result.FIRESTORE_MUTATION_COUNT = mutationCount;
+      result.PRODUCTION_MUTATION = mutationCount ? 'ONE_DETERMINISTIC_FIRESTORE_RECONCILIATION_EVENT_ONLY' : 'NONE';
+    } catch (error) {
+      result.RECONCILIATION_MUTATION_STATUS = 'BLOCKED';
+      result.BLOCKER_CODE = normalizeD6jD4ErrorCode_(error && (error.code || error.message) || 'BLOCKED_D6J_D4D_MUTATION_UNKNOWN');
+      mergeD6jD4Result_(result, error && error.diagnostics);
+      markD6jD4BlockedStage_(result, error, result.BLOCKER_CODE);
+    } finally {
+      if (lockAcquired && lock && typeof lock.releaseLock === 'function') lock.releaseLock();
+    }
+    finalizeD6jD4DMutationResult_(result);
+    logD6jD4SanitizedResult_(services.logger, result);
+    return result;
+  }
+
+  return Object.freeze({ run });
+}
+
+async function collectD6jD4DReconciliationVerification_(services, properties, seedResult) {
+  const result = seedResult || createD6jD4DBaseResult_();
+  const preflight = services.runPreflight(properties);
+  const preflightState = assertD6jD4Preflight_(preflight, result);
+  result.LAST_COMPLETED_VERIFICATION_STAGE = 'PREFLIGHT';
+  if (preflightState.sheetDuplicateStatus !== 'EXISTING_CANONICAL_MATCH') {
+    throw d6jD4Error_('BLOCKED_D6J_D4_PREFLIGHT_CLASSIFIER_DISAGREEMENT', 'CLASSIFIER');
+  }
+  const snapshot = services.readSheetSnapshot(properties);
+  const sheet = inspectD6jD4CanonicalSheetState_(snapshot);
+  mergeD6jD4Result_(result, sheet);
+  result.SHEET_VERIFICATION_STATUS = 'PASS';
+  result.LAST_COMPLETED_VERIFICATION_STAGE = 'SHEET';
+  const fire = await inspectD6jD4DReconciliationEvidence_(services, { properties, sheet });
+  mergeD6jD4Result_(result, fire);
+  result.FIRESTORE_VERIFICATION_STATUS = 'PASS';
+  result.LAST_COMPLETED_VERIFICATION_STAGE = 'FIRESTORE';
+  const drive = services.inspectDriveArtifacts(properties, preflight);
+  assertD6jD4DriveArtifacts_(drive);
+  mergeD6jD4Result_(result, drive);
+  result.DRIVE_VERIFICATION_STATUS = 'PASS';
+  result.LAST_COMPLETED_VERIFICATION_STAGE = 'DRIVE';
+  const gmail = services.inspectGmailArtifacts(properties, preflight);
+  assertD6jD4GmailArtifacts_(gmail);
+  mergeD6jD4Result_(result, gmail);
+  result.GMAIL_VERIFICATION_STATUS = 'PASS';
+  result.LAST_COMPLETED_VERIFICATION_STAGE = 'GMAIL';
+  const trigger = inspectD6jD4Triggers_(services.listTriggers());
+  mergeD6jD4Result_(result, trigger);
+  result.TRIGGER_VERIFICATION_STATUS = 'PASS';
+  result.LAST_COMPLETED_VERIFICATION_STAGE = 'TRIGGER';
+  return result;
+}
+
+async function inspectD6jD4DReconciliationEvidence_(services, context) {
+  const jobPath = durableJobPath(D6J_D4_ORIGINAL_JOB_ID_);
+  const eventsPath = durableJobEventsPath(D6J_D4_ORIGINAL_JOB_ID_);
+  const leasePath = workerLeasePath(D6J_D4_ORIGINAL_JOB_ID_);
+  const job = await services.readFirestoreDocument(jobPath);
+  if (!job) throw d6jD4Error_('BLOCKED_D6J_D4D_DURABLE_JOB_NOT_FOUND', 'FIRESTORE');
+  if (normalizeD6jD4String_(job.jobId || D6J_D4_ORIGINAL_JOB_ID_) !== D6J_D4_ORIGINAL_JOB_ID_) {
+    throw d6jD4Error_('BLOCKED_D6J_D4D_DURABLE_JOB_ID_MISMATCH', 'FIRESTORE');
+  }
+  const jobStatus = sanitizeD6jD4CCode_(job.status).toUpperCase();
+  if (jobStatus !== 'COMPLETED') throw d6jD4Error_('BLOCKED_D6J_D4D_DURABLE_JOB_NOT_COMPLETED', 'FIRESTORE');
+  const lease = await services.readFirestoreDocument(leasePath);
+  const leaseState = inspectD6jD4DLeaseReadState_(lease);
+  if (leaseState.LEASE_FOUND !== 'YES') throw d6jD4Error_('BLOCKED_D6J_D4D_LEASE_NOT_FOUND', 'FIRESTORE');
+  if (leaseState.LEASE_JOB_ID_MATCH !== 'YES') throw d6jD4Error_('BLOCKED_D6J_D4D_LEASE_JOB_ID_MISMATCH', 'FIRESTORE');
+  if (leaseState.LEASE_STATUS !== 'RELEASED') throw d6jD4Error_('BLOCKED_D6J_D4D_LEASE_STATUS', 'FIRESTORE');
+  if (leaseState.LEASE_FINAL_JOB_STATUS !== 'COMPLETED') throw d6jD4Error_('BLOCKED_D6J_D4D_LEASE_FINAL_STATUS', 'FIRESTORE');
+  const events = await services.queryFirestoreCollection(eventsPath);
+  const eventEvidence = buildD6jD4EventEvidence_(events, {
+    job,
+    lease,
+    sheet: context && context.sheet,
+    phase: D6J_D4D_PHASE_
+  });
+  if (eventEvidence.BLOCKER_CODE) {
+    throw d6jD4ErrorWithDiagnostics_(eventEvidence.BLOCKER_CODE, omitD6jD4DInternalEvidenceFields_(eventEvidence), 'FIRESTORE');
+  }
+  if (eventEvidence.FIRESTORE_EVIDENCE_MODE === 'ORIGINAL_AUDIT') {
+    throw d6jD4ErrorWithDiagnostics_('BLOCKED_D6J_D4D_RECONCILIATION_NOT_REQUIRED_ORIGINAL_AUDIT_PRESENT', omitD6jD4DInternalEvidenceFields_(eventEvidence), 'FIRESTORE');
+  }
+  return {
+    DURABLE_JOB_FOUND: 'YES',
+    DURABLE_JOB_STATUS: jobStatus,
+    LEASE_FOUND: leaseState.LEASE_FOUND,
+    LEASE_JOB_ID_MATCH: leaseState.LEASE_JOB_ID_MATCH,
+    LEASE_STATUS: leaseState.LEASE_STATUS,
+    LEASE_FINAL_JOB_STATUS: leaseState.LEASE_FINAL_JOB_STATUS,
+    LEASE_RELEASED_AT_PRESENT: leaseState.LEASE_RELEASED_AT_PRESENT,
+    LEASE_GENERATION_PRESENT: leaseState.LEASE_GENERATION_PRESENT,
+    ORIGINAL_REPAIR_AUDIT_STATUS: eventEvidence.ORIGINAL_REPAIR_AUDIT_STATUS,
+    ORIGINAL_REPAIR_AUDIT_MATCH_COUNT: eventEvidence.ORIGINAL_REPAIR_AUDIT_MATCH_COUNT,
+    POST_HOC_RECONCILIATION_EVENT_STATUS: eventEvidence.POST_HOC_RECONCILIATION_EVENT_STATUS,
+    POST_HOC_RECONCILIATION_EVENT_MATCH_COUNT: eventEvidence.POST_HOC_RECONCILIATION_EVENT_MATCH_COUNT,
+    POST_HOC_RECONCILIATION_EVENT_FOUND: eventEvidence.POST_HOC_RECONCILIATION_EVENT_FOUND,
+    FIRESTORE_EVIDENCE_MODE: eventEvidence.FIRESTORE_EVIDENCE_MODE,
+    FIRESTORE_EVENT_CREATE_PLANNED: eventEvidence.POST_HOC_RECONCILIATION_EVENT_FOUND === 'YES' ? 0 : 1,
+    _EXPECTED_POST_HOC_RECONCILIATION_EVENT: eventEvidence._EXPECTED_POST_HOC_RECONCILIATION_EVENT,
+    _EXPECTED_POST_HOC_RECONCILIATION_EVENT_PATH: eventEvidence._EXPECTED_POST_HOC_RECONCILIATION_EVENT_PATH
+  };
+}
+
+function inspectD6jD4DLeaseReadState_(lease) {
+  const source = lease || {};
+  return {
+    LEASE_FOUND: normalizeD6jD4String_(source.jobId) ? 'YES' : 'NO',
+    LEASE_JOB_ID_MATCH: normalizeD6jD4String_(source.jobId) === D6J_D4_ORIGINAL_JOB_ID_ ? 'YES' : 'NO',
+    LEASE_STATUS: sanitizeD6jD4CCode_(source.status).toUpperCase(),
+    LEASE_FINAL_JOB_STATUS: sanitizeD6jD4CCode_(source.finalJobStatus).toUpperCase(),
+    LEASE_RELEASED_AT_PRESENT: isD6jD4ValidTimestamp_(source.releasedAt) ? 'YES' : 'NO',
+    LEASE_GENERATION_PRESENT: normalizeD6jD4String_(source.generation || source.leaseGeneration || source.fencingToken) ? 'YES' : 'NO'
+  };
+}
+
+function buildD6jD4EventEvidence_(events, context) {
+  const docs = (events || []).map(item => item && item.data ? item.data : item);
+  const expectedPayload = buildD6jD4DExpectedPostHocEvent_(context.job, context.lease, context.sheet);
+  const originalMatches = docs.filter(event => normalizeD6jD4String_(event.eventType) === 'D6J_D_SINGLE_ROW_REPAIR'
+    && normalizeD6jD4String_(event.jobId || D6J_D4_ORIGINAL_JOB_ID_) === D6J_D4_ORIGINAL_JOB_ID_);
+  const originalState = inspectD6jD4OriginalAuditState_(originalMatches);
+  const postHocMatches = docs.filter(event => normalizeD6jD4String_(event.eventType) === D6J_D4D_EVENT_TYPE_
+    && normalizeD6jD4String_(event.jobId || D6J_D4_ORIGINAL_JOB_ID_) === D6J_D4_ORIGINAL_JOB_ID_);
+  const exactPostHocMatches = postHocMatches.filter(event => isD6jD4DPostHocEventExactMatch_(event, expectedPayload));
+  const out = {
+    FIRESTORE_REPAIR_AUDIT_COUNT: originalState.count,
+    FIRESTORE_REPAIR_AUDIT_FOUND: originalState.count === 1 && originalState.valid ? 'YES' : 'NO',
+    FIRESTORE_REPAIR_AUDIT_COLUMNS_MATCH: originalState.columnsMatch ? 'YES' : 'NO',
+    FIRESTORE_BEFORE_HASH_PRESENT: originalState.beforeHashPresent ? 'YES' : 'NO',
+    FIRESTORE_AFTER_HASH_PRESENT: originalState.afterHashPresent ? 'YES' : 'NO',
+    FIRESTORE_BEFORE_AFTER_HASH_DIFFER: originalState.beforeAfterHashDiffer ? 'YES' : 'NO',
+    ORIGINAL_REPAIR_AUDIT_STATUS: originalState.count === 0 ? 'MISSING' : originalState.valid ? 'PRESENT_VALID' : 'PRESENT_INVALID',
+    ORIGINAL_REPAIR_AUDIT_MATCH_COUNT: originalState.count,
+    POST_HOC_RECONCILIATION_EVENT_MATCH_COUNT: exactPostHocMatches.length,
+    POST_HOC_RECONCILIATION_EVENT_FOUND: exactPostHocMatches.length === 1 ? 'YES' : 'NO',
+    POST_HOC_RECONCILIATION_EVENT_STATUS: exactPostHocMatches.length === 1 ? 'EXACT_MATCH' : postHocMatches.length === 0 ? 'NOT_FOUND' : 'CONFLICT',
+    _EXPECTED_POST_HOC_RECONCILIATION_EVENT: expectedPayload,
+    _EXPECTED_POST_HOC_RECONCILIATION_EVENT_PATH: durableJobEventsPath(D6J_D4_ORIGINAL_JOB_ID_) + '/' + expectedPayload.eventId
+  };
+  if (originalState.blockerCode) {
+    out.BLOCKER_CODE = originalState.blockerCode;
+    return out;
+  }
+  if (originalState.valid && postHocMatches.length > 0) {
+    out.BLOCKER_CODE = 'BLOCKED_D6J_D4D_BOTH_ORIGINAL_AND_POST_HOC_EVENTS_PRESENT';
+    return out;
+  }
+  if (originalState.valid) {
+    out.FIRESTORE_EVIDENCE_MODE = 'ORIGINAL_AUDIT';
+    return out;
+  }
+  if (postHocMatches.length === 0) {
+    out.FIRESTORE_EVIDENCE_MODE = 'RECONCILIATION_PENDING_POST_HOC';
+    return out;
+  }
+  if (exactPostHocMatches.length === 1 && postHocMatches.length === 1) {
+    out.FIRESTORE_EVIDENCE_MODE = 'POST_HOC_RECONCILIATION';
+    return out;
+  }
+  out.BLOCKER_CODE = 'BLOCKED_D6J_D4D_RECONCILIATION_EVENT_CONFLICT';
+  return out;
+}
+
+function inspectD6jD4OriginalAuditState_(matches) {
+  const list = matches || [];
+  if (list.length === 0) {
+    return { count: 0, valid: false, columnsMatch: false, beforeHashPresent: false, afterHashPresent: false, beforeAfterHashDiffer: false, blockerCode: '' };
+  }
+  if (list.length > 1) {
+    return { count: list.length, valid: false, columnsMatch: false, beforeHashPresent: false, afterHashPresent: false, beforeAfterHashDiffer: false, blockerCode: 'RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_NOT_UNIQUE' };
+  }
+  const detail = list[0].safeDetails || list[0];
+  const columns = normalizeD6jD4Columns_(detail.changedColumns);
+  const expected = D6J_D4_EXPECTED_CHANGED_COLUMNS_.join(',');
+  const beforeHash = normalizeD6jD4String_(detail.beforeHash);
+  const afterHash = normalizeD6jD4String_(detail.afterHash);
+  const valid = columns.join(',') === expected && beforeHash && afterHash && beforeHash !== afterHash && isD6jD4ValidTimestamp_(detail.repairedAt || list[0].occurredAt);
+  return {
+    count: 1,
+    valid,
+    columnsMatch: columns.join(',') === expected,
+    beforeHashPresent: Boolean(beforeHash),
+    afterHashPresent: Boolean(afterHash),
+    beforeAfterHashDiffer: Boolean(beforeHash && afterHash && beforeHash !== afterHash),
+    blockerCode: valid ? '' : 'RECONCILIATION_REQUIRED_FIRESTORE_REPAIR_AUDIT_INVALID'
+  };
+}
+
+function buildD6jD4DExpectedPostHocEvent_(job, lease, sheet) {
+  const payload = {
+    eventType: D6J_D4D_EVENT_TYPE_,
+    schemaVersion: D6J_D4D_SCHEMA_VERSION_,
+    phase: D6J_D4D_PHASE_,
+    jobId: D6J_D4_ORIGINAL_JOB_ID_,
+    targetRowNumber: D6J_D4_TARGET_ROW_NUMBER_,
+    invoiceKeyHashPrefix: hashPrefixD6jC_(D6J_D4_INVOICE_KEY_, 8),
+    hashIndexHashPrefix: hashPrefixD6jC_(D6J_D4_HASH_INDEX_, 8),
+    expectedChangedColumns: D6J_D4_EXPECTED_CHANGED_COLUMNS_.slice(),
+    canonicalRowVerified: sheet && sheet.CANONICAL_ROW_MATCH_COUNT === 1 && sheet.CANONICAL_VALUES_MATCH === 'YES',
+    preservedCellsVerified: sheet && sheet.PRESERVED_VALUES_MATCH === 'YES',
+    dateCellPreserved: sheet && sheet.DATE_CELL_STILL_DATE === 'YES' && sheet.DATE_NUMBER_FORMAT_PRESERVED === 'YES',
+    formulaPreserved: sheet && sheet.HD_FORMULA_PRESERVED === 'YES',
+    duplicateCount: Number(sheet && sheet.DUPLICATE_ROW_COUNT || 0),
+    durableJobStatus: sanitizeD6jD4CCode_(job && job.status).toUpperCase(),
+    leaseStatus: sanitizeD6jD4CCode_(lease && lease.status).toUpperCase(),
+    leaseFinalJobStatus: sanitizeD6jD4CCode_(lease && lease.finalJobStatus).toUpperCase(),
+    originalRepairAuditStatus: 'MISSING',
+    originalRepairAuditMatchCount: 0,
+    reconciliationReason: D6J_D4D_RECONCILIATION_REASON_,
+    verificationSource: D6J_D4D_VERIFICATION_SOURCE_,
+    verifiedCurrentRowHash: normalizeD6jD4String_(sheet && sheet.VERIFIED_CURRENT_ROW_HASH),
+    d4cEvidenceStatus: D6J_D4D_EXPECTED_D4C_STATUS_,
+    recordedAt: resolveD6jD4DRecordedAt_(job, lease)
+  };
+  payload.eventId = buildD6jD4DDeterministicEventId_(payload);
+  return payload;
+}
+
+function resolveD6jD4DRecordedAt_(job, lease) {
+  const candidates = [lease && lease.releasedAt, job && job.completedAt, job && job.updatedAt, '2026-07-26T00:00:00.000Z'];
+  return candidates.find(isD6jD4ValidTimestamp_) || '2026-07-26T00:00:00.000Z';
+}
+
+function buildD6jD4DDeterministicEventId_(value) {
+  const source = value || {};
+  const seed = [
+    D6J_D4D_EVENT_TYPE_,
+    normalizeD6jD4String_(source.jobId || D6J_D4_ORIGINAL_JOB_ID_),
+    String(source.targetRowNumber || D6J_D4_TARGET_ROW_NUMBER_),
+    D6J_D4_INVOICE_KEY_,
+    D6J_D4_HASH_INDEX_,
+    normalizeD6jD4String_(source.d4cEvidenceStatus || D6J_D4D_EXPECTED_D4C_STATUS_),
+    D6J_D4D_SCHEMA_VERSION_
+  ].join('|');
+  return D6J_D4D_EVENT_ID_PREFIX_ + hashPrefixD6jC_(seed, 20);
+}
+
+function sanitizeD6jD4DPostHocEvent_(event) {
+  const source = event && event.data ? event.data : event || {};
+  const safe = {
+    eventId: normalizeD6jD4String_(source.eventId),
+    eventType: normalizeD6jD4String_(source.eventType),
+    schemaVersion: normalizeD6jD4String_(source.schemaVersion),
+    phase: normalizeD6jD4String_(source.phase),
+    jobId: normalizeD6jD4String_(source.jobId),
+    targetRowNumber: Number(source.targetRowNumber || 0),
+    invoiceKeyHashPrefix: normalizeD6jD4String_(source.invoiceKeyHashPrefix),
+    hashIndexHashPrefix: normalizeD6jD4String_(source.hashIndexHashPrefix),
+    expectedChangedColumns: normalizeD6jD4Columns_(source.expectedChangedColumns),
+    canonicalRowVerified: Boolean(source.canonicalRowVerified),
+    preservedCellsVerified: Boolean(source.preservedCellsVerified),
+    dateCellPreserved: Boolean(source.dateCellPreserved),
+    formulaPreserved: Boolean(source.formulaPreserved),
+    duplicateCount: Number(source.duplicateCount || 0),
+    durableJobStatus: normalizeD6jD4String_(source.durableJobStatus),
+    leaseStatus: normalizeD6jD4String_(source.leaseStatus),
+    leaseFinalJobStatus: normalizeD6jD4String_(source.leaseFinalJobStatus),
+    originalRepairAuditStatus: normalizeD6jD4String_(source.originalRepairAuditStatus),
+    originalRepairAuditMatchCount: Number(source.originalRepairAuditMatchCount || 0),
+    reconciliationReason: normalizeD6jD4String_(source.reconciliationReason),
+    verificationSource: normalizeD6jD4String_(source.verificationSource),
+    verifiedCurrentRowHash: normalizeD6jD4String_(source.verifiedCurrentRowHash),
+    d4cEvidenceStatus: normalizeD6jD4String_(source.d4cEvidenceStatus),
+    recordedAt: normalizeD6jD4String_(source.recordedAt)
+  };
+  return safe;
+}
+
+function isD6jD4DPostHocEventExactMatch_(event, expectedPayload) {
+  const actual = sanitizeD6jD4DPostHocEvent_(event);
+  const expected = sanitizeD6jD4DPostHocEvent_(expectedPayload);
+  return stableD6jD4Json_(actual) === stableD6jD4Json_(expected);
+}
+
+function omitD6jD4DInternalEvidenceFields_(eventEvidence) {
+  const out = cloneD6jD4PlainObject_(eventEvidence || {});
+  delete out._EXPECTED_POST_HOC_RECONCILIATION_EVENT;
+  delete out._EXPECTED_POST_HOC_RECONCILIATION_EVENT_PATH;
+  return out;
+}
+
+function createD6jD4DBaseResult_() {
+  const base = createD6jD4BaseResult_();
+  base.PHASE = D6J_D4D_PHASE_;
+  base.SCHEMA_VERSION = D6J_D4D_SCHEMA_VERSION_;
+  base.RECONCILIATION_PREVIEW_STATUS = 'NOT_STARTED';
+  base.RECONCILIATION_MUTATION_STATUS = 'NOT_STARTED';
+  base.DURABLE_JOB_FOUND = 'NO';
+  base.DURABLE_JOB_STATUS = '';
+  base.SHEET_MUTATION_PLANNED = 0;
+  base.DRIVE_MUTATION_PLANNED = 0;
+  base.GMAIL_MUTATION_PLANNED = 0;
+  base.JOB_DOCUMENT_MUTATION_PLANNED = 0;
+  base.LEASE_MUTATION_PLANNED = 0;
+  base.FIRESTORE_EVENT_CREATE_PLANNED = 0;
+  base.FIRESTORE_EVENT_CREATE_COUNT = 0;
+  base.SCRIPT_PROPERTIES_MUTATION_COUNT = 0;
+  base.SCRIPT_LOCK_ACQUIRED = 'NO';
+  return base;
+}
+
+function finalizeD6jD4DPreviewResult_(result) {
+  result.SHEETS_MUTATION_COUNT = 0;
+  result.DRIVE_MUTATION_COUNT = 0;
+  result.GMAIL_MUTATION_COUNT = 0;
+  result.FIRESTORE_MUTATION_COUNT = 0;
+  result.TRIGGER_MUTATION_COUNT = 0;
+  result.SCRIPT_PROPERTIES_MUTATION_COUNT = 0;
+  result.DESTRUCTIVE_OPERATION_COUNT = 0;
+  result.PRODUCTION_MUTATION = 'NONE';
+  result.SHEET_MUTATION_PLANNED = 0;
+  result.DRIVE_MUTATION_PLANNED = 0;
+  result.GMAIL_MUTATION_PLANNED = 0;
+  result.JOB_DOCUMENT_MUTATION_PLANNED = 0;
+  result.LEASE_MUTATION_PLANNED = 0;
+  result.CURRENT_ENTRYPOINT_EXECUTED = 'YES';
+  result.D6J_D4_ENTRYPOINT_EXECUTED = 'NO';
+  result.D6J_D4C_ENTRYPOINT_EXECUTED = 'NO';
+  result.D6J_D4D_PREVIEW_ENTRYPOINT_EXECUTED = 'YES';
+  result.D6J_D4D_MUTATION_ENTRYPOINT_EXECUTED = 'NO';
+  result.PROHIBITED_D6J_D4_ENTRYPOINT_EXECUTED = 'NO';
+  result.REPAIR_FUNCTION_EXECUTED = 'NO';
+  result.D6J_C_FUNCTION_EXECUTED = 'NO';
+  delete result._EXPECTED_POST_HOC_RECONCILIATION_EVENT;
+  delete result._EXPECTED_POST_HOC_RECONCILIATION_EVENT_PATH;
+}
+
+function finalizeD6jD4DMutationResult_(result) {
+  result.SHEETS_MUTATION_COUNT = 0;
+  result.DRIVE_MUTATION_COUNT = 0;
+  result.GMAIL_MUTATION_COUNT = 0;
+  result.JOB_DOCUMENT_MUTATION_COUNT = 0;
+  result.LEASE_MUTATION_COUNT = 0;
+  result.TRIGGER_MUTATION_COUNT = 0;
+  result.SCRIPT_PROPERTIES_MUTATION_COUNT = 0;
+  result.DESTRUCTIVE_OPERATION_COUNT = 0;
+  result.CURRENT_ENTRYPOINT_EXECUTED = 'YES';
+  result.D6J_D4_ENTRYPOINT_EXECUTED = 'NO';
+  result.D6J_D4C_ENTRYPOINT_EXECUTED = 'NO';
+  result.D6J_D4D_PREVIEW_ENTRYPOINT_EXECUTED = 'NO';
+  result.D6J_D4D_MUTATION_ENTRYPOINT_EXECUTED = 'YES';
+  result.PROHIBITED_D6J_D4_ENTRYPOINT_EXECUTED = 'NO';
+  result.REPAIR_FUNCTION_EXECUTED = 'NO';
+  result.D6J_C_FUNCTION_EXECUTED = 'NO';
+  delete result._EXPECTED_POST_HOC_RECONCILIATION_EVENT;
+  delete result._EXPECTED_POST_HOC_RECONCILIATION_EVENT_PATH;
 }
 
 function createD6jD4CFirestoreEvidenceDiagnosticsReadOnlyRunner_(deps) {
@@ -664,18 +1210,18 @@ function buildD6jD4CPaths_() {
   const gmailId = 'd6j_gmail_' + hashPrefixD6jC_(D6J_D4_GMAIL_MESSAGE_ID_, 20);
   const pdfId = 'd6j_att_' + hashPrefixD6jC_(['PDF', D6J_D4_GMAIL_MESSAGE_ID_, D6J_D4_PDF_SHA256_].join('|'), 20);
   const xmlId = 'd6j_att_' + hashPrefixD6jC_(['XML', D6J_D4_GMAIL_MESSAGE_ID_, D6J_D4_XML_SHA256_].join('|'), 20);
-  const durableJobPath = D6J_D4C_DURABLE_JOB_COLLECTION_ + '/' + jobId;
+  const durablePath = durableJobPath(jobId);
   return {
     EXPECTED_JOB_PATH: D6J_D4C_LEGACY_JOB_COLLECTION_ + '/' + jobId,
-    ACTUAL_DURABLE_JOB_PATH: durableJobPath,
-    ACTUAL_JOB_EVENTS_PATH: durableJobPath + '/events',
-    ACTUAL_COMMIT_PLAN_PATH: durableJobPath + '#commitPlan',
-    ACTUAL_RECONCILIATION_REPORT_PATH: durableJobPath + '/reconciliationReports',
-    EXPECTED_LEASE_PATH: 'worker_leases/' + jobId,
+    ACTUAL_DURABLE_JOB_PATH: durablePath,
+    ACTUAL_JOB_EVENTS_PATH: durableJobEventsPath(jobId),
+    ACTUAL_COMMIT_PLAN_PATH: durablePath + '#commitPlan',
+    ACTUAL_RECONCILIATION_REPORT_PATH: durablePath + '/reconciliationReports',
+    EXPECTED_LEASE_PATH: workerLeasePath(jobId),
     EXPECTED_GMAIL_RECORD_PATH: 'gmail_messages/' + gmailId,
     EXPECTED_PDF_ATTACHMENT_RECORD_PATH: 'attachments/' + pdfId,
     EXPECTED_XML_ATTACHMENT_RECORD_PATH: 'attachments/' + xmlId,
-    REPAIR_AUDIT_COLLECTION_PATH: durableJobPath + '/events'
+    REPAIR_AUDIT_COLLECTION_PATH: durableJobEventsPath(jobId)
   };
 }
 
@@ -852,8 +1398,10 @@ function finalizeD6jD4CReadOnlyCounts_(result) {
   result.SCRIPT_PROPERTIES_MUTATION_COUNT = 0;
   result.DESTRUCTIVE_OPERATION_COUNT = 0;
   result.PRODUCTION_MUTATION = 'NONE';
-  result.D6J_D4C_ENTRYPOINT_EXECUTED = 'NO';
+  result.CURRENT_ENTRYPOINT_EXECUTED = 'YES';
+  result.D6J_D4C_ENTRYPOINT_EXECUTED = 'YES';
   result.D6J_D4_ENTRYPOINT_EXECUTED = 'NO';
+  result.PROHIBITED_D6J_D4_ENTRYPOINT_EXECUTED = 'NO';
   result.REPAIR_FUNCTION_EXECUTED = 'NO';
   result.D6J_C_FUNCTION_EXECUTED = 'NO';
 }
@@ -959,6 +1507,13 @@ function finalizeD6jD4ReadOnlyCounts_(result) {
   result.TRIGGER_MUTATION_COUNT = 0;
   result.DESTRUCTIVE_OPERATION_COUNT = 0;
   result.PRODUCTION_MUTATION = 'NONE';
+  result.CURRENT_ENTRYPOINT_EXECUTED = 'YES';
+  result.D6J_D4_ENTRYPOINT_EXECUTED = result.PHASE === D6J_D4_PHASE_ ? 'YES' : 'NO';
+  result.PROHIBITED_D6J_D4_ENTRYPOINT_EXECUTED = 'NO';
+  result.D6J_D4D_PREVIEW_ENTRYPOINT_EXECUTED = 'NO';
+  result.D6J_D4D_MUTATION_ENTRYPOINT_EXECUTED = 'NO';
+  result.REPAIR_FUNCTION_EXECUTED = 'NO';
+  result.D6J_C_FUNCTION_EXECUTED = 'NO';
 }
 
 function mergeD6jD4Result_(target, patch) {
@@ -977,6 +1532,52 @@ function logD6jD4SanitizedResult_(logger, result) {
 
 function normalizeD6jD4String_(value) {
   return value == null ? '' : String(value).replace(/\s+/g, ' ').trim();
+}
+
+function buildD6jD4VerifiedCurrentRowHash_(row) {
+  const source = row || {};
+  const payload = {
+    rowNumber: Number(source.rowNumber || 0),
+    values: (source.values || []).map(normalizeD6jD4HashValue_),
+    displayValues: (source.displayValues || []).map(normalizeD6jD4HashValue_),
+    formulas: (source.formulas || []).map(normalizeD6jD4HashValue_),
+    formulasR1C1: (source.formulasR1C1 || []).map(normalizeD6jD4HashValue_),
+    numberFormats: (source.numberFormats || []).map(normalizeD6jD4HashValue_)
+  };
+  return buildD6jD4Sha256Hex_(stableD6jD4Json_(payload));
+}
+
+function normalizeD6jD4HashValue_(value) {
+  if (value instanceof Date) return Utilities.formatDate(value, 'Etc/UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+  if (Array.isArray(value)) return value.map(normalizeD6jD4HashValue_);
+  if (value && typeof value === 'object') {
+    const out = {};
+    Object.keys(value).sort().forEach(key => {
+      out[key] = normalizeD6jD4HashValue_(value[key]);
+    });
+    return out;
+  }
+  return value == null ? '' : value;
+}
+
+function stableD6jD4Json_(value) {
+  return JSON.stringify(normalizeD6jD4HashValue_(value));
+}
+
+function buildD6jD4Sha256Hex_(text) {
+  const bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    String(text || ''),
+    Utilities.Charset.UTF_8
+  );
+  return bytes.map(byte => {
+    const normalized = byte < 0 ? byte + 256 : byte;
+    return (normalized < 16 ? '0' : '') + normalized.toString(16);
+  }).join('');
+}
+
+function cloneD6jD4PlainObject_(value) {
+  return JSON.parse(JSON.stringify(value == null ? null : value));
 }
 
 function normalizeD6jD4ExactText_(value) {

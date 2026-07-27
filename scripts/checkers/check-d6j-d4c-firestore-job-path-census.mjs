@@ -25,9 +25,12 @@ for (const marker of [
   'runD6jD4CFirestoreEvidenceDiagnosticsReadOnly',
   'createD6jD4CFirestoreEvidenceDiagnosticsReadOnlyRunner_',
   'D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS_V1',
-  "D6J_D4C_LEGACY_JOB_COLLECTION_ = 'jobs'",
-  "D6J_D4C_DURABLE_JOB_COLLECTION_ = 'invoiceJobs'",
+  "D6J_D_LEGACY_JOB_COLLECTION_ = 'jobs'",
+  "D6J_DURABLE_JOB_COLLECTION_ = 'invoiceJobs'",
   'buildD6jD4CPaths_',
+  'durableJobPath',
+  'durableJobEventsPath',
+  'workerLeasePath',
   'recomputeD6jD4CJobId_',
   'EXPECTED_JOB_PATH',
   'ACTUAL_DURABLE_JOB_PATH',
@@ -39,7 +42,7 @@ for (const marker of [
   'attachments/',
   'REPAIR_AUDIT_COLLECTION_PATH',
   'D6J_D_SINGLE_ROW_REPAIR',
-  'RECONCILIATION_REQUIRED_D6J_D4_ORIGINAL_JOB_NOT_FOUND',
+  'RECONCILIATION_REQUIRED_D6J_D4_DURABLE_JOB_NOT_FOUND',
   'BLOCKED_MULTIPLE_JOB_CANDIDATES',
   'PASS_EXPECTED_JOB_AND_AUDIT_FOUND',
   'RECONCILIATION_REQUIRED_JOB_MISSING_AUDIT_PRESENT',
@@ -82,7 +85,7 @@ for (const marker of [
   'D6J-D4C multiple alternate candidates block without choosing one',
   'D6J-D4C Firestore diagnostics use GET/LIST only and logs are sanitized',
   'D6J-D4 missing original job returns reconciliation required after Sheet verification',
-  'RECONCILIATION_REQUIRED_D6J_D4_ORIGINAL_JOB_NOT_FOUND'
+  'RECONCILIATION_REQUIRED_D6J_D4_DURABLE_JOB_NOT_FOUND'
 ]) {
   assert.equal(tests.includes(marker), true, `tests missing D6J-D4C marker: ${marker}`);
 }
