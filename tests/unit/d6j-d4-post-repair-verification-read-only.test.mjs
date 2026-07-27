@@ -32,8 +32,13 @@ const gas = loadGasSource({
   exportNames: [
     'D6J_D4_ENTRYPOINT_',
     'D6J_D4_SCHEMA_VERSION_',
+    'D6J_D4C_ENTRYPOINT_',
+    'D6J_D4C_SCHEMA_VERSION_',
     'D6J_D4_EXPECTED_ROW_',
     'createD6jD4PostRepairVerificationReadOnlyRunner_',
+    'createD6jD4CFirestoreEvidenceDiagnosticsReadOnlyRunner_',
+    'buildD6jD4CPaths_',
+    'recomputeD6jD4CJobId_',
     'inspectD6jD4CanonicalSheetState_',
     'normalizeD6jD4ExactText_',
     'evaluateD6jD4RowFieldMatches_',
@@ -205,10 +210,79 @@ function makeRunner(options = {}) {
   return { runner, state, logger };
 }
 
+function documentState(data, httpStatus = data ? 200 : 404) {
+  return {
+    httpStatus,
+    readStatus: 'READ_OK',
+    found: Boolean(data),
+    data: clone(data || null)
+  };
+}
+
+function collectionState(documents = [], httpStatus = 200) {
+  return {
+    httpStatus,
+    readStatus: 'READ_OK',
+    documents: documents.map(item => ({ id: item.id, name: item.name || item.id, data: clone(item.data || item) }))
+  };
+}
+
+function makeD4CRunner(options = {}) {
+  const paths = fromVm(gas.call('buildD6jD4CPaths_'));
+  const calls = [];
+  const docs = options.docs || {};
+  const lists = options.lists || {};
+  const logger = { lines: [], log(value) { this.lines.push(String(value)); } };
+  const runner = gas.call('createD6jD4CFirestoreEvidenceDiagnosticsReadOnlyRunner_', {
+    readFirestoreDocumentState: async path => {
+      calls.push(['GET', path]);
+      if (Object.prototype.hasOwnProperty.call(docs, path)) return documentState(docs[path]);
+      return documentState(null, 404);
+    },
+    listFirestoreCollectionState: async (path, pageSize) => {
+      calls.push(['LIST', path, pageSize]);
+      if (Object.prototype.hasOwnProperty.call(lists, path)) return collectionState(lists[path]);
+      return collectionState([]);
+    },
+    logger
+  });
+  return { runner, calls, paths, logger };
+}
+
+function completedJob(overrides = {}) {
+  return {
+    jobId: 'd6j_job_10ad66ede74a1121b0d6',
+    status: 'COMPLETED',
+    pilotId: 'd6j_pilot_9e12d76a0f2b6c16',
+    correlationId: 'd6j_corr_9efff2df466dd953',
+    commitPlan: { invoiceKeyV2: invoiceKey },
+    ...overrides
+  };
+}
+
+function repairEvent(overrides = {}) {
+  return {
+    id: 'evt_000001',
+    data: {
+      jobId: 'd6j_job_10ad66ede74a1121b0d6',
+      eventType: 'D6J_D_SINGLE_ROW_REPAIR',
+      safeDetails: {
+        changedColumns: [3, 4, 10, 11, 12, 13, 14, 15],
+        beforeHash: 'before-hash',
+        afterHash: 'after-hash',
+        repairedAt: '2026-07-26T00:00:00.000Z'
+      },
+      ...overrides
+    }
+  };
+}
+
 test('metadata and D6J-D4 entrypoint contract are canonical', () => {
   assert.equal(TEST_METADATA.runtimeMutation, 'NONE');
   assert.equal(gas.exports.D6J_D4_ENTRYPOINT_, 'runD6jD4PostRepairVerificationReadOnly');
   assert.equal(gas.exports.D6J_D4_SCHEMA_VERSION_, 'D6J_D4_POST_REPAIR_READ_ONLY_VERIFICATION_AND_CHANNEL_CLOSURE_V1');
+  assert.equal(gas.exports.D6J_D4C_ENTRYPOINT_, 'runD6jD4CFirestoreEvidenceDiagnosticsReadOnly');
+  assert.equal(gas.exports.D6J_D4C_SCHEMA_VERSION_, 'D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS_V1');
 });
 
 test('exact Vietnamese customer and item expectations are clean NFC runtime values', () => {
@@ -378,6 +452,138 @@ test('D6J-D4 matches raw numeric invoice number when display value preserves lea
   assert.equal(result.POST_REPAIR_STATUS, 'PASS');
   assert.equal(result.TARGET_ROW_FIELD_MATCHES.C_MATCH, true);
   assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+});
+
+test('D6J-D4 missing original job returns reconciliation required after Sheet verification', async () => {
+  const h = makeRunner({ firestore: { job: null } });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.POST_REPAIR_STATUS, 'RECONCILIATION_REQUIRED');
+  assert.equal(result.BLOCKER_CODE, 'RECONCILIATION_REQUIRED_D6J_D4_ORIGINAL_JOB_NOT_FOUND');
+  assert.equal(result.SHEET_VERIFICATION_STATUS, 'PASS');
+  assert.equal(result.FIRESTORE_VERIFICATION_STATUS, 'RECONCILIATION_REQUIRED');
+  assert.equal(result.DRIVE_VERIFICATION_STATUS, 'NOT_EVALUATED');
+  assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+});
+
+test('D6J-D4C exact expected job path found and actual durable path found with valid repair audit', async () => {
+  const h = makeD4CRunner();
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.RECOMPUTED_JOB_ID, 'd6j_job_10ad66ede74a1121b0d6');
+  assert.equal(result.EXPECTED_JOB_ID_MATCH, 'YES');
+  assert.equal(result.EXPECTED_JOB_PATH, h.paths.EXPECTED_JOB_PATH);
+  assert.equal(result.ACTUAL_DURABLE_JOB_PATH, h.paths.ACTUAL_DURABLE_JOB_PATH);
+
+  const h2 = makeD4CRunner({
+    docs: {
+      [h.paths.EXPECTED_JOB_PATH]: completedJob(),
+      [h.paths.ACTUAL_DURABLE_JOB_PATH]: completedJob(),
+      [h.paths.EXPECTED_LEASE_PATH]: { jobId: 'd6j_job_10ad66ede74a1121b0d6', status: 'RELEASED', finalJobStatus: 'COMPLETED', releasedAt: '2026-07-26T00:00:00.000Z', generation: '1' },
+      [h.paths.EXPECTED_GMAIL_RECORD_PATH]: { messageIdHashPrefix: 'safe' },
+      [h.paths.EXPECTED_PDF_ATTACHMENT_RECORD_PATH]: { attachmentKind: 'PDF' },
+      [h.paths.EXPECTED_XML_ATTACHMENT_RECORD_PATH]: { attachmentKind: 'XML' }
+    },
+    lists: {
+      invoiceJobs: [{ id: 'd6j_job_10ad66ede74a1121b0d6', data: completedJob() }],
+      [h.paths.REPAIR_AUDIT_COLLECTION_PATH]: [repairEvent()]
+    }
+  });
+  const result2 = fromVm(await h2.runner.run());
+  assert.equal(result2.FIRESTORE_EVIDENCE_STATUS, 'PASS_EXPECTED_JOB_AND_AUDIT_FOUND');
+  assert.equal(result2.EXPECTED_JOB_FOUND, 'YES');
+  assert.equal(result2.ACTUAL_DURABLE_JOB_FOUND, 'YES');
+  assert.equal(result2.EXPECTED_GMAIL_RECORD_FOUND, 'YES');
+  assert.equal(result2.EXPECTED_PDF_ATTACHMENT_RECORD_FOUND, 'YES');
+  assert.equal(result2.EXPECTED_XML_ATTACHMENT_RECORD_FOUND, 'YES');
+  assert.equal(result2.REPAIR_AUDIT_FOUND, 'YES');
+  assert.equal(result2.REPAIR_AUDIT_CHANGED_COLUMNS_MATCH, 'YES');
+  assert.equal(result2.PRODUCTION_MUTATION, 'NONE');
+});
+
+test('D6J-D4C exact expected job path 404 and lease exists while actual job is missing', async () => {
+  const h0 = makeD4CRunner();
+  const h = makeD4CRunner({
+    docs: {
+      [h0.paths.EXPECTED_LEASE_PATH]: { jobId: 'd6j_job_10ad66ede74a1121b0d6', status: 'RELEASED', finalJobStatus: 'COMPLETED', releasedAt: '2026-07-26T00:00:00.000Z', fencingToken: 'token-safe' }
+    },
+    lists: {
+      invoiceJobs: [],
+      [h0.paths.REPAIR_AUDIT_COLLECTION_PATH]: [repairEvent()]
+    }
+  });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.EXPECTED_JOB_HTTP_STATUS, 404);
+  assert.equal(result.EXPECTED_JOB_FOUND, 'NO');
+  assert.equal(result.ACTUAL_DURABLE_JOB_FOUND, 'NO');
+  assert.equal(result.LEASE_FOUND, 'YES');
+  assert.equal(result.LEASE_JOB_ID_MATCH, 'YES');
+  assert.equal(result.FIRESTORE_EVIDENCE_STATUS, 'RECONCILIATION_REQUIRED_JOB_MISSING_AUDIT_PRESENT');
+});
+
+test('D6J-D4C job exists while repair audit is missing', async () => {
+  const h0 = makeD4CRunner();
+  const h = makeD4CRunner({
+    docs: { [h0.paths.ACTUAL_DURABLE_JOB_PATH]: completedJob() },
+    lists: { invoiceJobs: [{ id: 'd6j_job_10ad66ede74a1121b0d6', data: completedJob() }], [h0.paths.REPAIR_AUDIT_COLLECTION_PATH]: [] }
+  });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.ACTUAL_DURABLE_JOB_FOUND, 'YES');
+  assert.equal(result.REPAIR_AUDIT_FOUND, 'NO');
+  assert.equal(result.FIRESTORE_EVIDENCE_STATUS, 'RECONCILIATION_REQUIRED_JOB_PRESENT_AUDIT_MISSING');
+});
+
+test('D6J-D4C both job and audit missing', async () => {
+  const result = fromVm(await makeD4CRunner().runner.run());
+  assert.equal(result.ACTUAL_DURABLE_JOB_FOUND, 'NO');
+  assert.equal(result.REPAIR_AUDIT_FOUND, 'NO');
+  assert.equal(result.FIRESTORE_EVIDENCE_STATUS, 'RECONCILIATION_REQUIRED_JOB_AND_AUDIT_MISSING');
+});
+
+test('D6J-D4C alternate job candidate does not replace exact job', async () => {
+  const h0 = makeD4CRunner();
+  const h = makeD4CRunner({
+    lists: {
+      invoiceJobs: [{ id: 'd6j_job_other', data: completedJob({ jobId: 'd6j_job_other', pilotId: 'd6j_pilot_9e12d76a0f2b6c16' }) }],
+      [h0.paths.REPAIR_AUDIT_COLLECTION_PATH]: []
+    }
+  });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.EXPECTED_JOB_ID_MATCH_COUNT, 0);
+  assert.equal(result.ALTERNATE_JOB_CANDIDATE_COUNT, 1);
+  assert.deepEqual(result.ALTERNATE_JOB_CANDIDATE_IDS, ['d6j_job_other']);
+  assert.equal(result.FIRESTORE_EVIDENCE_STATUS, 'RECONCILIATION_REQUIRED_JOB_AND_AUDIT_MISSING');
+});
+
+test('D6J-D4C multiple alternate candidates block without choosing one', async () => {
+  const h0 = makeD4CRunner();
+  const h = makeD4CRunner({
+    lists: {
+      invoiceJobs: [
+        { id: 'd6j_job_other_1', data: completedJob({ jobId: 'd6j_job_other_1', status: 'COMPLETED' }) },
+        { id: 'd6j_job_other_2', data: completedJob({ jobId: 'd6j_job_other_2', status: 'COMPLETED' }) }
+      ],
+      [h0.paths.REPAIR_AUDIT_COLLECTION_PATH]: []
+    }
+  });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.ALTERNATE_JOB_CANDIDATE_COUNT, 2);
+  assert.equal(result.FIRESTORE_EVIDENCE_STATUS, 'BLOCKED_MULTIPLE_JOB_CANDIDATES');
+});
+
+test('D6J-D4C Firestore diagnostics use GET/LIST only and logs are sanitized', async () => {
+  const h = makeD4CRunner();
+  const result = fromVm(await h.runner.run());
+  assert.equal(h.calls.every(call => call[0] === 'GET' || call[0] === 'LIST'), true);
+  assert.equal(h.calls.some(call => call[0] === 'POST' || call[0] === 'PATCH' || call[0] === 'DELETE'), false);
+  assert.equal(result.SHEETS_MUTATION_COUNT, 0);
+  assert.equal(result.DRIVE_MUTATION_COUNT, 0);
+  assert.equal(result.GMAIL_MUTATION_COUNT, 0);
+  assert.equal(result.FIRESTORE_MUTATION_COUNT, 0);
+  assert.equal(result.TRIGGER_MUTATION_COUNT, 0);
+  assert.equal(result.SCRIPT_PROPERTIES_MUTATION_COUNT, 0);
+  assert.equal(result.REPAIR_FUNCTION_EXECUTED, 'NO');
+  assert.equal(result.D6J_C_FUNCTION_EXECUTED, 'NO');
+  const log = h.logger.lines.join('\n');
+  assert.equal(/Bearer|Authorization|refresh_token|private_key|client_secret|"fields"\s*:/.test(log), false);
 });
 
 const blockedCases = [

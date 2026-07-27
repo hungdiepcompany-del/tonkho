@@ -1,6 +1,13 @@
 const D6J_D4_SCHEMA_VERSION_ = 'D6J_D4_POST_REPAIR_READ_ONLY_VERIFICATION_AND_CHANNEL_CLOSURE_V1';
 const D6J_D4_ENTRYPOINT_ = 'runD6jD4PostRepairVerificationReadOnly';
 const D6J_D4_PHASE_ = 'D6J_D4_POST_REPAIR_READ_ONLY_VERIFICATION_AND_CHANNEL_CLOSURE';
+const D6J_D4C_SCHEMA_VERSION_ = 'D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS_V1';
+const D6J_D4C_ENTRYPOINT_ = 'runD6jD4CFirestoreEvidenceDiagnosticsReadOnly';
+const D6J_D4C_PHASE_ = 'D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS';
+const D6J_D4C_JOBS_SCAN_LIMIT_ = 100;
+const D6J_D4C_ALTERNATE_CANDIDATE_LIMIT_ = 5;
+const D6J_D4C_LEGACY_JOB_COLLECTION_ = 'jobs';
+const D6J_D4C_DURABLE_JOB_COLLECTION_ = 'invoiceJobs';
 const D6J_D4_TARGET_ROW_NUMBER_ = 1337;
 const D6J_D4_ORIGINAL_JOB_ID_ = 'd6j_job_10ad66ede74a1121b0d6';
 const D6J_D4_GMAIL_MESSAGE_ID_ = '19cd03f07ebbd84e';
@@ -39,6 +46,11 @@ const D6J_D4_EXPECTED_ROW_ = Object.freeze({
 
 function runD6jD4PostRepairVerificationReadOnly() {
   const runner = createD6jD4PostRepairVerificationReadOnlyRunner_();
+  return runner.run();
+}
+
+function runD6jD4CFirestoreEvidenceDiagnosticsReadOnly() {
+  const runner = createD6jD4CFirestoreEvidenceDiagnosticsReadOnlyRunner_();
   return runner.run();
 }
 
@@ -473,7 +485,7 @@ function isD6jD4FormulaMatch_(formula, formulaR1C1) {
 
 async function inspectD6jD4FirestoreAudit_(services) {
   const job = await services.readFirestoreDocument('jobs/' + D6J_D4_ORIGINAL_JOB_ID_);
-  if (!job) throw d6jD4Error_('BLOCKED_D6J_D4_ORIGINAL_JOB_NOT_FOUND', 'FIRESTORE');
+  if (!job) throw d6jD4Error_('RECONCILIATION_REQUIRED_D6J_D4_ORIGINAL_JOB_NOT_FOUND', 'FIRESTORE');
   const status = normalizeD6jD4String_(job.status).toLowerCase();
   if (status !== 'completed') throw d6jD4Error_('BLOCKED_D6J_D4_ORIGINAL_JOB_NOT_COMPLETED', 'FIRESTORE');
   const events = await services.queryFirestoreCollection('jobs/' + D6J_D4_ORIGINAL_JOB_ID_ + '/events');
@@ -542,6 +554,339 @@ function readD6jD4FirestoreDocumentReadOnly_(path) {
 
 function queryD6jD4FirestoreCollectionReadOnly_(path) {
   return createD6jCFirestoreDurableTransport_().queryDocuments(path);
+}
+
+function createD6jD4CFirestoreEvidenceDiagnosticsReadOnlyRunner_(deps) {
+  const d = deps || {};
+  const services = {
+    readFirestoreDocumentState: d.readFirestoreDocumentState || readD6jD4CFirestoreDocumentStateReadOnly_,
+    listFirestoreCollectionState: d.listFirestoreCollectionState || listD6jD4CFirestoreCollectionStateReadOnly_,
+    logger: d.logger || (typeof Logger !== 'undefined' ? Logger : { log() {} })
+  };
+
+  async function run() {
+    const result = createD6jD4CBaseResult_();
+    try {
+      const paths = buildD6jD4CPaths_();
+      mergeD6jD4Result_(result, paths);
+      const recomputedJobId = recomputeD6jD4CJobId_();
+      result.RECOMPUTED_JOB_ID = recomputedJobId;
+      result.EXPECTED_JOB_ID_MATCH = recomputedJobId === D6J_D4_ORIGINAL_JOB_ID_ ? 'YES' : 'NO';
+
+      const legacyJob = await services.readFirestoreDocumentState(paths.EXPECTED_JOB_PATH);
+      mergeD6jD4Result_(result, summarizeD6jD4CDocumentState_(legacyJob, 'EXPECTED_JOB'));
+      const durableJob = await services.readFirestoreDocumentState(paths.ACTUAL_DURABLE_JOB_PATH);
+      mergeD6jD4Result_(result, summarizeD6jD4CDocumentState_(durableJob, 'ACTUAL_DURABLE_JOB'));
+      const lease = await services.readFirestoreDocumentState(paths.EXPECTED_LEASE_PATH);
+      mergeD6jD4Result_(result, inspectD6jD4CLeaseState_(lease));
+      mergeD6jD4Result_(result, summarizeD6jD4CDocumentState_(await services.readFirestoreDocumentState(paths.EXPECTED_GMAIL_RECORD_PATH), 'EXPECTED_GMAIL_RECORD'));
+      mergeD6jD4Result_(result, summarizeD6jD4CDocumentState_(await services.readFirestoreDocumentState(paths.EXPECTED_PDF_ATTACHMENT_RECORD_PATH), 'EXPECTED_PDF_ATTACHMENT_RECORD'));
+      mergeD6jD4Result_(result, summarizeD6jD4CDocumentState_(await services.readFirestoreDocumentState(paths.EXPECTED_XML_ATTACHMENT_RECORD_PATH), 'EXPECTED_XML_ATTACHMENT_RECORD'));
+
+      const jobs = await services.listFirestoreCollectionState(D6J_D4C_DURABLE_JOB_COLLECTION_, D6J_D4C_JOBS_SCAN_LIMIT_);
+      mergeD6jD4Result_(result, inspectD6jD4CJobsCollection_(jobs));
+      const audit = await services.listFirestoreCollectionState(paths.REPAIR_AUDIT_COLLECTION_PATH, D6J_D4C_JOBS_SCAN_LIMIT_);
+      mergeD6jD4Result_(result, inspectD6jD4CRepairAudit_(audit));
+      result.FIRESTORE_EVIDENCE_STATUS = classifyD6jD4CFirestoreEvidence_(result);
+    } catch (error) {
+      result.FIRESTORE_EVIDENCE_STATUS = 'BLOCKED_FIRESTORE_READ_FAILED';
+      result.BLOCKER_CODE = normalizeD6jD4ErrorCode_(error && (error.code || error.message) || 'BLOCKED_D6J_D4C_FIRESTORE_READ_FAILED');
+      result.FIRESTORE_READ_ERROR_CODE = result.BLOCKER_CODE;
+    }
+    finalizeD6jD4CReadOnlyCounts_(result);
+    logD6jD4CSanitizedResult_(services.logger, result);
+    return result;
+  }
+
+  return Object.freeze({ run });
+}
+
+function createD6jD4CBaseResult_() {
+  return {
+    PHASE: D6J_D4C_PHASE_,
+    FIRESTORE_EVIDENCE_STATUS: 'NOT_STARTED',
+    FIRESTORE_PROJECT_ID: typeof D6J_C_FIRESTORE_PROJECT_ID_ !== 'undefined' ? D6J_C_FIRESTORE_PROJECT_ID_ : 'tonkhohd',
+    FIRESTORE_DATABASE_ID: typeof D6J_C_FIRESTORE_DATABASE_ID_ !== 'undefined' ? D6J_C_FIRESTORE_DATABASE_ID_ : '(default)',
+    EXPECTED_JOB_ID: D6J_D4_ORIGINAL_JOB_ID_,
+    EXPECTED_JOB_PATH: '',
+    EXPECTED_JOB_HTTP_STATUS: 0,
+    EXPECTED_JOB_FOUND: 'NO',
+    ACTUAL_DURABLE_JOB_PATH: '',
+    ACTUAL_DURABLE_JOB_HTTP_STATUS: 0,
+    ACTUAL_DURABLE_JOB_FOUND: 'NO',
+    EXPECTED_LEASE_PATH: '',
+    EXPECTED_LEASE_FOUND: 'NO',
+    EXPECTED_GMAIL_RECORD_FOUND: 'NO',
+    EXPECTED_PDF_ATTACHMENT_RECORD_FOUND: 'NO',
+    EXPECTED_XML_ATTACHMENT_RECORD_FOUND: 'NO',
+    JOBS_COLLECTION_READ_STATUS: 'NOT_RUN',
+    JOBS_COLLECTION_DOCUMENT_COUNT_SCANNED: 0,
+    EXPECTED_JOB_ID_MATCH_COUNT: 0,
+    PILOT_ID_JOB_MATCH_COUNT: 0,
+    CORRELATION_ID_JOB_MATCH_COUNT: 0,
+    ALTERNATE_JOB_CANDIDATE_COUNT: 0,
+    ALTERNATE_JOB_CANDIDATE_IDS: [],
+    RECOMPUTED_JOB_ID: '',
+    EXPECTED_JOB_ID_MATCH: 'NO',
+    LEASE_FOUND: 'NO',
+    LEASE_JOB_ID_MATCH: 'NO',
+    LEASE_STATUS: '',
+    LEASE_FINAL_JOB_STATUS: '',
+    LEASE_RELEASED_AT_PRESENT: 'NO',
+    LEASE_GENERATION_PRESENT: 'NO',
+    REPAIR_AUDIT_COLLECTION_PATH: '',
+    REPAIR_AUDIT_READ_STATUS: 'NOT_RUN',
+    REPAIR_AUDIT_MATCH_COUNT: 0,
+    REPAIR_AUDIT_FOUND: 'NO',
+    REPAIR_AUDIT_CHANGED_COLUMNS_MATCH: 'NO',
+    REPAIR_AUDIT_BEFORE_HASH_PRESENT: 'NO',
+    REPAIR_AUDIT_AFTER_HASH_PRESENT: 'NO',
+    REPAIR_AUDIT_BEFORE_AFTER_HASH_DIFFER: 'NO',
+    REPAIR_AUDIT_TIMESTAMP_VALID: 'NO',
+    SHEETS_MUTATION_COUNT: 0,
+    DRIVE_MUTATION_COUNT: 0,
+    GMAIL_MUTATION_COUNT: 0,
+    FIRESTORE_MUTATION_COUNT: 0,
+    TRIGGER_MUTATION_COUNT: 0,
+    SCRIPT_PROPERTIES_MUTATION_COUNT: 0,
+    DESTRUCTIVE_OPERATION_COUNT: 0,
+    PRODUCTION_MUTATION: 'NONE',
+    D6J_D4C_ENTRYPOINT_EXECUTED: 'NO',
+    D6J_D4_ENTRYPOINT_EXECUTED: 'NO',
+    REPAIR_FUNCTION_EXECUTED: 'NO',
+    D6J_C_FUNCTION_EXECUTED: 'NO',
+    SCHEMA_VERSION: D6J_D4C_SCHEMA_VERSION_
+  };
+}
+
+function buildD6jD4CPaths_() {
+  const jobId = recomputeD6jD4CJobId_();
+  const gmailId = 'd6j_gmail_' + hashPrefixD6jC_(D6J_D4_GMAIL_MESSAGE_ID_, 20);
+  const pdfId = 'd6j_att_' + hashPrefixD6jC_(['PDF', D6J_D4_GMAIL_MESSAGE_ID_, D6J_D4_PDF_SHA256_].join('|'), 20);
+  const xmlId = 'd6j_att_' + hashPrefixD6jC_(['XML', D6J_D4_GMAIL_MESSAGE_ID_, D6J_D4_XML_SHA256_].join('|'), 20);
+  const durableJobPath = D6J_D4C_DURABLE_JOB_COLLECTION_ + '/' + jobId;
+  return {
+    EXPECTED_JOB_PATH: D6J_D4C_LEGACY_JOB_COLLECTION_ + '/' + jobId,
+    ACTUAL_DURABLE_JOB_PATH: durableJobPath,
+    ACTUAL_JOB_EVENTS_PATH: durableJobPath + '/events',
+    ACTUAL_COMMIT_PLAN_PATH: durableJobPath + '#commitPlan',
+    ACTUAL_RECONCILIATION_REPORT_PATH: durableJobPath + '/reconciliationReports',
+    EXPECTED_LEASE_PATH: 'worker_leases/' + jobId,
+    EXPECTED_GMAIL_RECORD_PATH: 'gmail_messages/' + gmailId,
+    EXPECTED_PDF_ATTACHMENT_RECORD_PATH: 'attachments/' + pdfId,
+    EXPECTED_XML_ATTACHMENT_RECORD_PATH: 'attachments/' + xmlId,
+    REPAIR_AUDIT_COLLECTION_PATH: durableJobPath + '/events'
+  };
+}
+
+function recomputeD6jD4CJobId_() {
+  return 'd6j_job_' + hashPrefixD6jC_([D6J_D4_GMAIL_MESSAGE_ID_, D6J_D4_XML_SHA256_].join('|'), 20);
+}
+
+function summarizeD6jD4CDocumentState_(state, prefix) {
+  const s = state || {};
+  const out = {};
+  out[prefix + '_HTTP_STATUS'] = Number(s.httpStatus || (s.found ? 200 : 404));
+  out[prefix + '_FOUND'] = s.found || s.data ? 'YES' : 'NO';
+  return out;
+}
+
+function inspectD6jD4CLeaseState_(state) {
+  const s = state || {};
+  const lease = s.data || {};
+  const found = s.found || lease.jobId ? 'YES' : 'NO';
+  return {
+    EXPECTED_LEASE_HTTP_STATUS: Number(s.httpStatus || (found === 'YES' ? 200 : 404)),
+    EXPECTED_LEASE_FOUND: found,
+    LEASE_FOUND: found,
+    LEASE_JOB_ID_MATCH: normalizeD6jD4String_(lease.jobId) === D6J_D4_ORIGINAL_JOB_ID_ ? 'YES' : 'NO',
+    LEASE_STATUS: sanitizeD6jD4CCode_(lease.status),
+    LEASE_FINAL_JOB_STATUS: sanitizeD6jD4CCode_(lease.finalJobStatus),
+    LEASE_RELEASED_AT_PRESENT: normalizeD6jD4String_(lease.releasedAt) ? 'YES' : 'NO',
+    LEASE_GENERATION_PRESENT: normalizeD6jD4String_(lease.generation || lease.fencingToken || lease.leaseGeneration) ? 'YES' : 'NO'
+  };
+}
+
+function inspectD6jD4CJobsCollection_(state) {
+  const s = state || {};
+  const docs = (s.documents || []).map(normalizeD6jD4CListedDocument_);
+  const expectedMatches = docs.filter(item => item.id === D6J_D4_ORIGINAL_JOB_ID_ || normalizeD6jD4String_(item.data.jobId) === D6J_D4_ORIGINAL_JOB_ID_);
+  const pilotMatches = docs.filter(item => d6jD4CSearchText_(item.data).indexOf(D6J_D_PILOT_ID_) >= 0);
+  const correlationMatches = docs.filter(item => d6jD4CSearchText_(item.data).indexOf(D6J_D_CORRELATION_ID_) >= 0);
+  const alternates = docs.filter(item => item.id !== D6J_D4_ORIGINAL_JOB_ID_
+    && normalizeD6jD4String_(item.data.jobId) !== D6J_D4_ORIGINAL_JOB_ID_
+    && isD6jD4CAlternateJobCandidate_(item.data));
+  return {
+    JOBS_COLLECTION_READ_STATUS: s.readStatus || 'READ_OK',
+    JOBS_COLLECTION_DOCUMENT_COUNT_SCANNED: docs.length,
+    EXPECTED_JOB_ID_MATCH_COUNT: expectedMatches.length,
+    PILOT_ID_JOB_MATCH_COUNT: pilotMatches.length,
+    CORRELATION_ID_JOB_MATCH_COUNT: correlationMatches.length,
+    ALTERNATE_JOB_CANDIDATE_COUNT: alternates.length,
+    ALTERNATE_JOB_CANDIDATE_IDS: alternates.map(item => sanitizeD6jD4CDocumentId_(item.id || item.data.jobId)).slice(0, D6J_D4C_ALTERNATE_CANDIDATE_LIMIT_)
+  };
+}
+
+function normalizeD6jD4CListedDocument_(item) {
+  const source = item || {};
+  const data = source.data || source;
+  const name = normalizeD6jD4String_(source.name);
+  return {
+    id: sanitizeD6jD4CDocumentId_(source.id || normalizeD6jD4LastPathSegment_(name) || data.jobId),
+    data
+  };
+}
+
+function inspectD6jD4CRepairAudit_(state) {
+  const s = state || {};
+  const docs = (s.documents || []).map(item => item.data || item);
+  const matches = docs.filter(event => normalizeD6jD4String_(event.eventType) === 'D6J_D_SINGLE_ROW_REPAIR'
+    && normalizeD6jD4String_(event.jobId || D6J_D4_ORIGINAL_JOB_ID_) === D6J_D4_ORIGINAL_JOB_ID_);
+  const detail = matches.length === 1 ? (matches[0].safeDetails || matches[0]) : {};
+  const beforeHash = normalizeD6jD4String_(detail.beforeHash);
+  const afterHash = normalizeD6jD4String_(detail.afterHash);
+  return {
+    REPAIR_AUDIT_READ_STATUS: s.readStatus || 'READ_OK',
+    REPAIR_AUDIT_MATCH_COUNT: matches.length,
+    REPAIR_AUDIT_FOUND: matches.length === 1 ? 'YES' : 'NO',
+    REPAIR_AUDIT_CHANGED_COLUMNS_MATCH: normalizeD6jD4Columns_(detail.changedColumns).join(',') === D6J_D4_EXPECTED_CHANGED_COLUMNS_.join(',') ? 'YES' : 'NO',
+    REPAIR_AUDIT_BEFORE_HASH_PRESENT: beforeHash ? 'YES' : 'NO',
+    REPAIR_AUDIT_AFTER_HASH_PRESENT: afterHash ? 'YES' : 'NO',
+    REPAIR_AUDIT_BEFORE_AFTER_HASH_DIFFER: beforeHash && afterHash && beforeHash !== afterHash ? 'YES' : 'NO',
+    REPAIR_AUDIT_TIMESTAMP_VALID: isD6jD4ValidTimestamp_(detail.repairedAt || matches[0] && matches[0].occurredAt) ? 'YES' : 'NO'
+  };
+}
+
+function classifyD6jD4CFirestoreEvidence_(result) {
+  if (Number(result.ALTERNATE_JOB_CANDIDATE_COUNT || 0) > 1) return 'BLOCKED_MULTIPLE_JOB_CANDIDATES';
+  const jobFound = result.ACTUAL_DURABLE_JOB_FOUND === 'YES';
+  const auditFound = result.REPAIR_AUDIT_FOUND === 'YES';
+  if (jobFound && auditFound) return 'PASS_EXPECTED_JOB_AND_AUDIT_FOUND';
+  if (!jobFound && auditFound) return 'RECONCILIATION_REQUIRED_JOB_MISSING_AUDIT_PRESENT';
+  if (jobFound && !auditFound) return 'RECONCILIATION_REQUIRED_JOB_PRESENT_AUDIT_MISSING';
+  return 'RECONCILIATION_REQUIRED_JOB_AND_AUDIT_MISSING';
+}
+
+function isD6jD4CAlternateJobCandidate_(data) {
+  const text = d6jD4CSearchText_(data);
+  return text.indexOf(D6J_D_PILOT_ID_) >= 0
+    || text.indexOf(D6J_D_CORRELATION_ID_) >= 0
+    || text.indexOf(D6J_D4_GMAIL_MESSAGE_ID_) >= 0
+    || text.indexOf(D6J_D4_INVOICE_KEY_) >= 0
+    || text.indexOf(D6J_D4_XML_SHA256_) >= 0
+    || normalizeD6jD4String_(data && data.status).toLowerCase() === 'completed';
+}
+
+function d6jD4CSearchText_(value) {
+  try {
+    return JSON.stringify(value || {});
+  } catch (_error) {
+    return '';
+  }
+}
+
+function readD6jD4CFirestoreDocumentStateReadOnly_(path) {
+  return requestD6jD4CFirestoreReadOnly_('DOCUMENT', path, D6J_D4C_JOBS_SCAN_LIMIT_);
+}
+
+function listD6jD4CFirestoreCollectionStateReadOnly_(path, pageSize) {
+  return requestD6jD4CFirestoreReadOnly_('COLLECTION', path, pageSize || D6J_D4C_JOBS_SCAN_LIMIT_);
+}
+
+function requestD6jD4CFirestoreReadOnly_(kind, path, pageSize) {
+  const safe = kind === 'COLLECTION' ? validateD6jCFirestoreCollectionPath_(path) : validateD6jCFirestorePath_(path);
+  const base = d6jCFirestoreBaseUrl_() + '/' + safe.parts.map(encodeURIComponent).join('/');
+  const url = kind === 'COLLECTION' ? base + '?pageSize=' + Math.max(1, Math.min(Number(pageSize || D6J_D4C_JOBS_SCAN_LIMIT_), D6J_D4C_JOBS_SCAN_LIMIT_)) : base;
+  const response = UrlFetchApp.fetch(url, {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }
+  });
+  const status = Number(response.getResponseCode());
+  const text = String(response.getContentText() || '');
+  if (status === 404) return kind === 'COLLECTION'
+    ? { httpStatus: 404, readStatus: 'READ_OK', documents: [] }
+    : { httpStatus: 404, readStatus: 'READ_OK', found: false, data: null };
+  if (status < 200 || status >= 300) throw d6jD4Error_(createD6jD4CFirestoreReadErrorCode_(status, safe.path, text), 'FIRESTORE');
+  const parsed = text ? JSON.parse(text) : {};
+  const codec = createFirestoreValueCodec_();
+  if (kind === 'COLLECTION') {
+    return {
+      httpStatus: status,
+      readStatus: 'READ_OK',
+      documents: (parsed.documents || []).slice(0, D6J_D4C_JOBS_SCAN_LIMIT_).map(doc => ({
+        name: normalizeD6jD4String_(doc.name),
+        id: normalizeD6jD4LastPathSegment_(doc.name),
+        data: codec.decodeDocument(doc)
+      }))
+    };
+  }
+  return {
+    httpStatus: status,
+    readStatus: 'READ_OK',
+    found: true,
+    name: normalizeD6jD4String_(parsed.name),
+    data: codec.decodeDocument(parsed)
+  };
+}
+
+function createD6jD4CFirestoreReadErrorCode_(status, path, text) {
+  const errorStatus = typeof extractD6jCFirestoreErrorStatus_ === 'function' ? extractD6jCFirestoreErrorStatus_(text || '') : 'UNKNOWN';
+  return [
+    'BLOCKED_D6J_D4C_FIRESTORE_READ_FAILED',
+    'HTTP_STATUS=' + Number(status || 0),
+    'FIRESTORE_PROJECT_ID=' + (typeof D6J_C_FIRESTORE_PROJECT_ID_ !== 'undefined' ? D6J_C_FIRESTORE_PROJECT_ID_ : 'tonkhohd'),
+    'FIRESTORE_DATABASE_ID=' + (typeof D6J_C_FIRESTORE_DATABASE_ID_ !== 'undefined' ? D6J_C_FIRESTORE_DATABASE_ID_ : '(default)'),
+    'FIRESTORE_REQUEST_PATH=' + path,
+    'FIRESTORE_ERROR_STATUS=' + sanitizeD6jD4CCode_(errorStatus),
+    'FIRESTORE_ERROR_MESSAGE=' + sanitizeD6jD4CText_(text || '')
+  ].join(';');
+}
+
+function finalizeD6jD4CReadOnlyCounts_(result) {
+  result.SHEETS_MUTATION_COUNT = 0;
+  result.DRIVE_MUTATION_COUNT = 0;
+  result.GMAIL_MUTATION_COUNT = 0;
+  result.FIRESTORE_MUTATION_COUNT = 0;
+  result.TRIGGER_MUTATION_COUNT = 0;
+  result.SCRIPT_PROPERTIES_MUTATION_COUNT = 0;
+  result.DESTRUCTIVE_OPERATION_COUNT = 0;
+  result.PRODUCTION_MUTATION = 'NONE';
+  result.D6J_D4C_ENTRYPOINT_EXECUTED = 'NO';
+  result.D6J_D4_ENTRYPOINT_EXECUTED = 'NO';
+  result.REPAIR_FUNCTION_EXECUTED = 'NO';
+  result.D6J_C_FUNCTION_EXECUTED = 'NO';
+}
+
+function logD6jD4CSanitizedResult_(logger, result) {
+  const text = JSON.stringify(result);
+  if (/(Bearer|Authorization|refresh_token|private_key|client_secret|<\?xml|<Invoice|JVBERi0|\b80,68,70\b|"fields"\s*:)/i.test(text)) {
+    throw d6jD4Error_('BLOCKED_UNSAFE_D6J_D4C_LOG_PAYLOAD');
+  }
+  logger.log(text);
+}
+
+function normalizeD6jD4LastPathSegment_(path) {
+  const text = normalizeD6jD4String_(path);
+  const parts = text.split('/').filter(Boolean);
+  return sanitizeD6jD4CDocumentId_(parts[parts.length - 1] || '');
+}
+
+function sanitizeD6jD4CDocumentId_(value) {
+  return normalizeD6jD4String_(value).replace(/[^A-Za-z0-9._:-]/g, '_').slice(0, 120);
+}
+
+function sanitizeD6jD4CCode_(value) {
+  return normalizeD6jD4String_(value).replace(/[^A-Z0-9_:-]/gi, '_').slice(0, 80);
+}
+
+function sanitizeD6jD4CText_(value) {
+  return normalizeD6jD4String_(value)
+    .replace(/Bearer\s+[^\s,;)]*/ig, 'REDACTED')
+    .replace(/Authorization\s+[^\s,;)]*/ig, 'REDACTED')
+    .replace(/(refresh_token|private_key|client_secret)\s*[=:]?\s*[^\s,;)]*/ig, 'REDACTED')
+    .replace(/[^\w .:()/-]/g, ' ')
+    .slice(0, 180);
 }
 
 function inspectD6jD4DriveArtifactsReadOnly_(properties, preflight) {

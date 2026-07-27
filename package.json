@@ -53,6 +53,7 @@
     "check:d6j-d-nhap-xuat-schema-mapping-repair-channel": "node scripts/checkers/check-d6j-d-nhap-xuat-schema-mapping-repair-channel.mjs",
     "check:d6j-d4-post-repair-verification": "node scripts/checkers/check-d6j-d4-post-repair-verification.mjs",
     "check:d6j-d4-utf8-canonical-integrity": "node scripts/checkers/check-d6j-d4-utf8-canonical-integrity.mjs",
-    "check:d6j-d4b-canonical-duplicate-conflict-diagnostics": "node scripts/checkers/check-d6j-d4b-canonical-duplicate-conflict-diagnostics.mjs"
+    "check:d6j-d4b-canonical-duplicate-conflict-diagnostics": "node scripts/checkers/check-d6j-d4b-canonical-duplicate-conflict-diagnostics.mjs",
+    "check:d6j-d4c-firestore-job-path-census": "node scripts/checkers/check-d6j-d4c-firestore-job-path-census.mjs"
   }
 }
