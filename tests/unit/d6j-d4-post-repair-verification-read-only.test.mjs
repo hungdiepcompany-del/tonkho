@@ -50,6 +50,7 @@ const gas = loadGasSource({
     'inspectD6jD4Triggers_',
     'assertD6jD4DriveArtifacts_',
     'assertD6jD4GmailArtifacts_',
+    'assertD6jD4DPostHocClosureApprovalMarkerAbsent_',
     'durableJobPath',
     'durableJobEventsPath',
     'workerLeasePath',
@@ -213,7 +214,10 @@ function makeRunner(options = {}) {
   const fire = firestore(options.firestore || {});
   const logger = { lines: [], log(value) { this.lines.push(String(value)); } };
   const runner = gas.call('createD6jD4PostRepairVerificationReadOnlyRunner_', {
-    readProperties: () => ({ D6J_D_REPAIR_APPROVAL_MARKER: options.repairMarker || '' }),
+    readProperties: () => ({
+      D6J_D_REPAIR_APPROVAL_MARKER: options.repairMarker || '',
+      D6J_D4D_RECONCILIATION_APPROVAL_MARKER: options.reconciliationApprovalMarker || ''
+    }),
     runPreflight: () => passPreflight(options.preflight || {}),
     readSheetSnapshot: () => clone(options.snapshot || snapshot()),
     readFirestoreDocument: async path => {
@@ -862,8 +866,59 @@ test('D6J-D4 closes with PASS_RECONCILED when the exact post-hoc reconciliation 
   assert.equal(result.FIRESTORE_EVIDENCE_MODE, 'POST_HOC_RECONCILIATION');
   assert.equal(result.POST_HOC_RECONCILIATION_EVENT_FOUND, 'YES');
   assert.equal(result.D6J_D_CHANNEL_STATUS, 'CLOSED_WITH_RECONCILIATION');
+  assert.equal(result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT, 'NO');
   assert.equal(result.CURRENT_ENTRYPOINT_EXECUTED, 'YES');
   assert.equal(result.D6J_D4_ENTRYPOINT_EXECUTED, 'YES');
+});
+
+test('D6J-D4 maps an absent D4D reconciliation approval marker to NO after properties read', async () => {
+  const h = makeRunner();
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT, 'NO');
+  assert.equal(result.D6J_D_CHANNEL_STATUS, 'CLOSED');
+});
+
+test('D6J-D4 original-audit closure remains compatible with existing marker-state propagation', async () => {
+  const h = makeRunner({ reconciliationApprovalMarker: 'STALE_POST_HOC_APPROVAL_MARKER' });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.FIRESTORE_EVIDENCE_MODE, 'ORIGINAL_AUDIT');
+  assert.equal(result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT, 'YES');
+  assert.equal(result.POST_REPAIR_STATUS, 'PASS');
+  assert.equal(result.D6J_D_CHANNEL_STATUS, 'CLOSED');
+  assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+});
+
+test('D6J-D4 maps a non-empty D4D reconciliation approval marker to YES and blocks post-hoc closure', async () => {
+  const first = makeD4DMutationRunner({
+    firestore: { events: [] },
+    reconciliationApprovalMarker: 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE'
+  });
+  await first.runner.run();
+  const exactEvent = fromVm(first.getCreatedEvent());
+  const h = makeRunner({
+    firestore: { events: [exactEvent] },
+    reconciliationApprovalMarker: 'OWNER_APPROVED_D6J_D4D_POST_HOC_RECONCILIATION_EVIDENCE'
+  });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT, 'YES');
+  assert.equal(result.POST_REPAIR_STATUS, 'BLOCKED');
+  assert.equal(result.D6J_D_CHANNEL_STATUS, 'NOT_CLOSED');
+  assert.equal(result.BLOCKER_CODE, 'BLOCKED_D6J_D4D_RECONCILIATION_APPROVAL_MARKER_STILL_PRESENT');
+  assert.equal(result.SHEETS_MUTATION_COUNT, 0);
+  assert.equal(result.DRIVE_MUTATION_COUNT, 0);
+  assert.equal(result.GMAIL_MUTATION_COUNT, 0);
+  assert.equal(result.FIRESTORE_MUTATION_COUNT, 0);
+  assert.equal(result.TRIGGER_MUTATION_COUNT, 0);
+  assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+});
+
+test('D6J-D4 post-hoc closure guard blocks UNKNOWN marker state distinctly', () => {
+  assert.throws(
+    () => gas.call('assertD6jD4DPostHocClosureApprovalMarkerAbsent_', {
+      D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT: 'UNKNOWN'
+    }),
+    /BLOCKED_D6J_D4D_RECONCILIATION_APPROVAL_MARKER_STATE_UNKNOWN/
+  );
 });
 
 const blockedCases = [

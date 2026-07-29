@@ -55,6 +55,7 @@
     "check:d6j-d4-utf8-canonical-integrity": "node scripts/checkers/check-d6j-d4-utf8-canonical-integrity.mjs",
     "check:d6j-d4b-canonical-duplicate-conflict-diagnostics": "node scripts/checkers/check-d6j-d4b-canonical-duplicate-conflict-diagnostics.mjs",
     "check:d6j-d4c-firestore-job-path-census": "node scripts/checkers/check-d6j-d4c-firestore-job-path-census.mjs",
-    "check:d6j-d4d-durable-job-path-post-hoc-reconciliation": "node scripts/checkers/check-d6j-d4d-durable-job-path-post-hoc-reconciliation.mjs"
+    "check:d6j-d4d-durable-job-path-post-hoc-reconciliation": "node scripts/checkers/check-d6j-d4d-durable-job-path-post-hoc-reconciliation.mjs",
+    "check:d6j-d4e-final-closure-marker-guard": "node scripts/checkers/check-d6j-d4e-final-closure-marker-guard.mjs"
   }
 }

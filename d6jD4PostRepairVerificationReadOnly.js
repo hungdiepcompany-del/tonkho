@@ -95,6 +95,7 @@ function createD6jD4PostRepairVerificationReadOnlyRunner_(deps) {
     const result = createD6jD4BaseResult_();
     try {
       const properties = services.readProperties();
+      setD6jD4DReconciliationApprovalMarkerState_(properties, result);
       assertD6jD4RepairMarkerAbsent_(properties, result);
       const preflight = services.runPreflight(properties);
       const preflightState = assertD6jD4Preflight_(preflight, result);
@@ -109,9 +110,8 @@ function createD6jD4PostRepairVerificationReadOnlyRunner_(deps) {
       }
       const fire = await inspectD6jD4FirestoreEvidence_(services, { properties, sheet });
       mergeD6jD4Result_(result, fire);
-      if (fire.FIRESTORE_EVIDENCE_MODE === 'POST_HOC_RECONCILIATION'
-        && result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT === 'YES') {
-        throw d6jD4Error_('BLOCKED_D6J_D4D_RECONCILIATION_APPROVAL_MARKER_STILL_PRESENT', 'FIRESTORE');
+      if (fire.FIRESTORE_EVIDENCE_MODE === 'POST_HOC_RECONCILIATION') {
+        assertD6jD4DPostHocClosureApprovalMarkerAbsent_(result);
       }
       result.FIRESTORE_VERIFICATION_STATUS = 'PASS';
       result.LAST_COMPLETED_VERIFICATION_STAGE = 'FIRESTORE';
@@ -257,6 +257,20 @@ function assertD6jD4RepairMarkerAbsent_(properties, result) {
   const present = Boolean(normalizeD6jD4String_(properties && properties.D6J_D_REPAIR_APPROVAL_MARKER));
   result.REPAIR_APPROVAL_MARKER_PRESENT = present ? 'YES' : 'NO';
   if (present) throw d6jD4Error_('BLOCKED_D6J_D4_REPAIR_APPROVAL_MARKER_STILL_PRESENT', 'PREFLIGHT');
+}
+
+function setD6jD4DReconciliationApprovalMarkerState_(properties, result) {
+  const present = Boolean(normalizeD6jD4String_(properties && properties[D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_]));
+  result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT = present ? 'YES' : 'NO';
+}
+
+function assertD6jD4DPostHocClosureApprovalMarkerAbsent_(result) {
+  const state = normalizeD6jD4String_(result && result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT);
+  if (state === 'NO') return;
+  if (state === 'YES') {
+    throw d6jD4Error_('BLOCKED_D6J_D4D_RECONCILIATION_APPROVAL_MARKER_STILL_PRESENT', 'FIRESTORE');
+  }
+  throw d6jD4Error_('BLOCKED_D6J_D4D_RECONCILIATION_APPROVAL_MARKER_STATE_UNKNOWN', 'FIRESTORE');
 }
 
 function assertD6jD4Preflight_(preflight, result) {
@@ -662,7 +676,7 @@ function createD6jD4DReconciliationPreviewReadOnlyRunner_(deps) {
     const result = createD6jD4DBaseResult_();
     try {
       const properties = services.readProperties();
-      result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT = normalizeD6jD4String_(properties[D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_]) ? 'YES' : 'NO';
+      setD6jD4DReconciliationApprovalMarkerState_(properties, result);
       assertD6jD4RepairMarkerAbsent_(properties, result);
       await collectD6jD4DReconciliationVerification_(services, properties, result);
       result.RECONCILIATION_PREVIEW_STATUS = result.POST_HOC_RECONCILIATION_EVENT_FOUND === 'YES'
@@ -704,7 +718,7 @@ function createD6jD4DRecordPostHocReconciliationEvidenceRunner_(deps) {
     let lockAcquired = false;
     try {
       const properties = services.readProperties();
-      result.D6J_D4D_RECONCILIATION_APPROVAL_MARKER_PRESENT = normalizeD6jD4String_(properties[D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_]) ? 'YES' : 'NO';
+      setD6jD4DReconciliationApprovalMarkerState_(properties, result);
       assertD6jD4RepairMarkerAbsent_(properties, result);
       if (normalizeD6jD4String_(properties[D6J_D4D_RECONCILIATION_APPROVAL_PROPERTY_]) !== D6J_D4D_RECONCILIATION_APPROVAL_) {
         throw d6jD4Error_('BLOCKED_INVALID_D6J_D4D_RECONCILIATION_APPROVAL_MARKER', 'PREFLIGHT');
