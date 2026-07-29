@@ -104,7 +104,7 @@ assert.match(doc, /BATCH_ACTIVATION=NOT_APPROVED/, 'batch activation non-approva
 assert.match(doc, /HISTORICAL_BACKFILL=NOT_APPROVED/, 'historical backfill non-approval missing');
 assert.match(doc, /PRODUCTION_MUTATION=NONE/, 'production mutation none marker missing');
 
-const runtimeFiles = ['main.js', 'gmailScanner.js', '_triggerDriveScanner.js', 'gmailProcessInvoiceXML.js', 'hashUtils.js', 'sheetWriter.js', 'sheetHoaDon.js'];
+const runtimeFiles = ['main.js', 'gmailScanner.js', '_triggerDriveScanner.js', 'gmailProcessInvoiceXML.js', 'Shared_Hashing.js', 'hashUtils.js', 'sheetWriter.js', 'sheetHoaDon.js'];
 for (const file of runtimeFiles) {
   const text = read(file);
   assert.doesNotMatch(text, /createDurableInvoiceJobStore|D4_DURABLE_SCANNER_INTEGRATION|D5A_LOCAL_DURABLE_ORCHESTRATION/, `D4 checker detected runtime wiring in ${file}`);

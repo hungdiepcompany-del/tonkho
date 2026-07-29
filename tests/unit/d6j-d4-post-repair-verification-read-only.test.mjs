@@ -15,7 +15,9 @@ const TEST_METADATA = defineTestMetadata({
 const gas = loadGasSource({
   files: [
     'config.js',
+    'Shared_Normalization.js',
     'normalization.js',
+    'Shared_Hashing.js',
     'hashUtils.js',
     'sgdsAdapterErrors.js',
     'sgdsGmailAdapter.js',

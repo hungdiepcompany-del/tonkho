@@ -6,7 +6,7 @@ import { defineTestMetadata } from '../harness/test-metadata.mjs';
 
 const TEST_METADATA = defineTestMetadata({ testClass: 'CURRENT_BEHAVIOR', sourceFiles: ['pdfParser.js', 'gmailProcessInvoiceLINK.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
 const gas = loadGasSource({
-  files: ['normalization.js', 'pdfParser.js', 'gmailProcessInvoiceLINK.js'],
+  files: ['Shared_Normalization.js', 'normalization.js', 'pdfParser.js', 'gmailProcessInvoiceLINK.js'],
   exportNames: ['isVatInvoicePDF_', 'extractVatMetaFromPDFText_', 'extractAllLinksFromMessage_', 'extractPdfLinkFromHtml_', 'resolveHtmlUrl_'],
   stubs: { CONFIG: { MY_TAXCODE: '0100000999' } },
 });

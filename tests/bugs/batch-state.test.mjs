@@ -3,7 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
-const TEST_METADATA = defineTestMetadata({ testClass: 'REGRESSION_INVARIANT', sourceFiles: ['main.js', 'gmailScanner.js', 'hashUtils.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
+const TEST_METADATA = defineTestMetadata({ testClass: 'REGRESSION_INVARIANT', sourceFiles: ['main.js', 'gmailScanner.js', 'Shared_Hashing.js', 'Shared_Hashing.js',
+    'hashUtils.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
 test('C01: main uses per-source commit results instead of one writeOk for all threads', () => {
   const main = fs.readFileSync('main.js', 'utf8');
   const hash = fs.readFileSync('hashUtils.js', 'utf8');

@@ -9,6 +9,7 @@ const TEST_METADATA = defineTestMetadata({
   sourceFiles: [
     'd6jCOneRecordProductionMutation.js',
     'sgdsSheetsLedgerAdapter.js',
+    'Shared_Hashing.js',
     'hashUtils.js',
     'sheetNhapXuat.js'
   ],
@@ -19,7 +20,9 @@ const TEST_METADATA = defineTestMetadata({
 const gas = loadGasSource({
   files: [
     'config.js',
+    'Shared_Normalization.js',
     'normalization.js',
+    'Shared_Hashing.js',
     'hashUtils.js',
     'sgdsAdapterErrors.js',
     'sgdsGmailAdapter.js',

@@ -68,7 +68,7 @@ for (const token of forbiddenSourceTokens) {
   assert.equal(source.includes(token), false, `D5B source contains forbidden production/wiring token: ${token}`);
 }
 
-const runtimeFiles = ['main.js', 'gmailScanner.js', '_triggerDriveScanner.js', 'gmailProcessInvoiceXML.js', 'hashUtils.js', 'sheetWriter.js', 'sheetHoaDon.js'];
+const runtimeFiles = ['main.js', 'gmailScanner.js', '_triggerDriveScanner.js', 'gmailProcessInvoiceXML.js', 'Shared_Hashing.js', 'hashUtils.js', 'sheetWriter.js', 'sheetHoaDon.js'];
 for (const file of runtimeFiles) {
   const text = read(file);
   assert.doesNotMatch(text, /durableScannerShadowRunner|createDurableScannerShadowRunner|D5B_LOCAL_SHADOW_RUNNER/, `D5B checker detected runtime wiring in ${file}`);

@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { loadGasSource } from '../harness/load-gas-source.mjs';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
 
-const TEST_METADATA = defineTestMetadata({ testClass: 'CURRENT_BEHAVIOR', sourceFiles: ['normalization.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
+const TEST_METADATA = defineTestMetadata({ testClass: 'CURRENT_BEHAVIOR', sourceFiles: ['Shared_Normalization.js', 'normalization.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
 
 const gas = loadGasSource({
-  files: ['normalization.js'],
+  files: ['Shared_Normalization.js', 'normalization.js'],
   exportNames: ['normalizeTextForCompare_', 'parseInvoiceDateValue_', 'normalizeInvoiceNo_', 'normalizeCustomerName_', 'normalizeHashText_'],
 });
 
