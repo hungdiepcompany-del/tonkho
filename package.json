@@ -56,6 +56,7 @@
     "check:d6j-d4b-canonical-duplicate-conflict-diagnostics": "node scripts/checkers/check-d6j-d4b-canonical-duplicate-conflict-diagnostics.mjs",
     "check:d6j-d4c-firestore-job-path-census": "node scripts/checkers/check-d6j-d4c-firestore-job-path-census.mjs",
     "check:d6j-d4d-durable-job-path-post-hoc-reconciliation": "node scripts/checkers/check-d6j-d4d-durable-job-path-post-hoc-reconciliation.mjs",
-    "check:d6j-d4e-final-closure-marker-guard": "node scripts/checkers/check-d6j-d4e-final-closure-marker-guard.mjs"
+    "check:d6j-d4e-final-closure-marker-guard": "node scripts/checkers/check-d6j-d4e-final-closure-marker-guard.mjs",
+    "analysis:d6k-inventory": "node scripts/analysis/build-d6k-source-entrypoint-inventory.mjs --write artifacts/d6k/source-entrypoint-inventory.json --summary"
   }
 }
