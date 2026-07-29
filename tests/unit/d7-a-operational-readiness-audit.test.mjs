@@ -97,6 +97,12 @@ function runAudit({
   return { result: runner.run(), logs };
 }
 
+function propertyAuditItem(result, name) {
+  const item = (result.SCRIPT_PROPERTY_AUDIT || []).find(entry => entry.PROPERTY_NAME === name);
+  assert.ok(item, `missing property audit item: ${name}`);
+  return item;
+}
+
 test('D7-A public entrypoint exists but unit tests use only the internal runner', () => {
   const exports = loadD7A();
   assert.equal(typeof exports.runD7AOperationalAutomationReadinessReadOnly, 'function');
@@ -117,7 +123,55 @@ test('D7-A all readiness checks passing yields read-only D7-B readiness', () => 
   assert.equal(result.TRIGGER_MUTATION_COUNT, 0);
   assert.equal(result.CANDIDATE_DISCOVERY_EXECUTED, 'NO');
   assert.equal(result.PRODUCTION_MUTATION, 'NONE');
+  assert.equal(result.ALIASED_CONFIG_COUNT > 0, true);
+  assert.equal(result.DEFAULTED_CONFIG_COUNT, 0);
+  assert.equal(result.PROPERTY_CONFLICT_COUNT, 0);
+  assert.equal(result.TRIGGER_OWNER_REVIEW_REQUIRED, 'NO');
   assert.equal(logs.some(line => line.includes('PASS_READY_FOR_D7_B_READ_ONLY_CANDIDATE_DISCOVERY')), true);
+});
+
+test('D7-A resolves absent canonical properties through valid aliases without manufacturing empty canonical keys', () => {
+  const { result } = runAudit();
+  const drive = propertyAuditItem(result, 'DRIVE_ROOT_FOLDER_ID');
+  assert.equal(drive.PRESENT, 'PRESENT');
+  assert.equal(drive.RESOLUTION_SOURCE, 'ALIAS');
+  assert.equal(drive.EXPLICIT_PROPERTY_PRESENT, 'YES');
+  assert.equal(drive.EFFECTIVE_VALUE_AVAILABLE, 'YES');
+  assert.equal(drive.EMPTY, 'NON_EMPTY');
+  assert.equal(drive.SAFE_FORMAT_STATUS, 'SAFE_FORMAT_VALID');
+  assert.equal(result.ALIASED_CONFIG_COUNT > 0, true);
+});
+
+test('D7-A canonical empty blocks and does not silently fall through to alias', () => {
+  const { result } = runAudit({
+    properties: completeProperties({ DRIVE_ROOT_FOLDER_ID: '' }),
+  });
+  const drive = propertyAuditItem(result, 'DRIVE_ROOT_FOLDER_ID');
+  assert.equal(result.OPERATIONAL_READINESS_STATUS, 'BLOCKED_CONFIGURATION_GAPS');
+  assert.equal(drive.RESOLUTION_SOURCE, 'CANONICAL');
+  assert.equal(drive.RESOLUTION_STATUS, 'EXPLICIT_EMPTY');
+  assert.equal(drive.EXPLICIT_PROPERTY_PRESENT, 'YES');
+  assert.equal(drive.EFFECTIVE_VALUE_AVAILABLE, 'NO');
+  assert.equal(drive.EMPTY, 'EMPTY');
+  assert.equal(drive.SAFE_FORMAT_STATUS, 'INVALID');
+  assert.ok(result.READINESS_GAPS.includes('PROPERTY_DRIVE_ROOT_FOLDER_ID_EXPLICIT_EMPTY'));
+});
+
+test('D7-A absent canonical plus no alias uses safe default without counting explicit property presence', () => {
+  const props = completeProperties();
+  delete props.D7_MAX_MESSAGES_PER_CYCLE;
+  delete props.D7_AUTOMATION_ENABLED;
+  delete props.D7_AUTOMATION_KILL_SWITCH;
+  const { result } = runAudit({ properties: props });
+  const maxMessages = propertyAuditItem(result, 'MAX_MESSAGES_PER_CYCLE');
+  assert.equal(maxMessages.RESOLUTION_SOURCE, 'DEFAULT');
+  assert.equal(maxMessages.EXPLICIT_PROPERTY_PRESENT, 'NO');
+  assert.equal(maxMessages.EFFECTIVE_VALUE_AVAILABLE, 'YES');
+  assert.equal(maxMessages.SAFE_FORMAT_STATUS, 'SAFE_FORMAT_VALID');
+  assert.equal(result.DEFAULTED_CONFIG_COUNT >= 3, true);
+  assert.equal(result.AUTOMATION_CURRENTLY_ENABLED, 'NO');
+  assert.equal(result.AUTOMATION_KILL_SWITCH_ACTIVE, 'YES');
+  assert.equal(result.AUTOMATION_DEFAULT_SAFE_DISABLED, 'YES');
 });
 
 test('D7-A reports missing required properties without logging values', () => {
@@ -130,6 +184,20 @@ test('D7-A reports missing required properties without logging values', () => {
   assert.equal(logs.join('\n').includes('1cNCIC_Tv5Y3td80xMCTCl4vCWAoyFzxW'), false);
 });
 
+test('D7-A conflicting aliases block readiness with sanitized conflict metrics', () => {
+  const { result } = runAudit({
+    properties: completeProperties({ D6J_FIRESTORE_PROJECT_ID: 'tonkho-alt' }),
+  });
+  const firestoreProject = propertyAuditItem(result, 'FIRESTORE_PROJECT_ID');
+  assert.equal(result.OPERATIONAL_READINESS_STATUS, 'BLOCKED_CONFIGURATION_GAPS');
+  assert.equal(firestoreProject.RESOLUTION_SOURCE, 'CONFLICT');
+  assert.equal(firestoreProject.RESOLUTION_STATUS, 'ALIAS_CONFLICT');
+  assert.equal(firestoreProject.EFFECTIVE_VALUE_AVAILABLE, 'NO');
+  assert.equal(result.PROPERTY_CONFLICT_COUNT, 1);
+  assert.ok(result.READINESS_GAPS.includes('PROPERTY_FIRESTORE_PROJECT_ID_ALIAS_CONFLICT'));
+  assert.equal(JSON.stringify(result).includes('tonkho-alt'), false);
+});
+
 test('D7-A never emits secret-like values from properties or logs', () => {
   const { result, logs } = runAudit({
     properties: completeProperties({ D7_NOTIFICATION_POLICY: 'Bearer ' + 'ya' + '29.redacted-token <Invoice>private</Invoice>' }),
@@ -140,8 +208,38 @@ test('D7-A never emits secret-like values from properties or logs', () => {
   assert.equal(result.SECRET_VALUE_LOG_COUNT, 0);
 });
 
+test('D7-A sanitizer preserves safe status fields while redacting actual sensitive payloads', () => {
+  const { sanitizeD7ALogPayload_ } = loadD7A();
+  const sanitized = sanitizeD7ALogPayload_({
+    SECRET_VALUE_LOG_COUNT: 0,
+    FENCING_TOKEN_DEFINED: 'YES',
+    LEASE_FENCING_DEFINED: 'YES',
+    GMAIL_MESSAGE_CONTENT_LOGGED: 'NO',
+    DRIVE_PDF_XML_HASH_COMPARISON_DEFINED: 'YES',
+    authorizationHeader: 'Bearer ' + 'ya' + '29.hidden',
+    xmlContent: '<Invoice>private</Invoice>',
+    pdfBytes: '%PDF-private'
+  });
+  assert.equal(sanitized.SECRET_VALUE_LOG_COUNT, 0);
+  assert.equal(sanitized.FENCING_TOKEN_DEFINED, 'YES');
+  assert.equal(sanitized.LEASE_FENCING_DEFINED, 'YES');
+  assert.equal(sanitized.GMAIL_MESSAGE_CONTENT_LOGGED, 'NO');
+  assert.equal(sanitized.DRIVE_PDF_XML_HASH_COMPARISON_DEFINED, 'YES');
+  assert.equal(sanitized.authorizationHeader, 'REDACTED');
+  assert.equal(sanitized.xmlContent, 'REDACTED');
+  assert.equal(sanitized.pdfBytes, 'REDACTED');
+});
+
 test('D7-A kill-switch disabled safe, enabled blocks, and unknown blocks', () => {
   assert.equal(runAudit().result.KILL_SWITCH_AUDIT_STATUS, 'PASS');
+
+  const defaulted = completeProperties();
+  delete defaulted.D7_AUTOMATION_ENABLED;
+  delete defaulted.D7_AUTOMATION_KILL_SWITCH;
+  const defaultedResult = runAudit({ properties: defaulted }).result;
+  assert.equal(defaultedResult.KILL_SWITCH_AUDIT_STATUS, 'PASS');
+  assert.equal(defaultedResult.AUTOMATION_CURRENTLY_ENABLED, 'NO');
+  assert.equal(defaultedResult.AUTOMATION_KILL_SWITCH_ACTIVE, 'YES');
 
   const enabled = runAudit({ properties: completeProperties({ D7_AUTOMATION_ENABLED: 'true' }) }).result;
   assert.equal(enabled.OPERATIONAL_READINESS_STATUS, 'BLOCKED_KILL_SWITCH_NOT_SAFE');
@@ -213,6 +311,24 @@ test('D7-A blocks existing, duplicate, unknown, and historical triggers without 
   const historical = runAudit({ triggers: [{ handlerFunction: 'runD6jCOneRecordProductionMutation' }] }).result;
   assert.equal(historical.HISTORICAL_D6J_TRIGGER_COUNT, 1);
   assert.equal(historical.TRIGGER_MUTATION_COUNT, 0);
+});
+
+test('D7-A classifies existing triggerMarkAllInvoiceEmails as mutating production trigger requiring owner review', () => {
+  const result = runAudit({
+    triggers: [{ handlerFunction: 'triggerMarkAllInvoiceEmails', triggerType: 'CLOCK' }],
+  }).result;
+  assert.equal(result.OPERATIONAL_READINESS_STATUS, 'BLOCKED_EXISTING_OR_UNKNOWN_TRIGGER');
+  assert.equal(result.READY_FOR_D7_B, 'NO');
+  assert.equal(result.EXISTING_NON_D7_TRIGGER_COUNT, 1);
+  assert.equal(result.EXISTING_MUTATING_TRIGGER_COUNT, 1);
+  assert.equal(result.TRIGGER_OWNER_REVIEW_REQUIRED, 'YES');
+  assert.ok(result.READINESS_GAPS.includes('EXISTING_NON_D7_TRIGGER_REQUIRES_OWNER_REVIEW'));
+  assert.deepEqual(JSON.parse(JSON.stringify(result.TRIGGER_CLASSIFICATION_AUDIT)), [{
+    HANDLER: 'triggerMarkAllInvoiceEmails',
+    TRIGGER_TYPE: 'CLOCK',
+    TRIGGER_CLASSIFICATION: 'MUTATING_PRODUCTION_TRIGGER'
+  }]);
+  assert.equal(result.TRIGGER_MUTATION_COUNT, 0);
 });
 
 test('D7-A frozen D6J mutation reachability remains zero and raw payload sanitizer redacts forbidden content', () => {

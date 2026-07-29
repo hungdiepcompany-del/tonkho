@@ -12,7 +12,6 @@ const D7_A_HISTORICAL_D6J_ENTRYPOINTS_ = Object.freeze([
   'runD6jD4DRecordPostHocReconciliationEvidenceOnce',
   'runD6jD4PostRepairVerificationReadOnly'
 ]);
-const D7_A_FORBIDDEN_LOG_KEY_PATTERN_ = /token|secret|credential|private|body|xml|pdfBytes|content|authorization/i;
 const D7_A_FORBIDDEN_LOG_VALUE_PATTERN_ = new RegExp([
   'Bearer\\s+',
   'ya' + '29\\.',
@@ -22,6 +21,13 @@ const D7_A_FORBIDDEN_LOG_VALUE_PATTERN_ = new RegExp([
   '<HDon',
   '%PDF-'
 ].join('|'), 'i');
+const D7_A_SAFE_LOG_KEYS_ = Object.freeze([
+  'SECRET_VALUE_LOG_COUNT',
+  'FENCING_TOKEN_DEFINED',
+  'LEASE_FENCING_DEFINED',
+  'GMAIL_MESSAGE_CONTENT_LOGGED',
+  'DRIVE_PDF_XML_HASH_COMPARISON_DEFINED'
+]);
 
 const D7_A_PROPERTY_MANIFEST_ = Object.freeze([
   d7AProperty_('GMAIL_SENDER_POLICY', ['D6J_PILOT_SENDER'], true, false, 'email'),
@@ -93,13 +99,10 @@ function createD7AOperationalAutomationReadinessAuditRunner_(deps) {
 
 function readD7AScriptPropertiesMetadata_() {
   const props = PropertiesService.getScriptProperties();
+  const source = props && typeof props.getProperties === 'function' ? props.getProperties() : {};
   const values = {};
-  D7_A_PROPERTY_MANIFEST_.forEach(item => {
-    [item.name].concat(item.aliases || []).forEach(name => {
-      if (!Object.prototype.hasOwnProperty.call(values, name)) {
-        values[name] = String(props.getProperty(name) || '');
-      }
-    });
+  Object.keys(source || {}).forEach(name => {
+    values[name] = safeD7AString_(source[name]);
   });
   return values;
 }
@@ -196,27 +199,44 @@ function auditD7AScriptProperties_(rawValues) {
   const values = rawValues || {};
   const properties = D7_A_PROPERTY_MANIFEST_.map(item => {
     const resolved = resolveD7APropertyValue_(item, values);
+    const safeFormatStatus = resolved.resolutionSource === 'CONFLICT'
+      ? 'INVALID'
+      : validateD7APropertyFormat_(item.format, resolved.value);
     return Object.freeze({
       PROPERTY_NAME: item.name,
-      PRESENT: resolved.present ? 'PRESENT' : 'MISSING',
+      PRESENT: resolved.explicitPropertyPresent ? 'PRESENT' : 'MISSING',
+      RESOLUTION_SOURCE: resolved.resolutionSource,
+      RESOLUTION_STATUS: resolved.resolutionStatus,
+      EXPLICIT_PROPERTY_PRESENT: resolved.explicitPropertyPresent ? 'YES' : 'NO',
+      EFFECTIVE_VALUE_AVAILABLE: resolved.effectiveValueAvailable ? 'YES' : 'NO',
       EMPTY: resolved.empty ? 'EMPTY' : 'NON_EMPTY',
-      SAFE_FORMAT_STATUS: validateD7APropertyFormat_(item.format, resolved.value),
+      SAFE_FORMAT_STATUS: safeFormatStatus,
       REQUIRED_FOR_D7_B: item.requiredForD7B ? 'YES' : 'NO',
       REQUIRED_FOR_FUTURE_MUTATION: item.requiredForFutureMutation ? 'YES' : 'NO',
       VALUE_LOGGED: 'NO'
     });
   });
   const required = properties.filter(item => item.REQUIRED_FOR_D7_B === 'YES');
-  const missing = required.filter(item => item.PRESENT === 'MISSING' || item.EMPTY === 'EMPTY' || item.SAFE_FORMAT_STATUS !== 'SAFE_FORMAT_VALID');
+  const explicitMissing = required.filter(item => item.EXPLICIT_PROPERTY_PRESENT === 'NO');
+  const blocked = required.filter(item => item.EFFECTIVE_VALUE_AVAILABLE !== 'YES' || item.SAFE_FORMAT_STATUS !== 'SAFE_FORMAT_VALID');
   return {
     rawValues: values,
     properties,
-    gapCodes: missing.map(item => 'PROPERTY_' + item.PROPERTY_NAME + '_' + (item.PRESENT === 'MISSING' ? 'MISSING' : item.SAFE_FORMAT_STATUS)),
+    gapCodes: blocked.map(item => 'PROPERTY_' + item.PROPERTY_NAME + '_' + propertyGapReasonD7A_(item)),
     summary: {
       SCRIPT_PROPERTIES_READ_STATUS: 'PASS',
       REQUIRED_PROPERTY_COUNT: required.length,
-      REQUIRED_PROPERTY_PRESENT_COUNT: required.length - missing.filter(item => item.PRESENT === 'MISSING').length,
-      REQUIRED_PROPERTY_MISSING_COUNT: missing.filter(item => item.PRESENT === 'MISSING').length,
+      REQUIRED_PROPERTY_PRESENT_COUNT: required.length - explicitMissing.length,
+      REQUIRED_PROPERTY_MISSING_COUNT: explicitMissing.length,
+      EXPLICIT_REQUIRED_PROPERTY_COUNT: required.length,
+      EXPLICIT_REQUIRED_PROPERTY_PRESENT_COUNT: required.length - explicitMissing.length,
+      EXPLICIT_REQUIRED_PROPERTY_MISSING_COUNT: explicitMissing.length,
+      EFFECTIVE_REQUIRED_CONFIG_COUNT: required.length,
+      EFFECTIVE_REQUIRED_CONFIG_AVAILABLE_COUNT: required.filter(item => item.EFFECTIVE_VALUE_AVAILABLE === 'YES' && item.SAFE_FORMAT_STATUS === 'SAFE_FORMAT_VALID').length,
+      EFFECTIVE_REQUIRED_CONFIG_INVALID_COUNT: blocked.length,
+      DEFAULTED_CONFIG_COUNT: properties.filter(item => item.RESOLUTION_SOURCE === 'DEFAULT').length,
+      ALIASED_CONFIG_COUNT: properties.filter(item => item.RESOLUTION_SOURCE === 'ALIAS').length,
+      PROPERTY_CONFLICT_COUNT: properties.filter(item => item.RESOLUTION_SOURCE === 'CONFLICT').length,
       SECRET_VALUE_LOG_COUNT: 0,
       SCRIPT_PROPERTY_VALUE_CAPTURED: 'NO',
       SCRIPT_PROPERTIES_MUTATION_COUNT: 0,
@@ -242,6 +262,7 @@ function auditD7AKillSwitch_(propertyAudit, config, source) {
     AUTOMATION_KILL_SWITCH_DEFINED: 'YES',
     AUTOMATION_ENABLEMENT_PROPERTY_DEFINED: 'YES',
     AUTOMATION_CURRENTLY_ENABLED: enabledState === 'UNKNOWN' ? 'UNKNOWN' : enabled ? 'YES' : 'NO',
+    AUTOMATION_KILL_SWITCH_ACTIVE: killState === 'UNKNOWN' ? 'UNKNOWN' : killSwitchOn ? 'YES' : 'NO',
     AUTOMATION_DEFAULT_SAFE_DISABLED: source.shadowDefaults.SGDS_DURABLE_SHADOW_ENABLED === false ? 'YES' : 'NO',
     AUTOMATION_MUTATION_REACHABLE_WHEN_DISABLED: mutationReachableWhenDisabled,
     KILL_SWITCH_AUDIT_STATUS: gaps.length ? 'BLOCKED' : 'PASS'
@@ -394,12 +415,16 @@ function auditD7ATriggerReadiness_(listTriggers, source) {
   const triggers = normalizeD7ATriggers_(listTriggers());
   const handlerNames = triggers.map(item => item.handlerFunction);
   const d7Triggers = triggers.filter(item => item.handlerFunction === 'runSgdsWorkerDryRun' || item.handlerFunction === D7_A_ENTRYPOINT_);
+  const nonD7Triggers = triggers.filter(item => item.handlerFunction && item.handlerFunction !== D7_A_ENTRYPOINT_ && item.handlerFunction !== 'runSgdsWorkerDryRun');
+  const classifiedTriggers = triggers.map(classifyD7ATrigger_);
+  const mutatingTriggers = classifiedTriggers.filter(item => item.TRIGGER_CLASSIFICATION === 'MUTATING_PRODUCTION_TRIGGER');
   const duplicateCount = countD7ADuplicateValues_(handlerNames);
   const known = buildD7AKnownHandlers_();
   const unknown = triggers.filter(item => item.handlerFunction && !known.includes(item.handlerFunction));
   const historical = triggers.filter(item => D7_A_HISTORICAL_D6J_ENTRYPOINTS_.includes(item.handlerFunction));
   const gaps = [];
   if (d7Triggers.length > 0) gaps.push('D7_AUTOMATION_TRIGGER_PRESENT');
+  if (nonD7Triggers.length > 0) gaps.push('EXISTING_NON_D7_TRIGGER_REQUIRES_OWNER_REVIEW');
   if (duplicateCount > 0) gaps.push('DUPLICATE_TRIGGER_PRESENT');
   if (unknown.length > 0) gaps.push('UNKNOWN_TRIGGER_HANDLER');
   if (historical.length > 0) gaps.push('HISTORICAL_D6J_TRIGGER_PRESENT');
@@ -412,6 +437,10 @@ function auditD7ATriggerReadiness_(listTriggers, source) {
     DUPLICATE_TRIGGER_COUNT: duplicateCount,
     UNKNOWN_TRIGGER_HANDLER_COUNT: unknown.length,
     HISTORICAL_D6J_TRIGGER_COUNT: historical.length,
+    EXISTING_NON_D7_TRIGGER_COUNT: nonD7Triggers.length,
+    EXISTING_MUTATING_TRIGGER_COUNT: mutatingTriggers.length,
+    TRIGGER_OWNER_REVIEW_REQUIRED: nonD7Triggers.length || unknown.length || historical.length || mutatingTriggers.length ? 'YES' : 'NO',
+    TRIGGER_CLASSIFICATION_AUDIT: classifiedTriggers,
     TRIGGER_HANDLER_NAMES: handlerNames,
     TRIGGER_MUTATION_COUNT: 0,
     TRIGGER_CREATED: 'NO',
@@ -508,10 +537,6 @@ function finalizeD7AMutationCounters_(result) {
 
 function resolveD7AReadinessConfig_(propertyAudit) {
   const raw = {};
-  const propertyMap = {};
-  (propertyAudit.properties || []).forEach(item => {
-    propertyMap[item.PROPERTY_NAME] = item;
-  });
   D7_A_PROPERTY_MANIFEST_.forEach(item => {
     raw[item.name] = resolveD7APropertyValue_(item, propertyAudit.rawValues || {}).value;
   });
@@ -519,16 +544,84 @@ function resolveD7AReadinessConfig_(propertyAudit) {
 }
 
 function resolveD7APropertyValue_(item, values) {
-  const names = [item.name].concat(item.aliases || []);
-  for (let i = 0; i < names.length; i += 1) {
-    const name = names[i];
-    if (Object.prototype.hasOwnProperty.call(values || {}, name)) {
-      const value = safeD7AString_(values[name]);
-      return { present: true, empty: value.trim() === '', value };
-    }
+  const source = values || {};
+  if (Object.prototype.hasOwnProperty.call(source, item.name)) {
+    const value = safeD7AString_(source[item.name]);
+    const empty = value.trim() === '';
+    return {
+      resolutionSource: 'CANONICAL',
+      resolutionStatus: empty ? 'EXPLICIT_EMPTY' : 'RESOLVED',
+      explicitPropertyPresent: true,
+      effectiveValueAvailable: !empty,
+      empty,
+      value
+    };
+  }
+  const aliases = item.aliases || [];
+  const aliasValues = [];
+  aliases.forEach(name => {
+    if (!Object.prototype.hasOwnProperty.call(source, name)) return;
+    const value = safeD7AString_(source[name]);
+    aliasValues.push({ name, value, comparable: value.trim() });
+  });
+  const nonEmptyAliasValues = aliasValues.filter(itemValue => itemValue.comparable !== '');
+  const distinctAliasValues = stableD7AUnique_(nonEmptyAliasValues.map(itemValue => itemValue.comparable));
+  if (distinctAliasValues.length > 1) {
+    return {
+      resolutionSource: 'CONFLICT',
+      resolutionStatus: 'ALIAS_CONFLICT',
+      explicitPropertyPresent: true,
+      effectiveValueAvailable: false,
+      empty: false,
+      value: ''
+    };
+  }
+  if (nonEmptyAliasValues.length === 1) {
+    return {
+      resolutionSource: 'ALIAS',
+      resolutionStatus: 'RESOLVED',
+      explicitPropertyPresent: true,
+      effectiveValueAvailable: true,
+      empty: false,
+      value: nonEmptyAliasValues[0].value
+    };
+  }
+  if (aliasValues.length > 0) {
+    return {
+      resolutionSource: 'ALIAS',
+      resolutionStatus: 'EXPLICIT_EMPTY',
+      explicitPropertyPresent: true,
+      effectiveValueAvailable: false,
+      empty: true,
+      value: ''
+    };
   }
   const fallback = safeD7AString_(item.defaultValue || '');
-  return { present: fallback !== '', empty: fallback === '', value: fallback };
+  if (fallback !== '') {
+    return {
+      resolutionSource: 'DEFAULT',
+      resolutionStatus: 'RESOLVED',
+      explicitPropertyPresent: false,
+      effectiveValueAvailable: true,
+      empty: false,
+      value: fallback
+    };
+  }
+  return {
+    resolutionSource: 'MISSING',
+    resolutionStatus: 'MISSING',
+    explicitPropertyPresent: false,
+    effectiveValueAvailable: false,
+    empty: true,
+    value: ''
+  };
+}
+
+function propertyGapReasonD7A_(item) {
+  if (item.RESOLUTION_SOURCE === 'CONFLICT') return 'ALIAS_CONFLICT';
+  if (item.RESOLUTION_STATUS === 'EXPLICIT_EMPTY') return 'EXPLICIT_EMPTY';
+  if (item.RESOLUTION_SOURCE === 'MISSING') return 'MISSING';
+  return item.SAFE_FORMAT_STATUS;
 }
 
 function validateD7APropertyFormat_(format, value) {
@@ -586,6 +679,21 @@ function normalizeD7ATriggers_(triggers) {
   }));
 }
 
+function classifyD7ATrigger_(trigger) {
+  const handler = safeD7AString_(trigger && trigger.handlerFunction);
+  let classification = 'UNKNOWN_TRIGGER_REQUIRES_OWNER_REVIEW';
+  if (handler === D7_A_ENTRYPOINT_) classification = 'READ_ONLY_TRIGGER';
+  if (handler === 'triggerMarkAllInvoiceEmails' || handler === 'triggerScanInvoiceDriveFolder' || handler === 'main' || handler === 'mainRun') {
+    classification = 'MUTATING_PRODUCTION_TRIGGER';
+  }
+  if (D7_A_HISTORICAL_D6J_ENTRYPOINTS_.includes(handler)) classification = 'MUTATING_PRODUCTION_TRIGGER';
+  return Object.freeze({
+    HANDLER: handler,
+    TRIGGER_TYPE: safeD7AString_(trigger && trigger.triggerType),
+    TRIGGER_CLASSIFICATION: classification
+  });
+}
+
 function buildD7AKnownHandlers_() {
   return stableD7AUnique_([
     'main',
@@ -620,7 +728,7 @@ function sanitizeD7ALogPayload_(value) {
   if (typeof value === 'object') {
     const out = {};
     Object.keys(value).sort().forEach(key => {
-      if (D7_A_FORBIDDEN_LOG_KEY_PATTERN_.test(key)) {
+      if (isSensitiveD7ALogKey_(key)) {
         out[key] = 'REDACTED';
       } else {
         out[key] = sanitizeD7ALogPayload_(value[key]);
@@ -631,6 +739,32 @@ function sanitizeD7ALogPayload_(value) {
   const text = safeD7AString_(value);
   if (D7_A_FORBIDDEN_LOG_VALUE_PATTERN_.test(text)) return 'REDACTED';
   return text.length > 160 ? 'REDACTED_LONG_TEXT_' + hashD7AString_(text) : value;
+}
+
+function isSensitiveD7ALogKey_(key) {
+  const text = safeD7AString_(key);
+  if (D7_A_SAFE_LOG_KEYS_.includes(text)) return false;
+  const normalized = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+  const exactSensitive = [
+    'authorization',
+    'authorizationheader',
+    'oauthtoken',
+    'accesstoken',
+    'refreshtoken',
+    'privatekey',
+    'client' + 'secret',
+    'credential',
+    'credentials',
+    'xmlcontent',
+    'rawxml',
+    'pdfbytes',
+    'attachmentcontent',
+    'emailbody',
+    'body',
+    'content'
+  ];
+  if (exactSensitive.includes(normalized)) return true;
+  return /(?:authorization|oauth|accesstoken|refreshtoken|privatekey|credential)/i.test(normalized);
 }
 
 function mergeD7AResult_(target, source) {
