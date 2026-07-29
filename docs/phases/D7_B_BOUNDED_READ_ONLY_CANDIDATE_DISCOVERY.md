@@ -1,0 +1,45 @@
+# D7-B Bounded Read-Only Candidate Discovery
+
+PHASE=D7_B_BOUNDED_READ_ONLY_CANDIDATE_DISCOVERY
+
+READ_ONLY_MODE=YES
+PRODUCTION_MUTATION=NONE
+SGDS_PHASE_STATUS=IMPLEMENTED_NOT_EXECUTED
+
+## Baseline
+
+START_HEAD=e7ac839bcf7224323289ec2b59fbf25d2b71a376
+D7_A_READINESS_STATUS=PASS_READY_FOR_D7_B_READ_ONLY_CANDIDATE_DISCOVERY
+D7_A3_TRIGGER_SUSPENSION_STATUS=PASS_APPROVED_TRIGGER_SUSPENDED
+TRIGGER_MARK_ALL_INVOICE_EMAILS_PRESENT_AFTER=NO
+
+The former time schedule for `triggerMarkAllInvoiceEmails` is not recoverable from the installed trigger inventory. D7-B does not recreate triggers.
+
+## Runtime Boundary
+
+D7_B_PUBLIC_ENTRYPOINT=runD7BBoundedReadOnlyCandidateDiscovery
+D7_B_PRIVATE_RUNNER=createD7BBoundedReadOnlyCandidateDiscoveryRunner_
+D7_B_ENTRYPOINT_EXECUTED=NO
+CANDIDATE_DISCOVERY_EXECUTED=NO
+
+D7-B is limited to runtime safety recheck, effective config resolution, bounded Gmail read, attachment validation, deterministic fingerprinting, and read-only duplicate checks in Gmail, Drive, Sheets, and Firestore.
+
+## Required Output
+
+CANDIDATE_DISCOVERY_STATUS=ONE_OF_APPROVED_D7_B_CLASSIFICATIONS
+READY_FOR_D7_C=YES_ONLY_FOR_SEPARATE_OWNER_REVIEW
+D7_C_APPROVAL_READY=YES_ONLY_WHEN_ONE_CANDIDATE_AND_ALL_DUPLICATES_NOT_FOUND
+
+READY_FOR_D7_C never executes, schedules, or imports a candidate. D7-C requires separate owner approval.
+
+## Mutation Boundary
+
+GMAIL_MUTATION_REACHABILITY_COUNT=0
+DRIVE_MUTATION_REACHABILITY_COUNT=0
+SHEET_MUTATION_REACHABILITY_COUNT=0
+FIRESTORE_MUTATION_REACHABILITY_COUNT=0
+SCRIPT_PROPERTY_MUTATION_REACHABILITY_COUNT=0
+TRIGGER_MUTATION_REACHABILITY_COUNT=0
+PRODUCTION_MUTATION_REACHABILITY_COUNT=0
+
+No raw customer, message, attachment, XML, PDF, Drive, Sheet, or Firestore payload is stored in this phase document.
