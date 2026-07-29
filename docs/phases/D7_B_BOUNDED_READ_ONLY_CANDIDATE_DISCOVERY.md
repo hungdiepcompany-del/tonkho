@@ -4,7 +4,7 @@ PHASE=D7_B_BOUNDED_READ_ONLY_CANDIDATE_DISCOVERY
 
 READ_ONLY_MODE=YES
 PRODUCTION_MUTATION=NONE
-SGDS_PHASE_STATUS=IMPLEMENTED_NOT_EXECUTED
+SGDS_PHASE_STATUS=IMPLEMENTED_SYNCED_NOT_EXECUTED
 
 ## Baseline
 
@@ -21,6 +21,8 @@ D7_B_PUBLIC_ENTRYPOINT=runD7BBoundedReadOnlyCandidateDiscovery
 D7_B_PRIVATE_RUNNER=createD7BBoundedReadOnlyCandidateDiscoveryRunner_
 D7_B_ENTRYPOINT_EXECUTED=NO
 CANDIDATE_DISCOVERY_EXECUTED=NO
+REMOTE_APPS_SCRIPT_SYNC=PASS_HASH_VERIFIED
+CLASP_PUSH_ATTEMPT_COUNT=1
 
 D7-B is limited to runtime safety recheck, effective config resolution, bounded Gmail read, attachment validation, deterministic fingerprinting, and read-only duplicate checks in Gmail, Drive, Sheets, and Firestore.
 
