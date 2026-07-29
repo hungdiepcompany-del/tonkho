@@ -47,6 +47,10 @@ const D6J_D_TARGET_HEADERS_ = [
 ];
 
 function runD6jCOneRecordProductionMutation() {
+  return blockD6kHistoricalPhaseEntrypoint_(D6J_C_MUTATION_ENTRYPOINT_);
+}
+
+function runD6jCOneRecordProductionMutationHistoricalImpl_() {
   const runner = createD6jCOneRecordProductionMutationRunner_();
   return runner.run();
 }
@@ -57,6 +61,10 @@ function runD6jDInspectMalformedPilotRowReadOnly() {
 }
 
 function runD6jDRepairSingleMalformedPilotRow() {
+  return blockD6kHistoricalPhaseEntrypoint_(D6J_D_REPAIR_ENTRYPOINT_);
+}
+
+function runD6jDRepairSingleMalformedPilotRowHistoricalImpl_() {
   const runner = createD6jDNhapXuatSchemaRepairRunner_();
   return runner.repair();
 }

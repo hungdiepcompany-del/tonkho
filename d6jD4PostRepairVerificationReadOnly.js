@@ -58,21 +58,37 @@ const D6J_D4_EXPECTED_ROW_ = Object.freeze({
 });
 
 function runD6jD4PostRepairVerificationReadOnly() {
+  return blockD6kHistoricalPhaseEntrypoint_(D6J_D4_ENTRYPOINT_);
+}
+
+function runD6jD4PostRepairVerificationReadOnlyHistoricalImpl_() {
   const runner = createD6jD4PostRepairVerificationReadOnlyRunner_();
   return runner.run();
 }
 
 function runD6jD4CFirestoreEvidenceDiagnosticsReadOnly() {
+  return blockD6kHistoricalPhaseEntrypoint_(D6J_D4C_ENTRYPOINT_);
+}
+
+function runD6jD4CFirestoreEvidenceDiagnosticsReadOnlyHistoricalImpl_() {
   const runner = createD6jD4CFirestoreEvidenceDiagnosticsReadOnlyRunner_();
   return runner.run();
 }
 
 function runD6jD4DReconciliationPreviewReadOnly() {
+  return blockD6kHistoricalPhaseEntrypoint_(D6J_D4D_PREVIEW_ENTRYPOINT_);
+}
+
+function runD6jD4DReconciliationPreviewReadOnlyHistoricalImpl_() {
   const runner = createD6jD4DReconciliationPreviewReadOnlyRunner_();
   return runner.run();
 }
 
 function runD6jD4DRecordPostHocReconciliationEvidenceOnce() {
+  return blockD6kHistoricalPhaseEntrypoint_(D6J_D4D_MUTATION_ENTRYPOINT_);
+}
+
+function runD6jD4DRecordPostHocReconciliationEvidenceOnceHistoricalImpl_() {
   const runner = createD6jD4DRecordPostHocReconciliationEvidenceRunner_();
   return runner.run();
 }
