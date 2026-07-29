@@ -531,3 +531,19 @@ CLASP_PUSH_RUN=false
 PRODUCTION_MUTATION=NONE
 NEXT_SAFE_PHASE=D7_E2_APPS_SCRIPT_SOURCE_SYNC_AND_REMOTE_HASH_VERIFICATION
 NEXT_REQUIRED_OWNER_MARKER=OWNER_APPROVE_D7E_SYNCED_CHANNEL_ONE_CANDIDATE_PRODUCTION_EXECUTION
+
+## 2026-07-29 - D7-E Remote Channel Requires Fresh Post-Sync Execution Approval
+
+DECISION=Accept the owner-completed interactive clasp push only after a fresh remote Apps Script pull proves D7-E runtime, operator entrypoint, and manifest semantic hashes match local source.
+RATIONALE=Remote source parity is now verified without running any Apps Script function. D7-E is ready as a synced execution channel, but the next production action still requires a fresh owner marker after sync because Script Properties and the one-candidate function have not been run.
+PHASE=D7_E2R2_POST_OWNER_PUSH_REMOTE_HASH_VERIFICATION
+STATUS=PASS_REMOTE_SOURCE_SYNC_HASH_VERIFIED
+REMOTE_APPS_SCRIPT_SYNC=PASS_HASH_VERIFIED
+REMOTE_SOURCE_HASH_MATCH=YES
+D7_E_REMOTE_CHANNEL_READY=YES
+D7_E_ENTRYPOINT_EXECUTED=NO
+SCRIPT_PROPERTY_MUTATION=false
+TRIGGER_MUTATION=false
+PRODUCTION_MUTATION=NONE
+NEXT_SAFE_PHASE=D7_E3_OWNER_APPROVED_PROPERTY_SETUP_AND_ONE_CANDIDATE_EXECUTION
+NEXT_REQUIRED_OWNER_MARKER=OWNER_APPROVE_D7E_SYNCED_CHANNEL_ONE_CANDIDATE_PRODUCTION_EXECUTION
