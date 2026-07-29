@@ -4,9 +4,9 @@ import { loadGasSource } from '../harness/load-gas-source.mjs';
 import { readFixtureText } from '../harness/fixture-loader.mjs';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
 
-const TEST_METADATA = defineTestMetadata({ testClass: 'CURRENT_BEHAVIOR', sourceFiles: ['pdfParser.js', 'gmailProcessInvoiceLINK.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
+const TEST_METADATA = defineTestMetadata({ testClass: 'CURRENT_BEHAVIOR', sourceFiles: ['Invoice_AttachmentParser.js', 'gmailProcessInvoiceLINK.js'], ownerPolicyRequired: false, runtimeMutation: 'NONE' });
 const gas = loadGasSource({
-  files: ['Shared_Normalization.js', 'normalization.js', 'pdfParser.js', 'gmailProcessInvoiceLINK.js'],
+  files: ['Shared_Normalization.js', 'normalization.js', 'Invoice_AttachmentParser.js', 'gmailProcessInvoiceLINK.js'],
   exportNames: ['isVatInvoicePDF_', 'extractVatMetaFromPDFText_', 'extractAllLinksFromMessage_', 'extractPdfLinkFromHtml_', 'resolveHtmlUrl_'],
   stubs: { CONFIG: { MY_TAXCODE: '0100000999' } },
 });
@@ -36,7 +36,7 @@ test('HTML PDF link resolver supports relative paths', () => {
 test('OCR cleanup trashes temporary document when document read throws', () => {
   const calls = [];
   const localGas = loadGasSource({
-    files: ['utils.js', 'pdfParser.js'],
+    files: ['utils.js', 'Invoice_AttachmentParser.js'],
     exportNames: ['extractPdfText_'],
     stubs: {
       CONFIG: { DEBUG_LOG: true },
