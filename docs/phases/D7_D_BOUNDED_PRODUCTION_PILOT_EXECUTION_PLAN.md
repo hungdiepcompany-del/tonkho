@@ -1,7 +1,7 @@
 # D7-D Bounded Production Pilot Execution Plan
 
 PHASE=D7_D_BOUNDED_PRODUCTION_PILOT_EXECUTION_PLAN
-PHASE_BUNDLE=D7_C_PLUS_D7_D
+PHASE_BUNDLE=D7_B1_PLUS_D7_C1_PLUS_D7_D1
 
 READ_ONLY_MODE=YES
 PLAN_ONLY=YES
@@ -9,12 +9,30 @@ PRODUCTION_MUTATION=NONE
 
 ## Candidate Dependency
 
-D7_C_STATUS=BLOCKED_CANDIDATE_NOT_ELIGIBLE
-D7_C_BLOCKERS=BLOCKED_EVIDENCE_INCOMPLETE
-D7_D_STATUS=PASS_BLOCKED_EXECUTION_READINESS_PLAN_RECORDED
+D7_C_STATUS=PASS_ONE_CANDIDATE_ELIGIBLE
+D7_C_BLOCKERS=NONE
+D7_D_STATUS=PASS_BOUNDED_PILOT_PLAN_READY
 D7_E_OPENED=false
+D7_E_EXECUTED=false
 
-D7-D records the future pilot contract but does not make the owner approval marker actionable while D7-C is blocked. The missing item is a sanitized D7-B runtime discovery result proving exactly one eligible candidate and all duplicate/idempotency gates.
+D7-D refreshes the future pilot contract after the owner supplied a sanitized D7-B read-only runtime result. D7-E is ready for separate owner approval, but this bundle does not contain the execution marker and does not perform any mutation.
+
+## Proven Candidate Result
+
+D7_B_ENTRYPOINT_EXECUTED=YES_ONCE_BY_OWNER
+D7_B_EXECUTION_COUNT=1
+D7_B_RUNTIME_EVIDENCE_STATUS=PASS_SANITIZED_OWNER_RESULT_RECORDED
+D7_B_STATUS=PASS_EXACTLY_ONE_ELIGIBLE_CANDIDATE_READY_FOR_OWNER_REVIEW
+CANDIDATE_DISCOVERY_EXECUTED=YES_READ_ONLY
+CANDIDATE_COUNT=1
+CANDIDATE_ELIGIBLE=true
+GMAIL_GATE=PASS_EXACTLY_ONE_MESSAGE
+ATTACHMENT_GATE=PASS_ONE_PDF_ONE_XML
+DRIVE_GATE=PASS_NOT_FOUND
+SHEETS_SCHEMA_GATE=PASS
+SHEETS_DUPLICATE_GATE=PASS_NOT_FOUND
+FIRESTORE_GATE=PASS_NOT_FOUND
+CROSS_SYSTEM_IDENTITY_GATE=PASS_SANITIZED_FINGERPRINT
 
 ## Mutation Budget
 
@@ -28,6 +46,7 @@ MAX_SHEET_ROWS_UPDATED=0
 MAX_FIRESTORE_JOBS_CREATED=1
 MAX_FIRESTORE_ATTACHMENT_RECORDS_CREATED=2
 MAX_TRIGGER_CHANGES=0
+PILOT_MUTATION_BUDGET_DEFINED=YES
 
 The future D7-E pilot must use the strictest existing repository limits if any later evidence narrows these values.
 
@@ -36,25 +55,29 @@ The future D7-E pilot must use the strictest existing repository limits if any l
 | Area | Required Precondition |
 | --- | --- |
 | Repository baseline | Branch `main`, HEAD equals `origin/main`, no unrelated dirty paths, guard dirt preserved outside staging. |
-| Remote Apps Script source | D7-B/D7-E runtime source hash parity must be reverified from sanitized source evidence. |
-| Script Properties | Required property names must already exist or be explicitly approved by a separate phase; D7-D does not set them. |
-| Gmail candidate identity | D7-B must prove exactly one candidate, bounded message/thread cardinality, sender/date/subject constraints and expected attachment set. |
-| Drive destination | Destination must be identified by sanitized evidence, duplicate checks must include filename and content identity, and planned create count must be bounded. |
-| Sheets schema | Target spreadsheet and sheet contract must pass header/schema validation before any write plan is actionable. |
-| Duplicate status | Gmail, Drive, Sheets and Firestore duplicate checks must be `NO_EXISTING_MATCH`, `EXACT_MATCH`, `LEGACY_MATCH` or `CANONICAL_MATCH` according to the existing contract; `CONFLICT` or `UNKNOWN` blocks. |
+| Remote Apps Script source | D7-B and D7-E runtime source hash parity must be reverified from sanitized source evidence before execution. |
+| Owner approval marker | `OWNER_APPROVE_D7E_ONE_CANDIDATE_PRODUCTION_PILOT` must be supplied in the future D7-E phase. |
+| Script Properties | Required property names must already exist or be explicitly approved by the D7-E prompt; D7-D does not set them. |
+| Gmail candidate identity | The candidate must still match the D7-C sanitized hash and cardinality evidence. |
+| Drive destination | Destination must be revalidated with duplicate checks before any Drive write. |
+| Sheets schema | Target sheet contract must pass header/schema validation immediately before mutation. |
+| Duplicate status | Gmail, Drive, Sheets and Firestore duplicate checks must remain non-conflicting and not `UNKNOWN`. |
 | Firestore state | Allowed collection boundary, job identity, attachment record identity and active lease state must be known. |
 | Lock availability | Existing Apps Script lock and durable lease contracts must be available before mutation. |
-| Kill switch | Any existing kill switch or disabled-processing flag must be checked and must allow the one-candidate pilot. |
+| Kill switch | Any existing kill switch or disabled-processing flag must allow the one-candidate pilot. |
 | Retry policy | Retry must be idempotent and must not widen the candidate scope. |
 | Mutation budget | The exact D7-D mutation budget must be enforceable before the first mutation. |
-| Owner approval marker | `OWNER_APPROVE_D7E_ONE_CANDIDATE_PRODUCTION_PILOT` must be supplied in a later phase after D7-C passes. |
 
 ## Owner Approval Marker
 
 OWNER_APPROVAL_MARKER=OWNER_APPROVE_D7E_ONE_CANDIDATE_PRODUCTION_PILOT
-OWNER_MARKER_ACTIONABLE=NO_UNTIL_BLOCKERS_RESOLVED
+OWNER_MARKER_ACTIONABLE=YES
+OWNER_MARKER_SUPPLIED_FOR_EXECUTION=NO
+D7_E_READY_FOR_OWNER_APPROVAL=YES
+D7_E_OPENED=false
+D7_E_EXECUTED=false
 
-The marker is a future gate only. It does not approve D7-E while D7-C remains blocked, and it does not approve broad scanning, trigger creation, deployment, source sync, repair or batch processing.
+The marker is now actionable for a future separate D7-E phase because D7-C has passed. It is not supplied by this prompt and cannot be inferred from this plan.
 
 ## Future Execution Sequence
 
@@ -159,13 +182,11 @@ The future D7-E pilot must stop before mutation when any of these are true:
 
 ## D7-E Opening Decision
 
-D7_E_OPENED=false
-D7_E_EXECUTION_APPROVED=NO
-OWNER_MARKER_ACTIONABLE=NO_UNTIL_BLOCKERS_RESOLVED
-NEXT_SAFE_PHASE=D7_B_OWNER_RUN_BOUNDED_READ_ONLY_CANDIDATE_DISCOVERY_ONCE
-NEXT_REQUIRED_OWNER_MARKER=NONE_UNTIL_BLOCKERS_RESOLVED
+NEXT_SAFE_PHASE=D7_E_OWNER_APPROVED_ONE_CANDIDATE_PRODUCTION_PILOT
+NEXT_REQUIRED_OWNER_MARKER=OWNER_APPROVE_D7E_ONE_CANDIDATE_PRODUCTION_PILOT
+BLOCKER=OWNER_APPROVAL_REQUIRED
 
-After D7-B runtime evidence is recorded and D7-C passes, a separate owner marker can open D7-E. Until then this plan is readiness documentation only.
+D7-E remains closed until the owner provides the exact approval marker in a separate phase.
 
 ## Safety Boundary
 
@@ -173,8 +194,8 @@ GMAIL_MUTATION=NONE
 DRIVE_MUTATION=NONE
 GOOGLE_SHEETS_MUTATION=NONE
 FIRESTORE_MUTATION=NONE
-TRIGGER_MUTATION=NONE
-SCRIPT_PROPERTY_MUTATION=NONE
+TRIGGER_MUTATION=false
+SCRIPT_PROPERTY_MUTATION=false
 CLASP_PUSH_RUN=false
 DEPLOY_RUN=false
 PRODUCTION_COMMAND_CREATION=NO
