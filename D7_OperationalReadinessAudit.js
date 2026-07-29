@@ -718,8 +718,26 @@ function countD7ADuplicateValues_(values) {
 }
 
 function logD7ASanitizedResult_(logger, result) {
+  const summary = sanitizeD7ALogPayload_(createD7ACompactSummary_(result));
   const safe = sanitizeD7ALogPayload_(result);
-  if (logger && typeof logger.log === 'function') logger.log(JSON.stringify(safe));
+  if (logger && typeof logger.log === 'function') {
+    logger.log(JSON.stringify({ D7_A_COMPACT_READINESS_SUMMARY: summary }));
+    logger.log(JSON.stringify(safe));
+  }
+}
+
+function createD7ACompactSummary_(result) {
+  const source = result || {};
+  return Object.freeze({
+    OPERATIONAL_READINESS_STATUS: safeD7AString_(source.OPERATIONAL_READINESS_STATUS),
+    READY_FOR_D7_B: safeD7AString_(source.READY_FOR_D7_B),
+    READINESS_GAP_COUNT: Number(source.READINESS_GAP_COUNT || 0),
+    READINESS_GAPS: Array.isArray(source.READINESS_GAPS) ? source.READINESS_GAPS.map(safeD7ACode_) : [],
+    EXISTING_NON_D7_TRIGGER_COUNT: Number(source.EXISTING_NON_D7_TRIGGER_COUNT || 0),
+    EXISTING_MUTATING_TRIGGER_COUNT: Number(source.EXISTING_MUTATING_TRIGGER_COUNT || 0),
+    TRIGGER_OWNER_REVIEW_REQUIRED: safeD7AString_(source.TRIGGER_OWNER_REVIEW_REQUIRED || 'NO'),
+    PRODUCTION_MUTATION: safeD7AString_(source.PRODUCTION_MUTATION || 'NONE')
+  });
 }
 
 function sanitizeD7ALogPayload_(value) {
