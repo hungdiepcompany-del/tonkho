@@ -361,3 +361,8 @@ SGDS_CRIT_003_STATUS=PARTIALLY_CLOSED_RUNTIME_HOSTING_PENDING
 - [D6J-D4B Canonical Duplicate Conflict Diagnostics And Invoice Number Normalization Evidence](evidence/D6J_D4B_CANONICAL_DUPLICATE_CONFLICT_DIAGNOSTICS_AND_INVOICE_NUMBER_NORMALIZATION_EVIDENCE.md)
 - [D6J-D4C Firestore Job Path Census And Repair Audit Reconciliation Diagnostics](phases/D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS.md)
 - [D6J-D4C Firestore Job Path Census And Repair Audit Reconciliation Diagnostics Evidence](evidence/D6J_D4C_FIRESTORE_JOB_PATH_CENSUS_AND_REPAIR_AUDIT_RECONCILIATION_DIAGNOSTICS_EVIDENCE.md)
+
+## D7 Automation Evidence
+
+- [D7-A3 Existing Gmail Trigger Compatibility Evidence](evidence/D7_A3_EXISTING_GMAIL_TRIGGER_COMPATIBILITY_EVIDENCE.md)
+- [D7-A3 Controlled Trigger Suspension Evidence](evidence/D7_A3_CONTROLLED_TRIGGER_SUSPENSION_EVIDENCE.md)
