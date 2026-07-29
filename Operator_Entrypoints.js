@@ -11,6 +11,11 @@ function runD7BBoundedReadOnlyCandidateDiscovery() {
   return runner.run();
 }
 
+function runD7EOwnerApprovedOneCandidateProductionPilot() {
+  const runner = createD7EOwnerApprovedOneCandidateProductionPilotRunner_();
+  return runner.run();
+}
+
 function blockD6kHistoricalPhaseEntrypoint_(entrypointName) {
   const error = new Error(D6K_HISTORICAL_PHASE_CLOSED_STATUS_ + ': ' + entrypointName);
   error.code = D6K_HISTORICAL_PHASE_CLOSED_STATUS_;
