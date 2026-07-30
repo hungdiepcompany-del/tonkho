@@ -218,6 +218,10 @@ const allowedDirty = new Set([
   'docs/operations/D7_E_PARTIAL_EXECUTION_RECONCILIATION_RUNBOOK.md',
   files.evidence,
   'docs/evidence/D7_E3_PARTIAL_EXECUTION_AND_FORENSICS_EVIDENCE.md',
+  'D7_E3G_PartialStateReadOnlyDiagnostic.js',
+  'tests/unit/d7-e3g-partial-state-read-only-diagnostic.test.mjs',
+  'docs/phases/D7_E3G_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_CHANNEL.md',
+  'docs/evidence/D7_E3G_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_EVIDENCE.md',
   files.test,
   'docs/00_INDEX.md',
   'docs/07_WORK_LOG.md',
@@ -225,6 +229,7 @@ const allowedDirty = new Set([
   'docs/09_VALIDATION_LOG.md',
   'docs/99_NEXT_AI_HANDOFF.md',
   files.packageJson,
+  'scripts/checkers/check-d7-e3g-partial-state-read-only-diagnostic.mjs',
   'scripts/checkers/check-d7-e-owner-approved-one-candidate-production-pilot.mjs',
   'scripts/checkers/check-d7-c-d7-d-candidate-review-and-pilot-plan.mjs',
 ]);

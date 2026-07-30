@@ -43,6 +43,22 @@ NEXT_ACTION=READ_ONLY_DIAGNOSTIC_CHANNEL_REQUIRED
 NEXT_SAFE_PHASE=D7_E3G_OWNER_APPROVED_READ_ONLY_DIAGNOSTIC_CHANNEL_FOR_PARTIAL_STATE
 NEXT_REQUIRED_OWNER_MARKER=OWNER_APPROVE_D7E_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_CHANNEL
 
+## D7-E3G Source Channel
+
+OWNER_MARKER_RECEIVED=YES
+CURRENT_PHASE_MARKER_PREAUTHORIZED=YES
+FUTURE_MUTATION_MARKERS_PREAUTHORIZED=NO
+D7_E3G_RUNTIME_MODE=READ_ONLY
+D7_E_RERUN_FORBIDDEN=YES
+PRODUCTION_MUTATION=NONE
+
+D7_E3G_RUNTIME_FILE=D7_E3G_PartialStateReadOnlyDiagnostic.js
+D7_E3G_PUBLIC_ENTRYPOINT=runD7EPartialStateReadOnlyDiagnostic
+D7_E3G_EXECUTION_ATTEMPT_COUNT=0
+SANITIZED_D7_E3G_RESULT_RECORDED=NO
+
+The D7-E3G channel may be synced and run exactly once under the current owner-approved phase. It must not rerun D7-E, resume the job, repair Firestore, release or reclaim the lease, create or delete Drive files, append or update Sheets rows, mutate Gmail labels, change Script Properties, or modify triggers.
+
 The next diagnostic channel must prove the Drive, Sheets, and Gmail state without resuming or repairing the pilot. It must not rely on file name alone for Drive artifacts, must keep all raw production identifiers out of repository evidence, and must preserve the existing Firestore reconciliation state.
 
 Minimum required proof before any resume or compensating-action design:

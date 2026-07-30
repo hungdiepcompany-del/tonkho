@@ -21,7 +21,7 @@ function assertMatches(text, pattern, code) {
 }
 
 function git(args) {
-  return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).replace(/\s+$/g, '');
 }
 
 function assertCommitExists(commit, code) {
@@ -241,10 +241,16 @@ const allowedDirty = new Set([
   files.d7d,
   files.bundleEvidence,
   'D7_E_OwnerApprovedOneCandidateProductionPilot.js',
+  'D7_E3G_PartialStateReadOnlyDiagnostic.js',
   'Operator_Entrypoints.js',
   'tests/unit/d7-e-owner-approved-one-candidate-production-pilot.test.mjs',
+  'tests/unit/d7-e3g-partial-state-read-only-diagnostic.test.mjs',
   'scripts/checkers/check-d7-e-owner-approved-one-candidate-production-pilot.mjs',
+  'scripts/checkers/check-d7-e3g-partial-state-read-only-diagnostic.mjs',
   'scripts/checkers/check-d7-c-d7-d-candidate-review-and-pilot-plan.mjs',
+  'docs/phases/D7_E3G_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_CHANNEL.md',
+  'docs/evidence/D7_E3G_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_EVIDENCE.md',
+  'docs/operations/D7_E_PARTIAL_EXECUTION_RECONCILIATION_RUNBOOK.md',
   'package.json',
 ]);
 

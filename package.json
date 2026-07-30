@@ -62,6 +62,7 @@
     "check:d7-a3-existing-gmail-trigger-compatibility": "node scripts/checkers/check-d7-a3-existing-gmail-trigger-compatibility.mjs",
     "check:d7-b-bounded-read-only-candidate-discovery": "node scripts/checkers/check-d7-b-bounded-read-only-candidate-discovery.mjs",
     "check:d7-c-d7-d-candidate-review-and-pilot-plan": "node scripts/checkers/check-d7-c-d7-d-candidate-review-and-pilot-plan.mjs",
-    "check:d7-e-owner-approved-one-candidate-production-pilot": "node scripts/checkers/check-d7-e-owner-approved-one-candidate-production-pilot.mjs"
+    "check:d7-e-owner-approved-one-candidate-production-pilot": "node scripts/checkers/check-d7-e-owner-approved-one-candidate-production-pilot.mjs",
+    "check:d7-e3g-partial-state-read-only-diagnostic": "node scripts/checkers/check-d7-e3g-partial-state-read-only-diagnostic.mjs"
   }
 }

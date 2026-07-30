@@ -1162,3 +1162,23 @@ NEXT_SAFE_PHASE=D7_E3G_OWNER_APPROVED_READ_ONLY_DIAGNOSTIC_CHANNEL_FOR_PARTIAL_S
 NEXT_REQUIRED_OWNER_MARKER=OWNER_APPROVE_D7E_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_CHANNEL
 BLOCKER=READ_ONLY_DRIVE_SHEETS_GMAIL_FORENSICS_NOT_PROVEN_BY_CURRENT_AUTH_CHANNEL
 NEXT_AI_FIRST_ACTION=Do not rerun D7-E or repair production. First obtain an owner-approved read-only diagnostic channel that can prove Drive, Sheets, and Gmail state without raw production identifiers in repo evidence.
+
+## SGDS D7-E3G Partial-State Read-Only Diagnostic Channel Handoff
+
+CURRENT_PHASE=D7_E3G_OWNER_APPROVED_READ_ONLY_DIAGNOSTIC_CHANNEL_FOR_PARTIAL_STATE
+STATUS=IMPLEMENTED_NOT_EXECUTED
+OWNER_MARKER_RECEIVED=YES
+OWNER_MARKER=OWNER_APPROVE_D7E_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_CHANNEL
+CURRENT_PHASE_MARKER_PREAUTHORIZED=YES
+FUTURE_MUTATION_MARKERS_PREAUTHORIZED=NO
+D7_E3G_RUNTIME_MODE=READ_ONLY
+D7_E_RERUN_FORBIDDEN=YES
+
+D7_E3G_RUNTIME_FILE=D7_E3G_PartialStateReadOnlyDiagnostic.js
+D7_E3G_PUBLIC_ENTRYPOINT=runD7EPartialStateReadOnlyDiagnostic
+D7_E3G_RUNNER=createD7EPartialStateReadOnlyDiagnosticRunner_
+D7_E3G_EXECUTION_ATTEMPT_COUNT=0
+SANITIZED_D7_E3G_RESULT_RECORDED=NO
+PRODUCTION_MUTATION=NONE
+
+NEXT_AI_FIRST_ACTION=Run the D7-E3G local validation matrix, commit and push the source channel, sync Apps Script with normal clasp push only, verify remote hashes, then execute runD7EPartialStateReadOnlyDiagnostic exactly once through the Apps Script editor if the remote channel is hash verified.
