@@ -1182,3 +1182,28 @@ SANITIZED_D7_E3G_RESULT_RECORDED=NO
 PRODUCTION_MUTATION=NONE
 
 NEXT_AI_FIRST_ACTION=Run the D7-E3G local validation matrix, commit and push the source channel, sync Apps Script with normal clasp push only, verify remote hashes, then execute runD7EPartialStateReadOnlyDiagnostic exactly once through the Apps Script editor if the remote channel is hash verified.
+
+## SGDS D7-E3R Exact Bounded Production Read-Only Adapters Handoff
+
+CURRENT_PHASE=D7_E3R_TO_U_EXACT_BOUNDED_PRODUCTION_READ_ONLY_ADAPTER_IMPLEMENTATION_SOURCE_SYNC_AND_FRESH_FORENSIC
+STATUS=IMPLEMENTED_LOCAL_PENDING_VALIDATION_AND_SOURCE_SYNC
+START_HEAD=1ca7b6a013a2511814e7f87ab6630217391ff86f
+D7_E3R_RUNTIME_FILE=D7_E3R_ExactBoundedProductionReadOnlyAdapters.js
+D7_E3I_FORENSIC_ENTRYPOINT=runD7E3IExactProductionConflictForensicReadOnly
+D7_E3R_CHECKER=scripts/checkers/check-d7-e3r-exact-bounded-production-read-only-adapters.mjs
+D7_E3R_UNIT_TEST=tests/unit/d7-e3r-exact-bounded-production-read-only-adapters.test.mjs
+D7_E3I_UNIT_TEST=tests/unit/d7-e3i-exact-production-conflict-forensic-and-safe-reconciliation-plan.test.mjs
+GMAIL_ADAPTER=REAL_EXACT_BOUNDED_READ_ONLY
+DRIVE_ADAPTER=REAL_EXACT_BOUNDED_READ_ONLY
+SHEETS_ADAPTER=REAL_EXACT_BOUNDED_READ_ONLY
+FIRESTORE_ADAPTER=REAL_EXACT_BOUNDED_READ_ONLY
+APPSSCRIPT_SCOPE_CHANGE=NO
+PRODUCTION_EXECUTION=NOT_RUN
+PRODUCTION_MUTATION=NONE
+D7_E_RERUN_ALLOWED=NO
+REPAIR_OR_COMPENSATING_ACTION_ALLOWED=NO
+SCRIPT_PROPERTIES_MUTATION_ALLOWED=NO
+TRIGGER_MUTATION_ALLOWED=NO
+NEXT_SAFE_PHASE=APPS_SCRIPT_SOURCE_SYNC_AND_REMOTE_HASH_VERIFICATION
+NEXT_REQUIRED_OWNER_ACTION=RUN_FRESH_D7_E3I_READ_ONLY_EXACTLY_ONCE
+NEXT_AI_FIRST_ACTION=Run validation, commit and push source/docs, perform exactly one normal clasp push, verify remote source hash parity, then stop at the owner-gated fresh D7-E3I read-only forensic execution unless a previously established authenticated non-mutating execution channel is proven current.

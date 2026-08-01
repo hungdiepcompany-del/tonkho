@@ -1102,3 +1102,44 @@ test('83. minimum-scope matrix is explicit and Cloud Platform broad scope is not
   const manifest = fs.readFileSync('appsscript.json', 'utf8');
   assert.doesNotMatch(manifest, /cloud-platform/);
 });
+
+test('84. default productionReaders path disables placeholder reader diagnostics when all five channels are real', () => {
+  const fixture = baseFixture();
+  const logs = [];
+  const runner = gas.call('createD7E3IExactProductionConflictForensicRunner_', {
+    readConfiguration: () => fixture.configuration,
+    productionReaders: {
+      readSnapshot: ({ stage }) => (stage === 'BEFORE' ? fixture.beforeSnapshot : fixture.afterSnapshot),
+      readGmailEvidence: () => ({ ...fixture.gmail, readerImplementation: 'REAL_BOUNDED_READ_ONLY', readAttempted: true, exactTargetMatched: true }),
+      readDriveEvidence: ({ artifactType }) => ({
+        ...(artifactType === 'XML' ? fixture.driveXml : fixture.drivePdf),
+        readerImplementation: 'REAL_BOUNDED_READ_ONLY',
+        readAttempted: true,
+        exactTargetMatched: true
+      }),
+      readSheetsEvidence: () => ({ ...fixture.sheets, readerImplementation: 'REAL_BOUNDED_READ_ONLY', readAttempted: true, exactTargetMatched: true }),
+      readFirestoreEvidence: () => ({ ...fixture.firestore, readerImplementation: 'REAL_BOUNDED_READ_ONLY', readAttempted: true, exactTargetMatched: true })
+    },
+    now: () => '2026-08-01T00:00:00.000Z',
+    logger: { log: line => logs.push(line) }
+  });
+  const result = fromVm(runner.run());
+  assert.equal(result.READER_DIAGNOSTICS.PLACEHOLDER_PRODUCTION_PATH_DISABLED, 'YES');
+  assert.equal(result.READER_DIAGNOSTICS.REAL_ADAPTER_INVOCATION_PROVEN, 'YES');
+  assert.equal(result.PERMISSION_DIAGNOSTICS.PRODUCTION_PERMISSION_PROBE_EXECUTED, 'YES');
+  assert.equal(result.FINAL_STATUS, 'PASS_D7_E3I_CONSISTENT_ALREADY_COMPLETED_READ_ONLY');
+});
+
+test('85. missing productionReaders preserve fail-closed placeholder diagnostics', () => {
+  const fixture = baseFixture();
+  const runner = gas.call('createD7E3IExactProductionConflictForensicRunner_', {
+    readConfiguration: () => fixture.configuration,
+    readSnapshot: ({ stage }) => (stage === 'BEFORE' ? fixture.beforeSnapshot : fixture.afterSnapshot),
+    now: () => '2026-08-01T00:00:00.000Z',
+    logger: { log: () => {} }
+  });
+  const result = fromVm(runner.run());
+  assert.equal(result.READER_DIAGNOSTICS.PLACEHOLDER_PRODUCTION_PATH_DISABLED, 'NO');
+  assert.equal(result.PERMISSION_DIAGNOSTICS.PRODUCTION_PERMISSION_PROBE_EXECUTED, 'NO');
+  assert.equal(result.FINAL_STATUS, 'BLOCKED_D7_E3I_FORENSICS_INCOMPLETE');
+});

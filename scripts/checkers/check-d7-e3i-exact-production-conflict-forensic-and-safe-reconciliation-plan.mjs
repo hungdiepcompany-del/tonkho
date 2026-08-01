@@ -15,6 +15,21 @@ const files = {
 };
 
 const allowedDirty = new Set(Object.values(files));
+const d7e3rCompanionDirtyFiles = [
+  'D7_E3R_ExactBoundedProductionReadOnlyAdapters.js',
+  'tests/unit/d7-e3r-exact-bounded-production-read-only-adapters.test.mjs',
+  'scripts/checkers/check-d7-e3r-exact-bounded-production-read-only-adapters.mjs',
+  'scripts/checkers/check-d7-c-d7-d-candidate-review-and-pilot-plan.mjs',
+  'scripts/checkers/check-d7-e-owner-approved-one-candidate-production-pilot.mjs',
+  'scripts/checkers/check-d7-e3g-partial-state-read-only-diagnostic.mjs',
+  'docs/phases/D7_E3R_TO_U_EXACT_BOUNDED_PRODUCTION_READ_ONLY_ADAPTER_IMPLEMENTATION_SOURCE_SYNC_AND_FRESH_FORENSIC.md',
+  'docs/00_INDEX.md',
+  'docs/07_WORK_LOG.md',
+  'docs/08_DECISION_LOG.md',
+  'docs/09_VALIDATION_LOG.md',
+  'docs/99_NEXT_AI_HANDOFF.md',
+  'package.json'
+];
 
 const knownGuardDirtyPaths = new Set(['GUARD.bat']);
 const knownGuardDirtyPrefixes = ['_guard/deploy/'];
@@ -524,7 +539,7 @@ for (const marker of [
     trackedFiles,
     existingFiles,
     requiredFiles: Object.values(files),
-    allowedDirtyFiles: Object.values(files)
+    allowedDirtyFiles: Object.values(files).concat(d7e3rCompanionDirtyFiles)
   });
   if (!phaseFileState.ok) fail(phaseFileState.failureCode);
 

@@ -52,6 +52,11 @@ const D7_E3I_PERMISSION_REASON_CODES_ = Object.freeze({
   INVALID_EXACT_RESOURCE_REFERENCE: 'INVALID_EXACT_RESOURCE_REFERENCE',
   TRANSPORT_FAILED: 'TRANSPORT_FAILED',
   RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+  CONTENT_READ_FAILED: 'CONTENT_READ_FAILED',
+  METADATA_READ_FAILED: 'METADATA_READ_FAILED',
+  ROW_IDENTITY_MISMATCH: 'ROW_IDENTITY_MISMATCH',
+  MESSAGE_IDENTITY_MISMATCH: 'MESSAGE_IDENTITY_MISMATCH',
+  DOCUMENT_IDENTITY_MISMATCH: 'DOCUMENT_IDENTITY_MISMATCH',
   ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE: 'ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE',
   UNKNOWN_READ_BLOCKER: 'UNKNOWN_READ_BLOCKER'
 });
@@ -71,13 +76,16 @@ function runD7E3IExactProductionConflictForensicReadOnly() {
 
 function createD7E3IExactProductionConflictForensicRunner_(dependencies) {
   const d = dependencies || {};
+  const productionReaders = d.productionReaders || (typeof createD7E3RExactBoundedProductionReadOnlyAdapters_ === 'function'
+    ? createD7E3RExactBoundedProductionReadOnlyAdapters_()
+    : {});
   const services = {
     readConfiguration: d.readConfiguration || readD7E3IConfigurationReadOnly_,
-    readSnapshot: d.readSnapshot || createD7E3IUnavailableSnapshotReader_(),
-    readGmailEvidence: d.readGmailEvidence || createD7E3IUnavailableSystemReader_('GMAIL'),
-    readDriveEvidence: d.readDriveEvidence || createD7E3IUnavailableSystemReader_('DRIVE'),
-    readSheetsEvidence: d.readSheetsEvidence || createD7E3IUnavailableSystemReader_('SHEETS'),
-    readFirestoreEvidence: d.readFirestoreEvidence || createD7E3IUnavailableSystemReader_('FIRESTORE'),
+    readSnapshot: d.readSnapshot || productionReaders.readSnapshot || createD7E3IUnavailableSnapshotReader_(),
+    readGmailEvidence: d.readGmailEvidence || productionReaders.readGmailEvidence || createD7E3IUnavailableSystemReader_('GMAIL'),
+    readDriveEvidence: d.readDriveEvidence || productionReaders.readDriveEvidence || createD7E3IUnavailableSystemReader_('DRIVE'),
+    readSheetsEvidence: d.readSheetsEvidence || productionReaders.readSheetsEvidence || createD7E3IUnavailableSystemReader_('SHEETS'),
+    readFirestoreEvidence: d.readFirestoreEvidence || productionReaders.readFirestoreEvidence || createD7E3IUnavailableSystemReader_('FIRESTORE'),
     now: d.now || function nowD7E3I_() { return new Date().toISOString(); },
     logger: d.logger || (typeof Logger !== 'undefined' ? Logger : { log: function noopD7E3I_() {} })
   };
@@ -135,6 +143,7 @@ function createD7E3IExactProductionConflictForensicRunner_(dependencies) {
       firestore,
       concurrency
     };
+    result.READER_DIAGNOSTICS = createD7E3IReaderDiagnostics_(analysis);
     result.PERMISSION_DIAGNOSTICS = createD7E3IPermissionDiagnostics_(analysis);
     result.PRIMARY_CLASSIFICATION = classifyD7E3IPrimary_(analysis, findings);
     result.FINDINGS = sortD7E3IFindings_(findings);
@@ -172,6 +181,7 @@ function createD7E3IBaseResult_(createdAt) {
     DRIVE_PDF_EVIDENCE: {},
     SHEETS_EVIDENCE: {},
     FIRESTORE_EVIDENCE: {},
+    READER_DIAGNOSTICS: {},
     PERMISSION_DIAGNOSTICS: {},
     AFTER_SNAPSHOT: {},
     CONCURRENT_CHANGE_STATUS: {},
@@ -238,7 +248,9 @@ function readD7E3IConfigurationReadOnly_() {
     expectedXmlSha256: values.D7_E_CANONICAL_XML_SHA256 || values.expectedXmlSha256 || '',
     expectedPdfSha256: values.D7_E_CANONICAL_PDF_SHA256 || values.expectedPdfSha256 || '',
     expectedIdentityHash: values.D7_E_CANONICAL_INVOICE_IDENTITY_HASH || values.expectedIdentityHash || '',
-    expectedAttachmentSetHash: values.D7_E_CANONICAL_ATTACHMENT_SET_HASH || ''
+    expectedAttachmentSetHash: values.D7_E_CANONICAL_ATTACHMENT_SET_HASH || '',
+    expectedCandidateFingerprint: values.D7_E_CANONICAL_CANDIDATE_FINGERPRINT || '',
+    rawConfiguration: props && props.getProperties ? props.getProperties() : {}
   };
 }
 
@@ -249,7 +261,9 @@ function normalizeD7E3IConfiguration_(raw) {
     expectedXmlSha256: normalizeD7E3IHash_(input.expectedXmlSha256),
     expectedPdfSha256: normalizeD7E3IHash_(input.expectedPdfSha256),
     expectedIdentityHash: normalizeD7E3IHash_(input.expectedIdentityHash),
-    expectedAttachmentSetHash: normalizeD7E3IHash_(input.expectedAttachmentSetHash)
+    expectedAttachmentSetHash: normalizeD7E3IHash_(input.expectedAttachmentSetHash),
+    expectedCandidateFingerprint: normalizeD7E3IHash_(input.expectedCandidateFingerprint),
+    rawConfiguration: input.rawConfiguration || {}
   };
   return {
     blocked: blocked,
@@ -263,7 +277,8 @@ function normalizeD7E3IConfiguration_(raw) {
         expectedXmlSha256: privateConfig.expectedXmlSha256 ? 'YES' : 'NO',
         expectedPdfSha256: privateConfig.expectedPdfSha256 ? 'YES' : 'NO',
         expectedIdentityHash: privateConfig.expectedIdentityHash ? 'YES' : 'NO',
-        expectedAttachmentSetHash: privateConfig.expectedAttachmentSetHash ? 'YES' : 'NO'
+        expectedAttachmentSetHash: privateConfig.expectedAttachmentSetHash ? 'YES' : 'NO',
+        expectedCandidateFingerprint: privateConfig.expectedCandidateFingerprint ? 'YES' : 'NO'
       }
     })
   };
@@ -343,6 +358,9 @@ function analyzeD7E3IGmailEvidence_(raw, config, findings) {
   }
 
   const publicResult = evidenceD7E3IClaim_(classification, confidence, input.evidenceSource || 'INJECTED_GMAIL_READ_ONLY_ADAPTER', reasonCode, {
+    readerImplementation: input.readerImplementation || 'UNAVAILABLE',
+    readAttempted: boolStatusD7E3I_(input.readAttempted !== false),
+    exactTargetMatched: boolStatusD7E3I_(input.exactTargetMatched === true || input.exactTargetMatched === 'YES'),
     exactBoundedQueryContract: 'YES',
     candidateCount: candidateCount,
     messageCount: messageCount,
@@ -541,6 +559,9 @@ function analyzeD7E3IDriveEvidence_(artifactType, raw, config, findings) {
   }
 
   const publicResult = evidenceD7E3IClaim_(classification, confidence, input.evidenceSource || 'INJECTED_DRIVE_READ_ONLY_ADAPTER', reasonCode, {
+    readerImplementation: input.readerImplementation || 'UNAVAILABLE',
+    readAttempted: boolStatusD7E3I_(input.readAttempted !== false),
+    exactTargetMatched: boolStatusD7E3I_(input.exactTargetMatched === true || input.exactTargetMatched === 'YES'),
     artifactType: upperType,
     candidateCount: candidateCount,
     discoveryStatus: input.discoveryStatus || (candidateCount === 1 ? 'EXACT_CANDIDATE_FOUND' : 'NOT_EXACT'),
@@ -665,6 +686,9 @@ function analyzeD7E3ISheetsEvidence_(raw, config, findings) {
   }
 
   const publicResult = evidenceD7E3IClaim_(classification, confidence, input.evidenceSource || 'INJECTED_SHEETS_READ_ONLY_ADAPTER', reasonCode, {
+    readerImplementation: input.readerImplementation || 'UNAVAILABLE',
+    readAttempted: boolStatusD7E3I_(input.readAttempted !== false),
+    exactTargetMatched: boolStatusD7E3I_(input.exactTargetMatched === true || input.exactTargetMatched === 'YES'),
     schemaValidationStatus: input.schemaValidationStatus || 'NOT_EVALUATED',
     permissionStatus: permissionStatus.status,
     permissionReasonCode: permissionStatus.reasonCode,
@@ -869,6 +893,9 @@ function analyzeD7E3IFirestoreEvidence_(raw, config, findings) {
   }
 
   const publicResult = evidenceD7E3IClaim_(classification, confidence, input.evidenceSource || 'INJECTED_FIRESTORE_READ_ONLY_ADAPTER', reasonCode, {
+    readerImplementation: input.readerImplementation || 'UNAVAILABLE',
+    readAttempted: boolStatusD7E3I_(input.readAttempted !== false),
+    exactTargetMatched: boolStatusD7E3I_(input.exactTargetMatched === true || input.exactTargetMatched === 'YES'),
     exactPathContract: 'YES',
     permissionStatus: permissionStatus.status,
     permissionReasonCode: permissionStatus.reasonCode,
@@ -1152,7 +1179,30 @@ function createD7E3IPermissionDiagnostics_(analysis) {
     MINIMUM_SCOPE_MATRIX: D7_E3I_MINIMUM_SCOPE_MATRIX_,
     BROAD_SCOPE_ADDITION_REQUIRED: 'NO',
     CLOUD_PLATFORM_SCOPE_REQUIRED: 'NO',
-    PRODUCTION_PERMISSION_PROBE_EXECUTED: 'NO'
+    PRODUCTION_PERMISSION_PROBE_EXECUTED: productionD7E3IPermissionProbeExecuted_(analysis) ? 'YES' : 'NO'
+  });
+}
+
+function createD7E3IReaderDiagnostics_(analysis) {
+  return sanitizeD7E3IObject_({
+    GMAIL_READER_IMPLEMENTATION: readerImplementationD7E3I_(analysis.gmail),
+    DRIVE_XML_READER_IMPLEMENTATION: readerImplementationD7E3I_(analysis.driveXml),
+    DRIVE_PDF_READER_IMPLEMENTATION: readerImplementationD7E3I_(analysis.drivePdf),
+    SHEETS_READER_IMPLEMENTATION: readerImplementationD7E3I_(analysis.sheets),
+    FIRESTORE_READER_IMPLEMENTATION: readerImplementationD7E3I_(analysis.firestore),
+    PLACEHOLDER_PRODUCTION_PATH_DISABLED: productionD7E3IPermissionProbeExecuted_(analysis) ? 'YES' : 'NO',
+    REAL_ADAPTER_INVOCATION_PROVEN: productionD7E3IPermissionProbeExecuted_(analysis) ? 'YES' : 'NO'
+  });
+}
+
+function readerImplementationD7E3I_(analysisPart) {
+  const details = analysisPart && analysisPart.publicResult && analysisPart.publicResult.safeDetails || {};
+  return details.readerImplementation || details.READER_IMPLEMENTATION || 'UNAVAILABLE';
+}
+
+function productionD7E3IPermissionProbeExecuted_(analysis) {
+  return ['gmail', 'driveXml', 'drivePdf', 'sheets', 'firestore'].every(function realReader(key) {
+    return readerImplementationD7E3I_(analysis && analysis[key]) === 'REAL_BOUNDED_READ_ONLY';
   });
 }
 
@@ -1207,8 +1257,13 @@ function normalizeD7E3IPermissionReason_(channel, input, readStatus) {
   if (/REAUTH|AUTHORIZATION_REQUIRED|CONSENT_REQUIRED/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.OAUTH_REAUTHORIZATION_REQUIRED;
   if (/OAUTH|SCOPE|TOKEN_SCOPE|INSUFFICIENT_SCOPE/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.OAUTH_SCOPE_MISSING;
   if (/INVALID|MALFORMED|BAD_REQUEST|BAD_REFERENCE|REFERENCE/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.INVALID_EXACT_RESOURCE_REFERENCE;
+  if (/ROW_IDENTITY/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.ROW_IDENTITY_MISMATCH;
+  if (/MESSAGE_IDENTITY/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.MESSAGE_IDENTITY_MISMATCH;
+  if (/DOCUMENT_IDENTITY/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.DOCUMENT_IDENTITY_MISMATCH;
   if (/IDENTITY|PRINCIPAL|ACCOUNT_MISMATCH|USER_MISMATCH|EXECUTION_USER/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.EXECUTION_IDENTITY_MISMATCH;
   if (/TRANSPORT|TIMEOUT|NETWORK|FETCH|HTTP_?5\d\d/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.TRANSPORT_FAILED;
+  if (/CONTENT_READ_FAILED|CONTENT_FAILED/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.CONTENT_READ_FAILED;
+  if (/METADATA_READ_FAILED|METADATA_FAILED/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.METADATA_READ_FAILED;
   if (/DEFAULT_READER_NOT_CONFIGURED|NO_DEFAULT_PRODUCTION_READER|ADAPTER|NOT_CONFIGURED/.test(text)) {
     return D7_E3I_PERMISSION_REASON_CODES_.ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE;
   }
@@ -1240,6 +1295,11 @@ function safeErrorClassForD7E3IPermissionReason_(reasonCode) {
   map[D7_E3I_PERMISSION_REASON_CODES_.INVALID_EXACT_RESOURCE_REFERENCE] = 'CONFIGURATION';
   map[D7_E3I_PERMISSION_REASON_CODES_.TRANSPORT_FAILED] = 'TRANSPORT';
   map[D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_NOT_FOUND] = 'NOT_FOUND';
+  map[D7_E3I_PERMISSION_REASON_CODES_.CONTENT_READ_FAILED] = 'CONTENT_READ';
+  map[D7_E3I_PERMISSION_REASON_CODES_.METADATA_READ_FAILED] = 'METADATA_READ';
+  map[D7_E3I_PERMISSION_REASON_CODES_.ROW_IDENTITY_MISMATCH] = 'IDENTITY';
+  map[D7_E3I_PERMISSION_REASON_CODES_.MESSAGE_IDENTITY_MISMATCH] = 'IDENTITY';
+  map[D7_E3I_PERMISSION_REASON_CODES_.DOCUMENT_IDENTITY_MISMATCH] = 'IDENTITY';
   map[D7_E3I_PERMISSION_REASON_CODES_.ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE] = 'ADAPTER_DIAGNOSTIC';
   map[D7_E3I_PERMISSION_REASON_CODES_.UNKNOWN_READ_BLOCKER] = 'UNKNOWN';
   return map[reasonCode] || 'UNKNOWN';

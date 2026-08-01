@@ -123,6 +123,20 @@ Supported reason codes are:
 
 The source corrective does not add OAuth scopes and does not execute a production permission probe. The minimum-scope matrix is documented in the runtime output; `BROAD_SCOPE_ADDITION_REQUIRED=NO`, `CLOUD_PLATFORM_SCOPE_REQUIRED=NO`, and `PRODUCTION_PERMISSION_PROBE_EXECUTED=NO`.
 
+## D7-E3R Exact Bounded Adapters
+
+D7-E3R adds real exact bounded production read-only adapters for the D7-E3I runner. When `D7_E3R_ExactBoundedProductionReadOnlyAdapters.js` is loaded, D7-E3I prefers those readers before the previous unavailable-reader fallback.
+
+The D7-E3R adapter path keeps the same D7-E3I safety model:
+
+- Gmail is bounded to the D7-B exact candidate contract.
+- Drive XML/PDF reads are bounded to exact D7-E plan targets and content hashes.
+- Sheets reads are bounded to one exact A:P production ledger row.
+- Firestore reads are bounded to exact document GETs for the deterministic job, lease, attachment records, and one optional reconciliation report.
+- No Script Properties, trigger, Gmail, Drive, Sheets, Firestore, deploy, repair, or D7-E mutation call is introduced.
+
+When all five real readers run, D7-E3I reports `READER_DIAGNOSTICS.REAL_ADAPTER_INVOCATION_PROVEN=YES` and `PERMISSION_DIAGNOSTICS.PRODUCTION_PERMISSION_PROBE_EXECUTED=YES`. If the D7-E3R source is absent, D7-E3I still fails closed through the original placeholder diagnostics.
+
 ## Classification Precedence
 
 The runner chooses exactly one primary classification using this order:

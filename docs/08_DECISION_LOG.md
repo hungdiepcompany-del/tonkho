@@ -580,3 +580,16 @@ D7_E_RERUN_FORBIDDEN=YES
 PRODUCTION_MUTATION=NONE
 
 The current marker authorizes implementation, source sync, exactly one read-only diagnostic execution, and sanitized evidence recording. It does not authorize rerunning D7-E, resuming the production job, repairing Firestore, changing Drive or Sheets state, mutating Gmail labels, changing Script Properties, or modifying triggers.
+
+## 2026-08-01 - D7-E3R Real Read-Only Adapter Boundary
+
+DECISION=Wire D7-E3I to real exact bounded production read-only adapters while preserving the placeholder path as fail-closed fallback.
+RATIONALE=The previous D7-E3I diagnostic could classify permission blockers but could not prove Gmail, Drive, Sheets, or Firestore state because default production readers were unavailable. D7-E3R supplies exact bounded readers without adding mutation APIs or changing Apps Script OAuth scopes.
+PHASE=D7_E3R_TO_U_EXACT_BOUNDED_PRODUCTION_READ_ONLY_ADAPTER_IMPLEMENTATION_SOURCE_SYNC_AND_FRESH_FORENSIC
+PRODUCTION_EXECUTION=OWNER_GATED_AFTER_REMOTE_HASH_VERIFICATION
+PRODUCTION_MUTATION=NONE
+REPAIR_OR_COMPENSATING_ACTION_ALLOWED=NO
+D7_E_RERUN_ALLOWED=NO
+SCRIPT_PROPERTIES_MUTATION_ALLOWED=NO
+NEXT_SAFE_PHASE=APPS_SCRIPT_SOURCE_SYNC_AND_REMOTE_HASH_VERIFICATION
+NEXT_REQUIRED_OWNER_ACTION=RUN_FRESH_D7_E3I_READ_ONLY_EXACTLY_ONCE
