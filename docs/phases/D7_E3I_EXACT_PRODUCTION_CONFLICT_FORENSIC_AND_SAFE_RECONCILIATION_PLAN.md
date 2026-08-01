@@ -10,6 +10,10 @@ RUNTIME_MUTATION=NONE
 REPAIR_EXECUTION=NONE
 RECONCILIATION_WRITE=NONE
 COMMIT_CREATED=NO
+D7_E3N_TO_Q_PERMISSION_DIAGNOSTIC_CORRECTIVE=IMPLEMENTED
+SOURCE_DIAGNOSTIC_DEFECT_FOUND=YES
+PRODUCTION_PERMISSION_PROBE=NOT_RUN
+OWNER_ACTION_SCOPE=MINIMUM_REAUTH_OR_ACL_REVIEW_AFTER_FRESH_DIAGNOSTIC_ONLY
 
 ## Objective
 
@@ -89,6 +93,36 @@ Firestore state can be:
 
 No reconciliation event or durable state update is written in this phase.
 
+## Permission Diagnostic Taxonomy
+
+D7-E3N to Q hardened the D7-E3I diagnostic contract after a manual production run returned repeated generic read-permission blockers without enough channel-level attribution to distinguish OAuth, resource ACL, execution identity, Firestore IAM, transport, missing resource, or adapter-classification defects.
+
+The corrective adds a read-only `PERMISSION_DIAGNOSTICS` result block with:
+
+- `GMAIL_PERMISSION_STATUS`
+- `DRIVE_XML_PERMISSION_STATUS`
+- `DRIVE_PDF_PERMISSION_STATUS`
+- `SHEETS_PERMISSION_STATUS`
+- `FIRESTORE_PERMISSION_STATUS`
+
+Each channel reports sanitized `status`, `reasonCode`, `safeErrorClass`, `authorizationType`, `resourceAccessStatus`, and `executionIdentityStatus`. Repeated finding codes are also emitted with channel attribution as `channelFindingCodes`.
+
+Supported reason codes are:
+
+- `OAUTH_SCOPE_MISSING`
+- `OAUTH_REAUTHORIZATION_REQUIRED`
+- `RESOURCE_ACCESS_DENIED`
+- `EXECUTION_IDENTITY_MISMATCH`
+- `FIRESTORE_AUTHORIZATION_FAILED`
+- `FIRESTORE_PROJECT_OR_DATABASE_MISMATCH`
+- `INVALID_EXACT_RESOURCE_REFERENCE`
+- `TRANSPORT_FAILED`
+- `RESOURCE_NOT_FOUND`
+- `ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE`
+- `UNKNOWN_READ_BLOCKER`
+
+The source corrective does not add OAuth scopes and does not execute a production permission probe. The minimum-scope matrix is documented in the runtime output; `BROAD_SCOPE_ADDITION_REQUIRED=NO`, `CLOUD_PLATFORM_SCOPE_REQUIRED=NO`, and `PRODUCTION_PERMISSION_PROBE_EXECUTED=NO`.
+
 ## Classification Precedence
 
 The runner chooses exactly one primary classification using this order:
@@ -138,7 +172,7 @@ The runtime source contains no mutation adapters, deploy commands, source-sync c
 
 ## Local Validation Scope
 
-The local validation suite covers 51 synthetic cases, including exact consistency, absent or ambiguous Gmail candidates, source hash conflicts, explicit Drive zero-byte proof, missing Drive read statuses, reader fallback suspicion, fallback bytes after failed reads, read blockers, durable Sheet attribution derivation, label-only attribution rejection, timestamp-only rejection, InvoiceKey/HashIndex-only rejection, completed-job-without-row-linkage rejection, conflicting attribution evidence, Firestore durable state conflicts, unknown and confirmed D7-E outcomes, concurrency mismatch, bounded-query overflow, sanitization, zero mutation counters, deterministic output, and source-shape safety.
+The local validation suite covers 83 synthetic cases, including exact consistency, absent or ambiguous Gmail candidates, source hash conflicts, explicit Drive zero-byte proof, missing Drive read statuses, reader fallback suspicion, fallback bytes after failed reads, read blockers, durable Sheet attribution derivation, label-only attribution rejection, timestamp-only rejection, InvoiceKey/HashIndex-only rejection, completed-job-without-row-linkage rejection, conflicting attribution evidence, Firestore durable state conflicts, unknown and confirmed D7-E outcomes, concurrency mismatch, bounded-query overflow, sanitization, zero mutation counters, deterministic output, source-shape safety, and channel-level permission diagnostics across OAuth, ACL, execution identity, Firestore IAM, transport, not-found, adapter-diagnostic, and unknown blocker cases.
 
 ## Next Owner-Gated Phase
 

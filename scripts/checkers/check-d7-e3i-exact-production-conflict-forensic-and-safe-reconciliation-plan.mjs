@@ -152,6 +152,7 @@ function runD7E3IExactProductionConflictForensicCheck_() {
   const runtime = read(files.runtime);
   const unitTest = read(files.test);
   const docs = read(files.docs);
+  const manifest = exists('appsscript.json') ? read('appsscript.json') : '';
 
   assertIncludes(runtime, 'D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_AND_SAFE_RECONCILIATION_PLAN', 'PHASE_MARKER_MISSING');
   assertIncludes(runtime, 'runD7E3IExactProductionConflictForensicReadOnly', 'PUBLIC_ENTRYPOINT_NAME_MISSING');
@@ -173,6 +174,7 @@ function runD7E3IExactProductionConflictForensicCheck_() {
   'DRIVE_PDF_EVIDENCE',
   'SHEETS_EVIDENCE',
   'FIRESTORE_EVIDENCE',
+  'PERMISSION_DIAGNOSTICS',
   'AFTER_SNAPSHOT',
   'CONCURRENT_CHANGE_STATUS',
   'PRIMARY_CLASSIFICATION',
@@ -360,6 +362,68 @@ for (const marker of [
   assertIncludes(runtime + unitTest, marker, `FINDING_CODE_MISSING_${marker}`);
 }
 
+for (const marker of [
+  'D7_E3I_PERMISSION_REASON_CODES_',
+  'D7_E3I_MINIMUM_SCOPE_MATRIX_',
+  'createD7E3IPermissionDiagnostics_',
+  'createD7E3IPermissionStatus_',
+  'normalizeD7E3IPermissionReason_',
+  'addD7E3IReadIssueFinding_',
+  'publicD7E3IPermissionStatus_',
+  'GMAIL_PERMISSION_STATUS',
+  'DRIVE_XML_PERMISSION_STATUS',
+  'DRIVE_PDF_PERMISSION_STATUS',
+  'SHEETS_PERMISSION_STATUS',
+  'FIRESTORE_PERMISSION_STATUS',
+  'channelFindingCodes',
+  'BROAD_SCOPE_ADDITION_REQUIRED',
+  'CLOUD_PLATFORM_SCOPE_REQUIRED',
+  'PRODUCTION_PERMISSION_PROBE_EXECUTED'
+]) {
+  assertIncludes(runtime, marker, `PERMISSION_DIAGNOSTIC_RUNTIME_MARKER_MISSING_${marker}`);
+}
+
+for (const marker of [
+  'OAUTH_SCOPE_MISSING',
+  'OAUTH_REAUTHORIZATION_REQUIRED',
+  'RESOURCE_ACCESS_DENIED',
+  'EXECUTION_IDENTITY_MISMATCH',
+  'FIRESTORE_AUTHORIZATION_FAILED',
+  'FIRESTORE_PROJECT_OR_DATABASE_MISMATCH',
+  'INVALID_EXACT_RESOURCE_REFERENCE',
+  'TRANSPORT_FAILED',
+  'RESOURCE_NOT_FOUND',
+  'ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE',
+  'UNKNOWN_READ_BLOCKER'
+]) {
+  assertIncludes(runtime + unitTest, marker, `PERMISSION_REASON_CODE_MISSING_${marker}`);
+}
+
+for (const marker of [
+  '64. Gmail OAuth scope missing is classified separately from generic permission blocker',
+  '65. Gmail mailbox access denied is separated from OAuth scope failure',
+  '66. unavailable default Gmail adapter is a diagnostic defect, not proven OAuth or ACL denial',
+  '67. Drive XML OAuth scope missing is channel-attributed',
+  '68. Drive XML file ACL denial is channel-attributed',
+  '69. Drive PDF file ACL denial is distinct from Drive XML diagnostics',
+  '70. Sheets OAuth scope missing is separated from spreadsheet ACL failure',
+  '71. spreadsheet access denied is a resource-access blocker',
+  '72. Firestore IAM or API authorization failure is classified as Firestore authorization',
+  '73. Firestore project or database mismatch is not collapsed into Gmail or Sheets permission',
+  '74. Firestore exact document not found is evidence absence, not permission denied',
+  '75. transport failure is diagnostic incomplete, not a permission-denied finding',
+  '76. execution identity mismatch is a distinct blocker category',
+  '77. unknown adapter read error fails closed without fabricating OAuth or ACL cause',
+  '78. all five channel permission diagnostics are independently visible',
+  '79. repeated read-permission finding codes retain channel attribution in the summary log',
+  '80. permission diagnostics redact raw user and token-shaped error text',
+  '81. permission blockers still keep every mutation counter at zero',
+  '82. permission diagnostics preserve read-call maxima and do not widen bounded reads',
+  '83. minimum-scope matrix is explicit and Cloud Platform broad scope is not required'
+]) {
+  assertIncludes(unitTest, marker, `PERMISSION_DIAGNOSTIC_TEST_MISSING_${marker.replace(/[^A-Z0-9]+/gi, '_').toUpperCase()}`);
+}
+
 for (const forbidden of [
   /\.setProperty\s*\(/,
   /\.deleteProperty\s*\(/,
@@ -404,6 +468,7 @@ for (const pattern of [
   assertNotMatches(runtime, pattern, 'D7_E_OR_D6J_MUTATION_ENTRYPOINT_REACHABLE');
 }
 
+assertNotMatches(manifest, /cloud-platform/i, 'CLOUD_PLATFORM_SCOPE_PRESENT_IN_MANIFEST');
 assertNotMatches(unitTest, /gas\.call\(['"]runD7E3IExactProductionConflictForensicReadOnly['"]/, 'PUBLIC_PRODUCTION_ENTRYPOINT_CALLED_BY_TEST');
 assertNotMatches(runtime, /error\.message|JSON\.stringify\(error\)|logger\.log\(error/i, 'RAW_ADAPTER_ERROR_LOGGING');
 assertNotMatches(runtime, /candidate[sA-Za-z0-9_]*\s*\[\s*0\s*\]/, 'FIRST_RESULT_SELECTION_AFTER_CANDIDATE_MATCH');

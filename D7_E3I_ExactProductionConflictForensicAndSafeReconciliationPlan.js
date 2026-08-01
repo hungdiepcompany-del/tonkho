@@ -41,6 +41,29 @@ const D7_E3I_FINDING_SEVERITY_ = Object.freeze({
   INFO: 5
 });
 
+const D7_E3I_PERMISSION_REASON_CODES_ = Object.freeze({
+  READ_OK: 'READ_OK',
+  OAUTH_SCOPE_MISSING: 'OAUTH_SCOPE_MISSING',
+  OAUTH_REAUTHORIZATION_REQUIRED: 'OAUTH_REAUTHORIZATION_REQUIRED',
+  RESOURCE_ACCESS_DENIED: 'RESOURCE_ACCESS_DENIED',
+  EXECUTION_IDENTITY_MISMATCH: 'EXECUTION_IDENTITY_MISMATCH',
+  FIRESTORE_AUTHORIZATION_FAILED: 'FIRESTORE_AUTHORIZATION_FAILED',
+  FIRESTORE_PROJECT_OR_DATABASE_MISMATCH: 'FIRESTORE_PROJECT_OR_DATABASE_MISMATCH',
+  INVALID_EXACT_RESOURCE_REFERENCE: 'INVALID_EXACT_RESOURCE_REFERENCE',
+  TRANSPORT_FAILED: 'TRANSPORT_FAILED',
+  RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+  ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE: 'ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE',
+  UNKNOWN_READ_BLOCKER: 'UNKNOWN_READ_BLOCKER'
+});
+
+const D7_E3I_MINIMUM_SCOPE_MATRIX_ = Object.freeze({
+  GMAIL: 'GMAIL_EXACT_MESSAGE_READ_ONLY',
+  DRIVE_XML: 'DRIVE_EXACT_FILE_METADATA_AND_CONTENT_READ_ONLY',
+  DRIVE_PDF: 'DRIVE_EXACT_FILE_METADATA_AND_CONTENT_READ_ONLY',
+  SHEETS: 'SHEETS_EXACT_ROW_READ_ONLY',
+  FIRESTORE: 'FIRESTORE_EXACT_DOCUMENT_READ_ONLY'
+});
+
 function runD7E3IExactProductionConflictForensicReadOnly() {
   const runner = createD7E3IExactProductionConflictForensicRunner_();
   return runner.run();
@@ -112,6 +135,7 @@ function createD7E3IExactProductionConflictForensicRunner_(dependencies) {
       firestore,
       concurrency
     };
+    result.PERMISSION_DIAGNOSTICS = createD7E3IPermissionDiagnostics_(analysis);
     result.PRIMARY_CLASSIFICATION = classifyD7E3IPrimary_(analysis, findings);
     result.FINDINGS = sortD7E3IFindings_(findings);
     result.RECONCILIATION_PLAN = buildD7E3IReconciliationPlan_(result.PRIMARY_CLASSIFICATION, result.FINDINGS, analysis);
@@ -138,7 +162,8 @@ function createD7E3IBaseResult_(createdAt) {
       REPAIR_EXECUTION: 'NONE',
       RECONCILIATION_WRITE: 'NONE',
       DEPLOYMENT: 'NONE',
-      LIMITS: D7_E3I_LIMITS_
+      LIMITS: D7_E3I_LIMITS_,
+      MINIMUM_SCOPE_MATRIX: D7_E3I_MINIMUM_SCOPE_MATRIX_
     },
     CONFIGURATION: {},
     BEFORE_SNAPSHOT: {},
@@ -147,6 +172,7 @@ function createD7E3IBaseResult_(createdAt) {
     DRIVE_PDF_EVIDENCE: {},
     SHEETS_EVIDENCE: {},
     FIRESTORE_EVIDENCE: {},
+    PERMISSION_DIAGNOSTICS: {},
     AFTER_SNAPSHOT: {},
     CONCURRENT_CHANGE_STATUS: {},
     PRIMARY_CLASSIFICATION: 'FORENSICS_INCOMPLETE',
@@ -261,6 +287,7 @@ function safeD7E3IRead_(label, fn, args, findings) {
 
 function analyzeD7E3IGmailEvidence_(raw, config, findings) {
   const input = raw || {};
+  const permissionStatus = createD7E3IPermissionStatus_('GMAIL', input, input.status);
   const candidateCount = numberD7E3I_(input.candidateCount);
   const messageCount = numberD7E3I_(input.messageCount, candidateCount);
   const xmlAttachmentCount = numberD7E3I_(input.xmlAttachmentCount);
@@ -280,7 +307,7 @@ function analyzeD7E3IGmailEvidence_(raw, config, findings) {
     reasonCode = 'GMAIL_READ_BLOCKED';
     confidence = 'UNAVAILABLE';
     incomplete = true;
-    addD7E3IFinding_(findings, 'FORENSIC_READ_PERMISSION_BLOCKER', 'BLOCKER', 'GMAIL', 'UNAVAILABLE', { readStatus: input.status || 'READ_BLOCKED' });
+    addD7E3IReadIssueFinding_(findings, 'GMAIL', permissionStatus, { readStatus: input.status || 'READ_BLOCKED' });
   } else if (candidateCount === 0 || messageCount === 0) {
     classification = 'GMAIL_CANDIDATE_ABSENT';
     reasonCode = 'GMAIL_CANDIDATE_ABSENT';
@@ -327,6 +354,12 @@ function analyzeD7E3IGmailEvidence_(raw, config, findings) {
     pdfMimeTypeStatus: normalizeD7E3IMimeStatus_(input.pdfMimeTypeStatus || input.pdfMimeType),
     xmlByteLength: numberD7E3I_(input.xmlByteLength, byteLengthD7E3I_(input.xmlBytes)),
     pdfByteLength: numberD7E3I_(input.pdfByteLength, byteLengthD7E3I_(input.pdfBytes)),
+    permissionStatus: permissionStatus.status,
+    permissionReasonCode: permissionStatus.reasonCode,
+    safeErrorClass: permissionStatus.safeErrorClass,
+    authorizationType: permissionStatus.authorizationType,
+    resourceAccessStatus: permissionStatus.resourceAccessStatus,
+    executionIdentityStatus: permissionStatus.executionIdentityStatus,
     sourceXmlHashMatch: xmlHashMatch,
     sourcePdfHashMatch: pdfHashMatch,
     sourceXmlHashPrefix: hashPrefixD7E3I_(xmlHash),
@@ -341,7 +374,7 @@ function analyzeD7E3IGmailEvidence_(raw, config, findings) {
     })
   });
 
-  return { publicResult: publicResult, classification: classification, conflict: conflict, incomplete: incomplete, readCallCount: boundedCountD7E3I_(input.readCallCount, 1) };
+  return { publicResult: publicResult, classification: classification, conflict: conflict, incomplete: incomplete, permissionStatus: permissionStatus, readCallCount: boundedCountD7E3I_(input.readCallCount, 1) };
 }
 
 function analyzeD7E3IDriveEvidence_(artifactType, raw, config, findings) {
@@ -354,6 +387,11 @@ function analyzeD7E3IDriveEvidence_(artifactType, raw, config, findings) {
   const blobByteLength = numberD7E3I_(input.blobByteLength, bytesPresent ? byteLengthD7E3I_(rawBytes) : -1);
   const metadataReadStatus = normalizeD7E3IDriveReadStatus_(input.metadataReadStatus, input.status);
   const contentReadStatus = normalizeD7E3IDriveReadStatus_(input.contentReadStatus, input.status);
+  const permissionStatus = createD7E3IPermissionStatus_(
+    'DRIVE_' + upperType,
+    input,
+    isReadBlockedD7E3I_(metadataReadStatus) ? metadataReadStatus : (isReadBlockedD7E3I_(contentReadStatus) ? contentReadStatus : input.status)
+  );
   const metadataSizeExplicitlyObserved = input.metadataSizeExplicitlyObserved === true && metadataSize >= 0;
   const contentBytesExplicitlyObserved = input.contentBytesExplicitlyObserved === true && bytesPresent;
   const metadataReadExplicitlySucceeded = metadataReadStatus === 'READ_OK' && metadataSizeExplicitlyObserved;
@@ -387,12 +425,12 @@ function analyzeD7E3IDriveEvidence_(artifactType, raw, config, findings) {
     classification = 'METADATA_READ_BLOCKED';
     reasonCode = 'METADATA_READ_BLOCKED';
     incomplete = true;
-    addD7E3IFinding_(findings, 'FORENSIC_READ_PERMISSION_BLOCKER', 'BLOCKER', 'DRIVE_' + upperType, 'UNAVAILABLE', { artifactType: upperType, metadataReadStatus: metadataReadStatus });
+    addD7E3IReadIssueFinding_(findings, 'DRIVE_' + upperType, permissionStatus, { artifactType: upperType, metadataReadStatus: metadataReadStatus });
   } else if (isReadBlockedD7E3I_(contentReadStatus)) {
     classification = 'CONTENT_READ_BLOCKED';
     reasonCode = 'CONTENT_READ_BLOCKED';
     incomplete = true;
-    addD7E3IFinding_(findings, 'FORENSIC_READ_PERMISSION_BLOCKER', 'BLOCKER', 'DRIVE_' + upperType, 'UNAVAILABLE', { artifactType: upperType, contentReadStatus: contentReadStatus });
+    addD7E3IReadIssueFinding_(findings, 'DRIVE_' + upperType, permissionStatus, { artifactType: upperType, contentReadStatus: contentReadStatus });
   } else if (contentReadStatus === 'READ_OK' && !contentBytesExplicitlyObserved) {
     if (blobByteLength === 0) {
       classification = 'ZERO_BYTE_UNPROVEN';
@@ -517,6 +555,12 @@ function analyzeD7E3IDriveEvidence_(artifactType, raw, config, findings) {
     metadataSize: metadataSize,
     blobByteLength: blobByteLength,
     mimeTypeStatus: input.mimeTypeStatus || normalizeD7E3IMimeStatus_(input.mimeType),
+    permissionStatus: permissionStatus.status,
+    permissionReasonCode: permissionStatus.reasonCode,
+    safeErrorClass: permissionStatus.safeErrorClass,
+    authorizationType: permissionStatus.authorizationType,
+    resourceAccessStatus: permissionStatus.resourceAccessStatus,
+    executionIdentityStatus: permissionStatus.executionIdentityStatus,
     providerChecksumStatus: input.providerChecksumStatus || 'UNAVAILABLE',
     contentSha256ComputationStatus: shaStatus,
     sourceHashMatch: sourceHashMatch,
@@ -540,6 +584,7 @@ function analyzeD7E3IDriveEvidence_(artifactType, raw, config, findings) {
     classification: classification,
     conflict: conflict,
     incomplete: incomplete,
+    permissionStatus: permissionStatus,
     readerFallbackSuspected: readerFallbackSuspected,
     actualZeroByte: classification === 'ACTUAL_ZERO_BYTE_FILE',
     contentMismatch: classification === 'CONTENT_HASH_MISMATCH' || classification === 'METADATA_CONTENT_SIZE_MISMATCH',
@@ -549,6 +594,7 @@ function analyzeD7E3IDriveEvidence_(artifactType, raw, config, findings) {
 
 function analyzeD7E3ISheetsEvidence_(raw, config, findings) {
   const input = raw || {};
+  const permissionStatus = createD7E3IPermissionStatus_('SHEETS', input, input.status);
   const canonicalRowCount = numberD7E3I_(input.canonicalRowCount);
   const exactIdentityMatchCount = numberD7E3I_(input.exactIdentityMatchCount);
   const conflictingIdentityCount = numberD7E3I_(input.conflictingIdentityCount);
@@ -565,7 +611,7 @@ function analyzeD7E3ISheetsEvidence_(raw, config, findings) {
     classification = 'SHEET_READ_BLOCKED';
     reasonCode = 'SHEET_READ_BLOCKED';
     incomplete = true;
-    addD7E3IFinding_(findings, 'FORENSIC_READ_PERMISSION_BLOCKER', 'BLOCKER', 'SHEETS', 'UNAVAILABLE', { readStatus: input.status || 'READ_BLOCKED' });
+    addD7E3IReadIssueFinding_(findings, 'SHEETS', permissionStatus, { readStatus: input.status || 'READ_BLOCKED' });
   } else if (input.boundedOverflow || canonicalRowCount > D7_E3I_LIMITS_.SHEET_CANONICAL_ROW_LIMIT) {
     classification = 'SHEET_ROW_AMBIGUOUS';
     reasonCode = 'BOUNDED_QUERY_OVERFLOW';
@@ -620,6 +666,12 @@ function analyzeD7E3ISheetsEvidence_(raw, config, findings) {
 
   const publicResult = evidenceD7E3IClaim_(classification, confidence, input.evidenceSource || 'INJECTED_SHEETS_READ_ONLY_ADAPTER', reasonCode, {
     schemaValidationStatus: input.schemaValidationStatus || 'NOT_EVALUATED',
+    permissionStatus: permissionStatus.status,
+    permissionReasonCode: permissionStatus.reasonCode,
+    safeErrorClass: permissionStatus.safeErrorClass,
+    authorizationType: permissionStatus.authorizationType,
+    resourceAccessStatus: permissionStatus.resourceAccessStatus,
+    executionIdentityStatus: permissionStatus.executionIdentityStatus,
     canonicalRowCount: canonicalRowCount,
     exactIdentityMatchCount: exactIdentityMatchCount,
     conflictingIdentityCount: conflictingIdentityCount,
@@ -646,6 +698,7 @@ function analyzeD7E3ISheetsEvidence_(raw, config, findings) {
     classification: classification,
     conflict: conflict,
     incomplete: incomplete,
+    permissionStatus: permissionStatus,
     rowExact: classification === 'SHEET_ROW_EXACT',
     attributionStatus: attributionStatus,
     attributionConflict: attribution.conflictingAttributionEvidencePresent,
@@ -724,6 +777,7 @@ function deriveD7E3ISheetAttribution_(input) {
 
 function analyzeD7E3IFirestoreEvidence_(raw, config, findings) {
   const input = raw || {};
+  const permissionStatus = createD7E3IPermissionStatus_('FIRESTORE', input, input.status);
   const attachmentRecordCount = numberD7E3I_(input.attachmentRecordCount);
   const auditEventCount = numberD7E3I_(input.auditEventCount);
   const jobState = input.jobState || 'UNAVAILABLE';
@@ -741,7 +795,7 @@ function analyzeD7E3IFirestoreEvidence_(raw, config, findings) {
     classification = 'FIRESTORE_READ_BLOCKED';
     reasonCode = 'FIRESTORE_READ_BLOCKED';
     incomplete = true;
-    addD7E3IFinding_(findings, 'FORENSIC_READ_PERMISSION_BLOCKER', 'BLOCKER', 'FIRESTORE', 'UNAVAILABLE', { readStatus: input.status || 'READ_BLOCKED' });
+    addD7E3IReadIssueFinding_(findings, 'FIRESTORE', permissionStatus, { readStatus: input.status || 'READ_BLOCKED' });
   } else if (input.boundedOverflow) {
     classification = 'FIRESTORE_FORENSICS_INCOMPLETE';
     reasonCode = 'BOUNDED_QUERY_OVERFLOW';
@@ -816,6 +870,12 @@ function analyzeD7E3IFirestoreEvidence_(raw, config, findings) {
 
   const publicResult = evidenceD7E3IClaim_(classification, confidence, input.evidenceSource || 'INJECTED_FIRESTORE_READ_ONLY_ADAPTER', reasonCode, {
     exactPathContract: 'YES',
+    permissionStatus: permissionStatus.status,
+    permissionReasonCode: permissionStatus.reasonCode,
+    safeErrorClass: permissionStatus.safeErrorClass,
+    authorizationType: permissionStatus.authorizationType,
+    resourceAccessStatus: permissionStatus.resourceAccessStatus,
+    executionIdentityStatus: permissionStatus.executionIdentityStatus,
     jobExists: boolStatusD7E3I_(input.jobExists),
     jobIdentityStatus: input.jobIdentityStatus || 'UNAVAILABLE',
     jobIdentityExact: boolStatusD7E3I_(jobIdentityExact),
@@ -854,6 +914,7 @@ function analyzeD7E3IFirestoreEvidence_(raw, config, findings) {
     classification: classification,
     conflict: conflict,
     incomplete: incomplete,
+    permissionStatus: permissionStatus,
     jobState: jobState,
     jobCompleted: classification === 'FIRESTORE_STATE_CONSISTENT',
     jobIdentityExact: jobIdentityExact,
@@ -1081,6 +1142,160 @@ function finalD7E3IStatus_(primaryClassification, findings) {
   return 'REVIEW_REQUIRED_D7_E3I_' + primaryClassification;
 }
 
+function createD7E3IPermissionDiagnostics_(analysis) {
+  return sanitizeD7E3IObject_({
+    GMAIL_PERMISSION_STATUS: publicD7E3IPermissionStatus_(analysis.gmail.permissionStatus),
+    DRIVE_XML_PERMISSION_STATUS: publicD7E3IPermissionStatus_(analysis.driveXml.permissionStatus),
+    DRIVE_PDF_PERMISSION_STATUS: publicD7E3IPermissionStatus_(analysis.drivePdf.permissionStatus),
+    SHEETS_PERMISSION_STATUS: publicD7E3IPermissionStatus_(analysis.sheets.permissionStatus),
+    FIRESTORE_PERMISSION_STATUS: publicD7E3IPermissionStatus_(analysis.firestore.permissionStatus),
+    MINIMUM_SCOPE_MATRIX: D7_E3I_MINIMUM_SCOPE_MATRIX_,
+    BROAD_SCOPE_ADDITION_REQUIRED: 'NO',
+    CLOUD_PLATFORM_SCOPE_REQUIRED: 'NO',
+    PRODUCTION_PERMISSION_PROBE_EXECUTED: 'NO'
+  });
+}
+
+function publicD7E3IPermissionStatus_(permissionStatus) {
+  const safe = permissionStatus || createD7E3IPermissionStatus_('UNKNOWN', {}, 'UNKNOWN_READ_BLOCKER');
+  return {
+    status: safe.status,
+    reasonCode: safe.reasonCode,
+    safeErrorClass: safe.safeErrorClass,
+    authorizationType: safe.authorizationType,
+    resourceAccessStatus: safe.resourceAccessStatus,
+    executionIdentityStatus: safe.executionIdentityStatus
+  };
+}
+
+function createD7E3IPermissionStatus_(channel, input, readStatus) {
+  const safeChannel = sanitizeFindingCodesD7E3I_([channel || 'UNKNOWN'])[0] || 'UNKNOWN';
+  const reasonCode = normalizeD7E3IPermissionReason_(safeChannel, input || {}, readStatus);
+  return {
+    status: statusForD7E3IPermissionReason_(reasonCode),
+    reasonCode: reasonCode,
+    safeErrorClass: safeErrorClassForD7E3IPermissionReason_(reasonCode),
+    authorizationType: normalizeD7E3IAuthorizationType_(safeChannel, input && input.authorizationType),
+    resourceAccessStatus: normalizeD7E3IResourceAccessStatus_(reasonCode, input && input.resourceAccessStatus),
+    executionIdentityStatus: normalizeD7E3IExecutionIdentityStatus_(reasonCode, input && input.executionIdentityStatus)
+  };
+}
+
+function normalizeD7E3IPermissionReason_(channel, input, readStatus) {
+  const candidateValues = [
+    input.permissionReasonCode,
+    input.permissionStatus && input.permissionStatus.reasonCode,
+    input.permissionStatus,
+    input.safeErrorClass,
+    input.reasonCode,
+    input.errorCode,
+    input.readErrorCode,
+    input.metadataReadErrorCode,
+    input.contentReadErrorCode,
+    input.metadataReadStatus,
+    input.contentReadStatus,
+    readStatus,
+    input.status
+  ];
+  const text = sanitizeFindingCodesD7E3I_(candidateValues).join('_');
+  const isFirestore = String(channel || '').indexOf('FIRESTORE') !== -1;
+  if (!text || text === 'READ_OK' || text === 'OK') return D7_E3I_PERMISSION_REASON_CODES_.READ_OK;
+  if (/NOT_FOUND|NO_SUCH|ABSENT|HTTP_?404/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_NOT_FOUND;
+  if (/PROJECT.*MISMATCH|DATABASE.*MISMATCH|WRONG_PROJECT|WRONG_DATABASE|PROJECT_OR_DATABASE/.test(text)) {
+    return D7_E3I_PERMISSION_REASON_CODES_.FIRESTORE_PROJECT_OR_DATABASE_MISMATCH;
+  }
+  if (/REAUTH|AUTHORIZATION_REQUIRED|CONSENT_REQUIRED/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.OAUTH_REAUTHORIZATION_REQUIRED;
+  if (/OAUTH|SCOPE|TOKEN_SCOPE|INSUFFICIENT_SCOPE/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.OAUTH_SCOPE_MISSING;
+  if (/INVALID|MALFORMED|BAD_REQUEST|BAD_REFERENCE|REFERENCE/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.INVALID_EXACT_RESOURCE_REFERENCE;
+  if (/IDENTITY|PRINCIPAL|ACCOUNT_MISMATCH|USER_MISMATCH|EXECUTION_USER/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.EXECUTION_IDENTITY_MISMATCH;
+  if (/TRANSPORT|TIMEOUT|NETWORK|FETCH|HTTP_?5\d\d/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.TRANSPORT_FAILED;
+  if (/DEFAULT_READER_NOT_CONFIGURED|NO_DEFAULT_PRODUCTION_READER|ADAPTER|NOT_CONFIGURED/.test(text)) {
+    return D7_E3I_PERMISSION_REASON_CODES_.ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE;
+  }
+  if (isFirestore && /PERMISSION|DENIED|FORBIDDEN|HTTP_?403|AUTH|IAM/.test(text)) {
+    return D7_E3I_PERMISSION_REASON_CODES_.FIRESTORE_AUTHORIZATION_FAILED;
+  }
+  if (/ACCESS|DENIED|FORBIDDEN|PERMISSION|HTTP_?403/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_ACCESS_DENIED;
+  if (/BLOCKED|ERROR|FAILED|UNKNOWN/.test(text)) return D7_E3I_PERMISSION_REASON_CODES_.UNKNOWN_READ_BLOCKER;
+  return D7_E3I_PERMISSION_REASON_CODES_.READ_OK;
+}
+
+function statusForD7E3IPermissionReason_(reasonCode) {
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.READ_OK) return 'READ_OK';
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_NOT_FOUND) return 'RESOURCE_NOT_FOUND';
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.TRANSPORT_FAILED) return 'TRANSPORT_FAILED';
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE) return 'READ_BLOCKED';
+  return 'READ_BLOCKED';
+}
+
+function safeErrorClassForD7E3IPermissionReason_(reasonCode) {
+  const map = {};
+  map[D7_E3I_PERMISSION_REASON_CODES_.READ_OK] = 'NONE';
+  map[D7_E3I_PERMISSION_REASON_CODES_.OAUTH_SCOPE_MISSING] = 'OAUTH';
+  map[D7_E3I_PERMISSION_REASON_CODES_.OAUTH_REAUTHORIZATION_REQUIRED] = 'OAUTH';
+  map[D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_ACCESS_DENIED] = 'RESOURCE_ACCESS';
+  map[D7_E3I_PERMISSION_REASON_CODES_.EXECUTION_IDENTITY_MISMATCH] = 'IDENTITY';
+  map[D7_E3I_PERMISSION_REASON_CODES_.FIRESTORE_AUTHORIZATION_FAILED] = 'AUTHORIZATION';
+  map[D7_E3I_PERMISSION_REASON_CODES_.FIRESTORE_PROJECT_OR_DATABASE_MISMATCH] = 'CONFIGURATION';
+  map[D7_E3I_PERMISSION_REASON_CODES_.INVALID_EXACT_RESOURCE_REFERENCE] = 'CONFIGURATION';
+  map[D7_E3I_PERMISSION_REASON_CODES_.TRANSPORT_FAILED] = 'TRANSPORT';
+  map[D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_NOT_FOUND] = 'NOT_FOUND';
+  map[D7_E3I_PERMISSION_REASON_CODES_.ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE] = 'ADAPTER_DIAGNOSTIC';
+  map[D7_E3I_PERMISSION_REASON_CODES_.UNKNOWN_READ_BLOCKER] = 'UNKNOWN';
+  return map[reasonCode] || 'UNKNOWN';
+}
+
+function normalizeD7E3IAuthorizationType_(channel, value) {
+  const explicit = sanitizeFindingCodesD7E3I_([value])[0];
+  if (explicit) return explicit;
+  if (channel === 'GMAIL') return 'OAUTH_AND_MAILBOX_ACCESS';
+  if (channel === 'DRIVE_XML' || channel === 'DRIVE_PDF') return 'OAUTH_AND_DRIVE_FILE_ACL';
+  if (channel === 'SHEETS') return 'OAUTH_AND_SPREADSHEET_ACL';
+  if (channel === 'FIRESTORE') return 'OAUTH_DATASTORE_AND_IAM';
+  return 'UNKNOWN';
+}
+
+function normalizeD7E3IResourceAccessStatus_(reasonCode, value) {
+  const explicit = sanitizeFindingCodesD7E3I_([value])[0];
+  if (explicit) return explicit;
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.READ_OK) return 'ACCESS_GRANTED';
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_NOT_FOUND) return 'RESOURCE_NOT_FOUND';
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_ACCESS_DENIED) return 'ACCESS_DENIED_OR_UNPROVEN';
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.FIRESTORE_AUTHORIZATION_FAILED) return 'IAM_OR_API_DENIED_OR_UNPROVEN';
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE) return 'ADAPTER_NOT_PROVEN';
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.TRANSPORT_FAILED) return 'NOT_EVALUATED_TRANSPORT_FAILED';
+  return 'NOT_PROVEN';
+}
+
+function normalizeD7E3IExecutionIdentityStatus_(reasonCode, value) {
+  const explicit = sanitizeFindingCodesD7E3I_([value])[0];
+  if (explicit) return explicit;
+  if (reasonCode === D7_E3I_PERMISSION_REASON_CODES_.EXECUTION_IDENTITY_MISMATCH) return 'EXECUTION_IDENTITY_MISMATCH';
+  return 'IDENTITY_UNAVAILABLE';
+}
+
+function isD7E3IPermissionBlockerReason_(reasonCode) {
+  return reasonCode === D7_E3I_PERMISSION_REASON_CODES_.OAUTH_SCOPE_MISSING ||
+    reasonCode === D7_E3I_PERMISSION_REASON_CODES_.OAUTH_REAUTHORIZATION_REQUIRED ||
+    reasonCode === D7_E3I_PERMISSION_REASON_CODES_.RESOURCE_ACCESS_DENIED ||
+    reasonCode === D7_E3I_PERMISSION_REASON_CODES_.EXECUTION_IDENTITY_MISMATCH ||
+    reasonCode === D7_E3I_PERMISSION_REASON_CODES_.FIRESTORE_AUTHORIZATION_FAILED ||
+    reasonCode === D7_E3I_PERMISSION_REASON_CODES_.FIRESTORE_PROJECT_OR_DATABASE_MISMATCH;
+}
+
+function addD7E3IReadIssueFinding_(findings, system, permissionStatus, details) {
+  const safeDetails = Object.assign({}, details || {}, publicD7E3IPermissionStatus_(permissionStatus));
+  const isPermission = isD7E3IPermissionBlockerReason_(permissionStatus.reasonCode);
+  addD7E3IFinding_(
+    findings,
+    isPermission ? 'FORENSIC_READ_PERMISSION_BLOCKER' : 'FORENSIC_EVIDENCE_INCOMPLETE',
+    'BLOCKER',
+    system,
+    'UNAVAILABLE',
+    safeDetails
+  );
+}
+
 function addD7E3IFinding_(findings, code, severity, system, confidence, safeDetails) {
   findings.push({
     code: code,
@@ -1126,6 +1341,8 @@ function emitD7E3ISummary_(logger, result) {
     status: result.FINAL_STATUS,
     classification: result.PRIMARY_CLASSIFICATION,
     findingCodes: result.FINDINGS.map(function codeOnly(finding) { return finding.code; }),
+    channelFindingCodes: result.FINDINGS.map(function channelCode(finding) { return finding.code + ':' + finding.system; }),
+    permissionDiagnostics: result.PERMISSION_DIAGNOSTICS,
     safeCounters: result.SAFETY_COUNTS
   }));
 }

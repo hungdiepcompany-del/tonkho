@@ -202,6 +202,28 @@ function assertFinding(result, code) {
   assert.ok(findingCodes(result).includes(code), `missing ${code}`);
 }
 
+function assertNoFinding(result, code) {
+  assert.equal(findingCodes(result).includes(code), false, `unexpected ${code}`);
+}
+
+function permissionDiagnostic(result, key) {
+  assert.ok(result.PERMISSION_DIAGNOSTICS, 'PERMISSION_DIAGNOSTICS_MISSING');
+  assert.ok(result.PERMISSION_DIAGNOSTICS[key], `${key}_MISSING`);
+  return result.PERMISSION_DIAGNOSTICS[key];
+}
+
+function assertPermissionReason(result, key, expectedReason, expectedStatus = 'READ_BLOCKED') {
+  const permission = permissionDiagnostic(result, key);
+  assert.equal(permission.reasonCode, expectedReason);
+  assert.equal(permission.status, expectedStatus);
+  return permission;
+}
+
+function parseSummaryLog(logs) {
+  assert.ok(logs.length > 0, 'SUMMARY_LOG_MISSING');
+  return JSON.parse(logs[logs.length - 1]);
+}
+
 test('1. metadata and public entrypoint contract are canonical', () => {
   assert.equal(TEST_METADATA.runtimeMutation, 'NONE');
   assert.equal(gas.exports.D7_E3I_PHASE_, 'D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_AND_SAFE_RECONCILIATION_PLAN');
@@ -857,4 +879,226 @@ test('63. state evaluator PASS cannot bypass failed semantic source validation',
     assert.ok(resolvedTemp.startsWith(path.resolve(os.tmpdir())));
     fs.rmSync(resolvedTemp, { recursive: true, force: true });
   }
+});
+
+test('64. Gmail OAuth scope missing is classified separately from generic permission blocker', () => {
+  const { result } = runScenario({
+    gmail: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'OAUTH_SCOPE_MISSING' }
+  });
+  const permission = assertPermissionReason(result, 'GMAIL_PERMISSION_STATUS', 'OAUTH_SCOPE_MISSING');
+  assert.equal(permission.safeErrorClass, 'OAUTH');
+  assert.equal(permission.authorizationType, 'OAUTH_AND_MAILBOX_ACCESS');
+  assert.equal(result.GMAIL_EVIDENCE.safeDetails.permissionReasonCode, 'OAUTH_SCOPE_MISSING');
+  assertFinding(result, 'FORENSIC_READ_PERMISSION_BLOCKER');
+});
+
+test('65. Gmail mailbox access denied is separated from OAuth scope failure', () => {
+  const { result } = runScenario({
+    gmail: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'RESOURCE_ACCESS_DENIED' }
+  });
+  const permission = assertPermissionReason(result, 'GMAIL_PERMISSION_STATUS', 'RESOURCE_ACCESS_DENIED');
+  assert.equal(permission.safeErrorClass, 'RESOURCE_ACCESS');
+  assert.equal(permission.resourceAccessStatus, 'ACCESS_DENIED_OR_UNPROVEN');
+});
+
+test('66. unavailable default Gmail adapter is a diagnostic defect, not proven OAuth or ACL denial', () => {
+  const { result } = runScenario({
+    gmail: { status: 'READ_BLOCKED', readBlocked: true, reasonCode: 'GMAIL_DEFAULT_READER_NOT_CONFIGURED' }
+  });
+  const permission = assertPermissionReason(result, 'GMAIL_PERMISSION_STATUS', 'ADAPTER_PERMISSION_CLASSIFICATION_INCOMPLETE');
+  assert.equal(permission.safeErrorClass, 'ADAPTER_DIAGNOSTIC');
+  assert.equal(result.FINAL_STATUS, 'BLOCKED_D7_E3I_FORENSICS_INCOMPLETE');
+  assertNoFinding(result, 'FORENSIC_READ_PERMISSION_BLOCKER');
+});
+
+test('67. Drive XML OAuth scope missing is channel-attributed', () => {
+  const { result } = runScenario({
+    driveXml: { metadataReadStatus: 'READ_BLOCKED', permissionReasonCode: 'OAUTH_SCOPE_MISSING', bytes: undefined }
+  });
+  const permission = assertPermissionReason(result, 'DRIVE_XML_PERMISSION_STATUS', 'OAUTH_SCOPE_MISSING');
+  assert.equal(permission.authorizationType, 'OAUTH_AND_DRIVE_FILE_ACL');
+  assert.equal(result.DRIVE_XML_EVIDENCE.safeDetails.permissionReasonCode, 'OAUTH_SCOPE_MISSING');
+});
+
+test('68. Drive XML file ACL denial is channel-attributed', () => {
+  const { result } = runScenario({
+    driveXml: { contentReadStatus: 'PERMISSION_DENIED', permissionReasonCode: 'RESOURCE_ACCESS_DENIED', bytes: undefined }
+  });
+  const permission = assertPermissionReason(result, 'DRIVE_XML_PERMISSION_STATUS', 'RESOURCE_ACCESS_DENIED');
+  assert.equal(permission.safeErrorClass, 'RESOURCE_ACCESS');
+  assertFinding(result, 'FORENSIC_READ_PERMISSION_BLOCKER');
+});
+
+test('69. Drive PDF file ACL denial is distinct from Drive XML diagnostics', () => {
+  const { result } = runScenario({
+    drivePdf: { metadataReadStatus: 'PERMISSION_DENIED', permissionReasonCode: 'RESOURCE_ACCESS_DENIED', bytes: undefined }
+  });
+  assertPermissionReason(result, 'DRIVE_PDF_PERMISSION_STATUS', 'RESOURCE_ACCESS_DENIED');
+  assertPermissionReason(result, 'DRIVE_XML_PERMISSION_STATUS', 'READ_OK', 'READ_OK');
+});
+
+test('70. Sheets OAuth scope missing is separated from spreadsheet ACL failure', () => {
+  const { result } = runScenario({
+    sheets: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'OAUTH_SCOPE_MISSING' }
+  });
+  const permission = assertPermissionReason(result, 'SHEETS_PERMISSION_STATUS', 'OAUTH_SCOPE_MISSING');
+  assert.equal(permission.authorizationType, 'OAUTH_AND_SPREADSHEET_ACL');
+});
+
+test('71. spreadsheet access denied is a resource-access blocker', () => {
+  const { result } = runScenario({
+    sheets: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'RESOURCE_ACCESS_DENIED' }
+  });
+  const permission = assertPermissionReason(result, 'SHEETS_PERMISSION_STATUS', 'RESOURCE_ACCESS_DENIED');
+  assert.equal(permission.resourceAccessStatus, 'ACCESS_DENIED_OR_UNPROVEN');
+});
+
+test('72. Firestore IAM or API authorization failure is classified as Firestore authorization', () => {
+  const { result } = runScenario({
+    firestore: { status: 'PERMISSION_DENIED', readBlocked: true, permissionReasonCode: 'FIRESTORE_AUTHORIZATION_FAILED' }
+  });
+  const permission = assertPermissionReason(result, 'FIRESTORE_PERMISSION_STATUS', 'FIRESTORE_AUTHORIZATION_FAILED');
+  assert.equal(permission.authorizationType, 'OAUTH_DATASTORE_AND_IAM');
+  assert.equal(permission.resourceAccessStatus, 'IAM_OR_API_DENIED_OR_UNPROVEN');
+});
+
+test('73. Firestore project or database mismatch is not collapsed into Gmail or Sheets permission', () => {
+  const { result } = runScenario({
+    firestore: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'FIRESTORE_PROJECT_OR_DATABASE_MISMATCH' }
+  });
+  assertPermissionReason(result, 'FIRESTORE_PERMISSION_STATUS', 'FIRESTORE_PROJECT_OR_DATABASE_MISMATCH');
+  assertPermissionReason(result, 'GMAIL_PERMISSION_STATUS', 'READ_OK', 'READ_OK');
+  assertPermissionReason(result, 'SHEETS_PERMISSION_STATUS', 'READ_OK', 'READ_OK');
+});
+
+test('74. Firestore exact document not found is evidence absence, not permission denied', () => {
+  const { result } = runScenario({
+    firestore: {
+      status: 'NOT_FOUND',
+      permissionReasonCode: 'RESOURCE_NOT_FOUND',
+      jobExists: false,
+      jobState: 'ABSENT',
+      commitPlanStatus: 'ABSENT',
+      reconciliationReportStatus: 'ABSENT'
+    }
+  });
+  assertPermissionReason(result, 'FIRESTORE_PERMISSION_STATUS', 'RESOURCE_NOT_FOUND', 'RESOURCE_NOT_FOUND');
+  assert.equal(result.FIRESTORE_EVIDENCE.status, 'FIRESTORE_JOB_ABSENT');
+  assertNoFinding(result, 'FORENSIC_READ_PERMISSION_BLOCKER');
+});
+
+test('75. transport failure is diagnostic incomplete, not a permission-denied finding', () => {
+  const { result } = runScenario({
+    drivePdf: { metadataReadStatus: 'TRANSPORT_FAILED', contentReadStatus: 'UNAVAILABLE', permissionReasonCode: 'TRANSPORT_FAILED', bytes: undefined }
+  });
+  const permission = assertPermissionReason(result, 'DRIVE_PDF_PERMISSION_STATUS', 'TRANSPORT_FAILED', 'TRANSPORT_FAILED');
+  assert.equal(permission.safeErrorClass, 'TRANSPORT');
+  assertNoFinding(result, 'FORENSIC_READ_PERMISSION_BLOCKER');
+  assertFinding(result, 'FORENSIC_EVIDENCE_INCOMPLETE');
+});
+
+test('76. execution identity mismatch is a distinct blocker category', () => {
+  const { result } = runScenario({
+    sheets: {
+      status: 'READ_BLOCKED',
+      readBlocked: true,
+      permissionReasonCode: 'EXECUTION_IDENTITY_MISMATCH',
+      executionIdentityStatus: 'EXECUTION_IDENTITY_MISMATCH'
+    }
+  });
+  const permission = assertPermissionReason(result, 'SHEETS_PERMISSION_STATUS', 'EXECUTION_IDENTITY_MISMATCH');
+  assert.equal(permission.safeErrorClass, 'IDENTITY');
+  assert.equal(permission.executionIdentityStatus, 'EXECUTION_IDENTITY_MISMATCH');
+});
+
+test('77. unknown adapter read error fails closed without fabricating OAuth or ACL cause', () => {
+  const { result } = runScenario({
+    gmail: { status: 'READ_BLOCKED', readBlocked: true, reasonCode: 'SYNTHETIC_UNKNOWN_FAILURE' }
+  });
+  const permission = assertPermissionReason(result, 'GMAIL_PERMISSION_STATUS', 'UNKNOWN_READ_BLOCKER');
+  assert.equal(permission.safeErrorClass, 'UNKNOWN');
+  assertNoFinding(result, 'FORENSIC_READ_PERMISSION_BLOCKER');
+  assert.equal(result.FINAL_STATUS, 'BLOCKED_D7_E3I_FORENSICS_INCOMPLETE');
+});
+
+test('78. all five channel permission diagnostics are independently visible', () => {
+  const { result } = runScenario({
+    gmail: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'OAUTH_SCOPE_MISSING' },
+    driveXml: { metadataReadStatus: 'PERMISSION_DENIED', permissionReasonCode: 'RESOURCE_ACCESS_DENIED', bytes: undefined },
+    drivePdf: { metadataReadStatus: 'TRANSPORT_FAILED', permissionReasonCode: 'TRANSPORT_FAILED', bytes: undefined },
+    sheets: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'EXECUTION_IDENTITY_MISMATCH' },
+    firestore: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'FIRESTORE_AUTHORIZATION_FAILED' }
+  });
+  assertPermissionReason(result, 'GMAIL_PERMISSION_STATUS', 'OAUTH_SCOPE_MISSING');
+  assertPermissionReason(result, 'DRIVE_XML_PERMISSION_STATUS', 'RESOURCE_ACCESS_DENIED');
+  assertPermissionReason(result, 'DRIVE_PDF_PERMISSION_STATUS', 'TRANSPORT_FAILED', 'TRANSPORT_FAILED');
+  assertPermissionReason(result, 'SHEETS_PERMISSION_STATUS', 'EXECUTION_IDENTITY_MISMATCH');
+  assertPermissionReason(result, 'FIRESTORE_PERMISSION_STATUS', 'FIRESTORE_AUTHORIZATION_FAILED');
+});
+
+test('79. repeated read-permission finding codes retain channel attribution in the summary log', () => {
+  const { logs } = runScenario({
+    gmail: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'OAUTH_SCOPE_MISSING' },
+    sheets: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'RESOURCE_ACCESS_DENIED' },
+    firestore: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'FIRESTORE_AUTHORIZATION_FAILED' }
+  });
+  const summary = parseSummaryLog(logs);
+  assert.ok(summary.findingCodes.filter(code => code === 'FORENSIC_READ_PERMISSION_BLOCKER').length >= 3);
+  assert.ok(summary.channelFindingCodes.includes('FORENSIC_READ_PERMISSION_BLOCKER:GMAIL'));
+  assert.ok(summary.channelFindingCodes.includes('FORENSIC_READ_PERMISSION_BLOCKER:SHEETS'));
+  assert.ok(summary.channelFindingCodes.includes('FORENSIC_READ_PERMISSION_BLOCKER:FIRESTORE'));
+});
+
+test('80. permission diagnostics redact raw user and token-shaped error text', () => {
+  const atSign = String.fromCharCode(64);
+  const rawUser = ['reader', atSign, 'example.invalid'].join('');
+  const rawToken = ['synthetic', '_private', '_marker'].join('');
+  const { result, logs } = runScenario({
+    gmail: {
+      status: 'READ_BLOCKED',
+      readBlocked: true,
+      reasonCode: ['OAuth denied for', rawUser, rawToken].join(' ')
+    }
+  });
+  const serialized = JSON.stringify({ result, logs });
+  assert.doesNotMatch(serialized, /reader@example\.invalid/);
+  assert.doesNotMatch(serialized, /synthetic_private_marker/);
+  assertPermissionReason(result, 'GMAIL_PERMISSION_STATUS', 'OAUTH_SCOPE_MISSING');
+});
+
+test('81. permission blockers still keep every mutation counter at zero', () => {
+  const { result } = runScenario({
+    gmail: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'OAUTH_SCOPE_MISSING' },
+    firestore: { status: 'PERMISSION_DENIED', readBlocked: true, permissionReasonCode: 'FIRESTORE_AUTHORIZATION_FAILED' }
+  });
+  for (const [key, value] of Object.entries(result.SAFETY_COUNTS)) {
+    if (/MUTATION|DESTRUCTIVE|REPAIR|WRITE/.test(key)) assert.equal(value, 0, key);
+  }
+});
+
+test('82. permission diagnostics preserve read-call maxima and do not widen bounded reads', () => {
+  const { result } = runScenario({
+    gmail: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'OAUTH_SCOPE_MISSING', readCallCount: 1 },
+    driveXml: { metadataReadStatus: 'PERMISSION_DENIED', permissionReasonCode: 'RESOURCE_ACCESS_DENIED', readCallCount: 1, bytes: undefined },
+    drivePdf: { metadataReadStatus: 'PERMISSION_DENIED', permissionReasonCode: 'RESOURCE_ACCESS_DENIED', readCallCount: 1, bytes: undefined },
+    sheets: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'RESOURCE_ACCESS_DENIED', readCallCount: 1 },
+    firestore: { status: 'READ_BLOCKED', readBlocked: true, permissionReasonCode: 'FIRESTORE_AUTHORIZATION_FAILED', readCallCount: 1 }
+  });
+  assert.equal(result.SAFETY_COUNTS.READ_ONLY_GMAIL_CALL_COUNT, 1);
+  assert.equal(result.SAFETY_COUNTS.READ_ONLY_DRIVE_CALL_COUNT, 2);
+  assert.equal(result.SAFETY_COUNTS.READ_ONLY_SHEETS_CALL_COUNT, 1);
+  assert.equal(result.SAFETY_COUNTS.READ_ONLY_FIRESTORE_CALL_COUNT, 1);
+  assert.equal(result.SAFETY_COUNTS.READ_CALLS_WITHIN_MAXIMA, 'YES');
+});
+
+test('83. minimum-scope matrix is explicit and Cloud Platform broad scope is not required', () => {
+  const { result } = runScenario();
+  assert.equal(result.PERMISSION_DIAGNOSTICS.MINIMUM_SCOPE_MATRIX.GMAIL, 'GMAIL_EXACT_MESSAGE_READ_ONLY');
+  assert.equal(result.PERMISSION_DIAGNOSTICS.MINIMUM_SCOPE_MATRIX.DRIVE_XML, 'DRIVE_EXACT_FILE_METADATA_AND_CONTENT_READ_ONLY');
+  assert.equal(result.PERMISSION_DIAGNOSTICS.MINIMUM_SCOPE_MATRIX.SHEETS, 'SHEETS_EXACT_ROW_READ_ONLY');
+  assert.equal(result.PERMISSION_DIAGNOSTICS.MINIMUM_SCOPE_MATRIX.FIRESTORE, 'FIRESTORE_EXACT_DOCUMENT_READ_ONLY');
+  assert.equal(result.PERMISSION_DIAGNOSTICS.BROAD_SCOPE_ADDITION_REQUIRED, 'NO');
+  assert.equal(result.PERMISSION_DIAGNOSTICS.CLOUD_PLATFORM_SCOPE_REQUIRED, 'NO');
+  const manifest = fs.readFileSync('appsscript.json', 'utf8');
+  assert.doesNotMatch(manifest, /cloud-platform/);
 });
