@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import { loadGasSource } from '../harness/load-gas-source.mjs';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
+import { evaluateD7E3IPhaseFileState_ } from '../../scripts/checkers/check-d7-e3i-exact-production-conflict-forensic-and-safe-reconciliation-plan.mjs';
 
 const TEST_METADATA = defineTestMetadata({
   testClass: 'REGRESSION_INVARIANT',
@@ -36,6 +40,27 @@ const EXPECTED_XML = hash(XML_BYTES);
 const EXPECTED_PDF = hash(PDF_BYTES);
 const EXPECTED_IDENTITY = hash('synthetic-identity');
 const EXPECTED_ATTACHMENT_SET = hash(`${EXPECTED_XML}:${EXPECTED_PDF}`);
+const D7_E3I_PHASE_FILES = [
+  'D7_E3I_ExactProductionConflictForensicAndSafeReconciliationPlan.js',
+  'tests/unit/d7-e3i-exact-production-conflict-forensic-and-safe-reconciliation-plan.test.mjs',
+  'scripts/checkers/check-d7-e3i-exact-production-conflict-forensic-and-safe-reconciliation-plan.mjs',
+  'docs/phases/D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_AND_SAFE_RECONCILIATION_PLAN.md'
+];
+const D7_E3I_RUNTIME_FILE = D7_E3I_PHASE_FILES[0];
+const D7_E3I_TEST_FILE = D7_E3I_PHASE_FILES[1];
+const D7_E3I_CHECKER_FILE = D7_E3I_PHASE_FILES[2];
+const D7_E3I_DOCS_FILE = D7_E3I_PHASE_FILES[3];
+
+function evaluatePhaseState(overrides = {}) {
+  return evaluateD7E3IPhaseFileState_({
+    statusLines: [],
+    trackedFiles: D7_E3I_PHASE_FILES,
+    existingFiles: D7_E3I_PHASE_FILES,
+    requiredFiles: D7_E3I_PHASE_FILES,
+    allowedDirtyFiles: D7_E3I_PHASE_FILES,
+    ...overrides
+  });
+}
 
 function baseFixture() {
   return {
@@ -721,4 +746,115 @@ test('51. conflicting D7-E and external attribution evidence fails closed', () =
   assert.equal(result.SHEETS_EVIDENCE.status, 'SHEET_FORENSICS_INCOMPLETE');
   assert.equal(result.SHEETS_EVIDENCE.safeDetails.attributionEvidence.conflictingAttributionEvidencePresent, 'YES');
   assert.equal(result.PRIMARY_CLASSIFICATION, 'FORENSICS_INCOMPLETE');
+});
+
+test('52. all required D7-E3I files tracked and clean passes committed-baseline mode', () => {
+  const state = evaluatePhaseState();
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
+});
+
+test('53. runtime and docs clean while checker and test are approved dirty passes mixed corrective mode', () => {
+  const state = evaluatePhaseState({
+    statusLines: [
+      ` M ${D7_E3I_CHECKER_FILE}`,
+      ` M ${D7_E3I_TEST_FILE}`
+    ]
+  });
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'MIXED_APPROVED_CORRECTIVE_STATE');
+});
+
+test('54. runtime source approved modified passes implementation-change mode', () => {
+  const state = evaluatePhaseState({ statusLines: [` M ${D7_E3I_RUNTIME_FILE}`] });
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'APPROVED_LOCAL_IMPLEMENTATION_CHANGES');
+});
+
+test('55. one required D7-E3I file missing fails', () => {
+  const state = evaluatePhaseState({
+    existingFiles: D7_E3I_PHASE_FILES.filter(file => file !== D7_E3I_DOCS_FILE)
+  });
+  assert.equal(state.ok, false);
+  assert.match(state.failureCode, /^MISSING_FILE_/);
+});
+
+test('56. runtime source absent from working copy and HEAD fails', () => {
+  const state = evaluatePhaseState({
+    trackedFiles: D7_E3I_PHASE_FILES.filter(file => file !== D7_E3I_RUNTIME_FILE),
+    existingFiles: D7_E3I_PHASE_FILES.filter(file => file !== D7_E3I_RUNTIME_FILE)
+  });
+  assert.equal(state.ok, false);
+  assert.match(state.failureCode, /^MISSING_FILE_/);
+});
+
+test('57. one approved D7-E3I file staged fails', () => {
+  const state = evaluatePhaseState({ statusLines: [`M  ${D7_E3I_TEST_FILE}`] });
+  assert.equal(state.ok, false);
+  assert.match(state.failureCode, /^STAGED_FILE_/);
+});
+
+test('58. unexpected non-guard modified file fails', () => {
+  const state = evaluatePhaseState({ statusLines: [' M unexpected-runtime.js'] });
+  assert.equal(state.ok, false);
+  assert.match(state.failureCode, /^UNAPPROVED_DIRTY_FILE_/);
+});
+
+test('59. unexpected non-guard untracked file fails', () => {
+  const state = evaluatePhaseState({ statusLines: ['?? unexpected-notes.txt'] });
+  assert.equal(state.ok, false);
+  assert.match(state.failureCode, /^UNAPPROVED_DIRTY_FILE_/);
+});
+
+test('60. exact known guard paths dirty or untracked are ignored', () => {
+  const state = evaluatePhaseState({
+    statusLines: [
+      ' M GUARD.bat',
+      ' M _guard/PROJECT_GUARD.config.bat',
+      ' M _guard/PROJECT_GUARD_ENGINE.bat',
+      ' M _guard/README.md',
+      '?? _guard/deploy/',
+      '?? _guard/deploy/snapshot.txt'
+    ]
+  });
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
+});
+
+test('61. similarly named guard-like path outside exact allowlist fails', () => {
+  const state = evaluatePhaseState({ statusLines: ['?? _guardrail/deploy/snapshot.txt'] });
+  assert.equal(state.ok, false);
+  assert.match(state.failureCode, /^UNAPPROVED_DIRTY_FILE_/);
+});
+
+test('62. runtime source tracked clean is accepted without requiring runtime dirt', () => {
+  const state = evaluatePhaseState({ statusLines: [` M ${D7_E3I_CHECKER_FILE}`] });
+  assert.equal(state.ok, true);
+  assert.equal(state.fileStates[D7_E3I_RUNTIME_FILE], 'TRACKED_CLEAN');
+  assert.notEqual(state.approvedDirtyFiles.includes(D7_E3I_RUNTIME_FILE), true);
+});
+
+test('63. state evaluator PASS cannot bypass failed semantic source validation', () => {
+  const repoRoot = process.cwd();
+  const checkerPath = path.join(repoRoot, D7_E3I_CHECKER_FILE);
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'd7-e3i-checker-'));
+  try {
+    for (const file of D7_E3I_PHASE_FILES) {
+      fs.mkdirSync(path.dirname(path.join(tempRoot, file)), { recursive: true });
+      fs.writeFileSync(path.join(tempRoot, file), 'synthetic placeholder\n', 'utf8');
+    }
+    fs.writeFileSync(path.join(tempRoot, D7_E3I_RUNTIME_FILE), 'function unsafePlaceholder_() {}\n', 'utf8');
+    execFileSync('git', ['init'], { cwd: tempRoot, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.name', 'Checker Test'], { cwd: tempRoot, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.email', ['checker', 'invalid.local'].join('@')], { cwd: tempRoot, stdio: 'ignore' });
+    execFileSync('git', ['add', ...D7_E3I_PHASE_FILES], { cwd: tempRoot, stdio: 'ignore' });
+    execFileSync('git', ['commit', '-m', 'synthetic baseline'], { cwd: tempRoot, stdio: 'ignore' });
+    const result = spawnSync(process.execPath, [checkerPath], { cwd: tempRoot, encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(`${result.stdout}\n${result.stderr}`, /FAILED_GATE=PHASE_MARKER_MISSING/);
+  } finally {
+    const resolvedTemp = path.resolve(tempRoot);
+    assert.ok(resolvedTemp.startsWith(path.resolve(os.tmpdir())));
+    fs.rmSync(resolvedTemp, { recursive: true, force: true });
+  }
 });

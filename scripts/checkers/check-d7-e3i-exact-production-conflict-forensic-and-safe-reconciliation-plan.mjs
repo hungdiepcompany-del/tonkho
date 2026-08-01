@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const root = process.cwd();
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -15,11 +16,13 @@ const files = {
 
 const allowedDirty = new Set(Object.values(files));
 
-function fail(code) {
-  console.error('D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_CHECK=FAIL');
-  console.error(`FAILED_GATE=${code}`);
-  process.exit(1);
-}
+const knownGuardDirtyPaths = new Set(['GUARD.bat']);
+const knownGuardDirtyPrefixes = ['_guard/deploy/'];
+const knownGuardDirtyFiles = new Set([
+  '_guard/PROJECT_GUARD.config.bat',
+  '_guard/PROJECT_GUARD_ENGINE.bat',
+  '_guard/README.md'
+]);
 
 function git(args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).replace(/\s+$/g, '');
@@ -38,21 +41,125 @@ function countFunctionDeclarations(text, name) {
   return [...withoutComments.matchAll(new RegExp(`\\bfunction\\s+${name}\\s*\\(`, 'g'))].length;
 }
 
-for (const file of Object.values(files)) {
-  if (!exists(file)) fail(`MISSING_FILE_${file.replace(/[^A-Z0-9]+/gi, '_').toUpperCase()}`);
+function normalizeStatusPath_(value) {
+  return String(value || '').trim().replace(/\\/g, '/');
 }
 
-const runtime = read(files.runtime);
-const unitTest = read(files.test);
-const docs = read(files.docs);
+function safeCodeFile_(value) {
+  return normalizeStatusPath_(value).replace(/[^A-Z0-9]+/gi, '_').toUpperCase();
+}
 
-assertIncludes(runtime, 'D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_AND_SAFE_RECONCILIATION_PLAN', 'PHASE_MARKER_MISSING');
-assertIncludes(runtime, 'runD7E3IExactProductionConflictForensicReadOnly', 'PUBLIC_ENTRYPOINT_NAME_MISSING');
-assertIncludes(runtime, 'createD7E3IExactProductionConflictForensicRunner_', 'RUNNER_FACTORY_NAME_MISSING');
-if (countFunctionDeclarations(runtime, 'runD7E3IExactProductionConflictForensicReadOnly') !== 1) fail('PUBLIC_ENTRYPOINT_DECLARATION_COUNT_NOT_ONE');
-if (countFunctionDeclarations(runtime, 'createD7E3IExactProductionConflictForensicRunner_') !== 1) fail('RUNNER_DECLARATION_COUNT_NOT_ONE');
+function parseD7E3IStatusLine_(line) {
+  const raw = String(line || '');
+  if (!raw.trim()) return null;
+  const indexStatus = raw[0] || ' ';
+  const worktreeStatus = raw[1] || ' ';
+  const pathText = normalizeStatusPath_(raw.slice(3).split(' -> ').pop());
+  return {
+    raw,
+    indexStatus,
+    worktreeStatus,
+    path: pathText,
+    staged: indexStatus !== ' ' && indexStatus !== '?',
+    untracked: indexStatus === '?' && worktreeStatus === '?',
+    dirty: worktreeStatus !== ' ' || (indexStatus === '?' && worktreeStatus === '?')
+  };
+}
 
-for (const marker of [
+function isKnownGuardDirtyPath_(file) {
+  return knownGuardDirtyPaths.has(file) ||
+    knownGuardDirtyFiles.has(file) ||
+    knownGuardDirtyPrefixes.some(prefix => file.startsWith(prefix));
+}
+
+export function evaluateD7E3IPhaseFileState_({
+  statusLines = [],
+  trackedFiles = [],
+  existingFiles = [],
+  requiredFiles = Object.values(files),
+  allowedDirtyFiles = Object.values(files)
+} = {}) {
+  const required = new Set([...requiredFiles].map(normalizeStatusPath_));
+  const allowed = new Set([...allowedDirtyFiles].map(normalizeStatusPath_));
+  const tracked = new Set([...trackedFiles].map(normalizeStatusPath_));
+  const existing = new Set([...existingFiles].map(normalizeStatusPath_));
+  const parsedStatus = statusLines.map(parseD7E3IStatusLine_).filter(Boolean);
+  const statusByFile = new Map(parsedStatus.map(entry => [entry.path, entry]));
+  const approvedDirtyFiles = [];
+  const fileStates = {};
+
+  for (const file of required) {
+    const status = statusByFile.get(file);
+    const existsInWorkingTree = existing.has(file);
+    const trackedInHead = tracked.has(file);
+    if (!existsInWorkingTree) {
+      return { ok: false, failureCode: `MISSING_FILE_${safeCodeFile_(file)}`, mode: 'INVALID_MISSING_REQUIRED_FILE', fileStates };
+    }
+    if (status?.staged) {
+      return { ok: false, failureCode: `STAGED_FILE_${safeCodeFile_(file)}`, mode: 'INVALID_STAGED_FILE', fileStates };
+    }
+    if (!trackedInHead && !status?.untracked) {
+      return { ok: false, failureCode: `REQUIRED_FILE_NOT_TRACKED_${safeCodeFile_(file)}`, mode: 'INVALID_REQUIRED_FILE_NOT_TRACKED', fileStates };
+    }
+    if (status?.dirty || status?.untracked) {
+      if (!allowed.has(file)) {
+        return { ok: false, failureCode: `UNAPPROVED_DIRTY_FILE_${safeCodeFile_(file)}`, mode: 'INVALID_UNAPPROVED_DIRTY_FILE', fileStates };
+      }
+      approvedDirtyFiles.push(file);
+      fileStates[file] = status.untracked ? 'UNTRACKED_APPROVED' : 'DIRTY_APPROVED';
+    } else {
+      fileStates[file] = trackedInHead ? 'TRACKED_CLEAN' : 'PRESENT_UNTRACKED_STATUS_MISSING';
+    }
+  }
+
+  for (const status of parsedStatus) {
+    if (isKnownGuardDirtyPath_(status.path)) continue;
+    if (status.staged) {
+      return { ok: false, failureCode: `STAGED_FILE_${safeCodeFile_(status.path)}`, mode: 'INVALID_STAGED_FILE', fileStates };
+    }
+    if (status.dirty || status.untracked) {
+      if (!allowed.has(status.path)) {
+        return { ok: false, failureCode: `UNAPPROVED_DIRTY_FILE_${safeCodeFile_(status.path)}`, mode: 'INVALID_UNAPPROVED_DIRTY_FILE', fileStates };
+      }
+    }
+  }
+
+  if (approvedDirtyFiles.length === 0) {
+    return { ok: true, mode: 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN', approvedDirtyFiles, fileStates };
+  }
+  if (approvedDirtyFiles.includes(normalizeStatusPath_(files.runtime))) {
+    return { ok: true, mode: 'APPROVED_LOCAL_IMPLEMENTATION_CHANGES', approvedDirtyFiles, fileStates };
+  }
+  if (
+    approvedDirtyFiles.every(file => file === normalizeStatusPath_(files.checker) || file === normalizeStatusPath_(files.test))
+  ) {
+    return { ok: true, mode: 'MIXED_APPROVED_CORRECTIVE_STATE', approvedDirtyFiles, fileStates };
+  }
+  return { ok: true, mode: 'APPROVED_LOCAL_IMPLEMENTATION_CHANGES', approvedDirtyFiles, fileStates };
+}
+
+function fail(code) {
+  console.error('D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_CHECK=FAIL');
+  console.error(`FAILED_GATE=${code}`);
+  process.exit(1);
+}
+
+function runD7E3IExactProductionConflictForensicCheck_() {
+  for (const file of Object.values(files)) {
+    if (!exists(file)) fail(`MISSING_FILE_${safeCodeFile_(file)}`);
+  }
+
+  const runtime = read(files.runtime);
+  const unitTest = read(files.test);
+  const docs = read(files.docs);
+
+  assertIncludes(runtime, 'D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_AND_SAFE_RECONCILIATION_PLAN', 'PHASE_MARKER_MISSING');
+  assertIncludes(runtime, 'runD7E3IExactProductionConflictForensicReadOnly', 'PUBLIC_ENTRYPOINT_NAME_MISSING');
+  assertIncludes(runtime, 'createD7E3IExactProductionConflictForensicRunner_', 'RUNNER_FACTORY_NAME_MISSING');
+  if (countFunctionDeclarations(runtime, 'runD7E3IExactProductionConflictForensicReadOnly') !== 1) fail('PUBLIC_ENTRYPOINT_DECLARATION_COUNT_NOT_ONE');
+  if (countFunctionDeclarations(runtime, 'createD7E3IExactProductionConflictForensicRunner_') !== 1) fail('RUNNER_DECLARATION_COUNT_NOT_ONE');
+
+  for (const marker of [
   'RUNTIME_MUTATION: \'NONE\'',
   'PRODUCTION_EXECUTION_IN_TESTS: \'NONE\'',
   'REPAIR_EXECUTION: \'NONE\'',
@@ -342,20 +449,24 @@ for (const marker of [
   assertIncludes(docs, marker, `DOC_MARKER_MISSING_${marker.replace(/[^A-Z0-9]+/gi, '_').toUpperCase()}`);
 }
 
-const statusLines = git(['status', '--short']).split(/\r?\n/).filter(Boolean);
-for (const line of statusLines) {
-  const file = line.slice(3).trim().replace(/\\/g, '/');
-  if (file === 'GUARD.bat' || file.startsWith('_guard/')) continue;
-  if (!allowedDirty.has(file)) fail(`UNAPPROVED_DIRTY_FILE_${file.replace(/[^A-Z0-9]+/gi, '_').toUpperCase()}`);
+  const statusLines = git(['status', '--short']).split(/\r?\n/).filter(Boolean);
+  const stagedFiles = git(['diff', '--cached', '--name-only']).split(/\r?\n/).filter(Boolean);
+  if (stagedFiles.length) fail('STAGED_FILES_PRESENT');
+  const trackedFiles = git(['ls-tree', '-r', '--name-only', 'HEAD']).split(/\r?\n/).filter(Boolean);
+  const existingFiles = Object.values(files).filter(file => exists(file));
+  const phaseFileState = evaluateD7E3IPhaseFileState_({
+    statusLines,
+    trackedFiles,
+    existingFiles,
+    requiredFiles: Object.values(files),
+    allowedDirtyFiles: Object.values(files)
+  });
+  if (!phaseFileState.ok) fail(phaseFileState.failureCode);
+
+  console.log('D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_CHECK=PASS');
+  console.log(`D7_E3I_PHASE_FILE_STATE_MODE=${phaseFileState.mode}`);
 }
 
-const stagedFiles = git(['diff', '--cached', '--name-only']).split(/\r?\n/).filter(Boolean);
-if (stagedFiles.length) fail('STAGED_FILES_PRESENT');
-
-for (const file of allowedDirty) {
-  if (!statusLines.some(line => line.slice(3).trim().replace(/\\/g, '/') === file)) {
-    fail(`ALLOWED_PHASE_FILE_NOT_DIRTY_${file.replace(/[^A-Z0-9]+/gi, '_').toUpperCase()}`);
-  }
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  runD7E3IExactProductionConflictForensicCheck_();
 }
-
-console.log('D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_CHECK=PASS');
