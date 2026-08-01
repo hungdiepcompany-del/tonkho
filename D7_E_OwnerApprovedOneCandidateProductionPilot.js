@@ -205,8 +205,7 @@ function createD7EOwnerApprovedOneCandidateProductionPilotRunner_(deps) {
       logD7ESanitizedResult_(services.logger, result);
       return result;
     } catch (error) {
-      if (Number(error && error.driveMutationCount || 0) > 0) result.DRIVE_MUTATION_COUNT += Number(error.driveMutationCount);
-      if (Number(error && error.sheetsMutationCount || 0) > 0) result.SHEETS_MUTATION_COUNT += Number(error.sheetsMutationCount);
+      mergeD7EErrorMutationEvidence_(result, error);
       if (error && error.partialSafeResult) mergeD7EResult_(result, error.partialSafeResult);
       await maybeMarkD7EReconciliationRequired_(activeJobStore, activePlan, activeJob, error, result);
       const externalMutationCount = Number(result.DRIVE_MUTATION_COUNT || 0) + Number(result.SHEETS_MUTATION_COUNT || 0);
@@ -632,6 +631,7 @@ async function releaseD7ELease_(leaseStore, lease, result, finalJobStatus, opts)
     result.FIRESTORE_LEASE_WRITE_COUNT += Number(outcome && outcome.mutationCount || 0);
     return outcome;
   } catch (error) {
+    mergeD7EErrorMutationEvidence_(result, error);
     result.LEASE_RELEASE_STATUS = 'FAILED_' + normalizeD7EErrorCode_(error && (error.code || error.message));
     if (options.mustConfirm) throw error;
     return null;
@@ -655,6 +655,7 @@ async function closeD7ELeaseAfterFailure_(leaseStore, lease, result, finalJobSta
       result.FIRESTORE_LEASE_WRITE_COUNT += Number(outcome && outcome.mutationCount || 0);
       return outcome;
     } catch (_ignored) {
+      mergeD7EErrorMutationEvidence_(result, _ignored);
       result.LEASE_RELEASE_STATUS = 'RECONCILIATION_MARK_ATTEMPTED_BUT_UNCONFIRMED';
       return null;
     }
@@ -701,17 +702,18 @@ async function writeAndVerifyD7EDriveArtifacts_(drive, plan) {
     xml = await mutate.createFileIfAbsent({ ...plan.driveTargets.xml, idempotencyKey: plan.idempotencyKeys.xml });
     if (xml.status === 'CONFIRMED_WRITTEN' && !xml.idempotent) createdCount += 1;
     if (xml.status === 'ALREADY_PRESENT' || xml.idempotent) alreadyCount += 1;
+    assertD7EWriteOutcomeKnown_(xml, 'DRIVE', 'XML');
+  } catch (error) {
+    annotateD7EDriveWriteError_(error, 'XML', createdCount, alreadyCount, xml, pdf);
+    throw error;
+  }
+  try {
     pdf = await mutate.createFileIfAbsent({ ...plan.driveTargets.pdf, idempotencyKey: plan.idempotencyKeys.pdf });
     if (pdf.status === 'CONFIRMED_WRITTEN' && !pdf.idempotent) createdCount += 1;
     if (pdf.status === 'ALREADY_PRESENT' || pdf.idempotent) alreadyCount += 1;
+    assertD7EWriteOutcomeKnown_(pdf, 'DRIVE', 'PDF');
   } catch (error) {
-    error.driveMutationCount = createdCount;
-    error.partialSafeResult = {
-      DRIVE_XML_STATUS: xml ? xml.status : 'NOT_ATTEMPTED',
-      DRIVE_PDF_STATUS: pdf ? pdf.status : 'NOT_ATTEMPTED',
-      DRIVE_FILES_CREATED: createdCount,
-      DRIVE_FILES_ALREADY_PRESENT: alreadyCount
-    };
+    annotateD7EDriveWriteError_(error, 'PDF', createdCount, alreadyCount, xml, pdf);
     throw error;
   }
   try {
@@ -759,6 +761,12 @@ async function appendAndVerifyD7ESheetTransaction_(sheets, plan) {
       rows: plan.ledgerRows,
       idempotencyKey: plan.idempotencyKeys.sheet
     });
+    assertD7EWriteOutcomeKnown_(append, 'SHEETS', 'APPEND');
+  } catch (error) {
+    annotateD7ESheetsWriteError_(error, append);
+    throw error;
+  }
+  try {
     const verify = await read.findTransactionByIdentity({
       transactionIdentity: plan.ledgerRows[0].transactionIdentity,
       hashIndex: plan.ledgerRows[0].legacyHashIndex,
@@ -804,6 +812,43 @@ function assertD7ESheetRowMatches_(actual, expected) {
       throw d7eError_('BLOCKED_D7_E_SHEET_TRANSACTION_CONFLICT');
     }
   });
+}
+
+function assertD7EWriteOutcomeKnown_(outcome, subsystem, stage) {
+  if (!outcome || normalizeD7EString_(outcome.status) !== 'OUTCOME_UNKNOWN') return;
+  const error = d7eError_('BLOCKED_D7_E_' + subsystem + '_' + stage + '_WRITE_OUTCOME_UNKNOWN');
+  error.writeSubsystem = subsystem;
+  error.writeOutcome = 'OUTCOME_UNKNOWN';
+  if (subsystem === 'DRIVE') error.driveWriteOutcomeUnknownCount = 1;
+  if (subsystem === 'SHEETS') error.sheetsWriteOutcomeUnknownCount = 1;
+  throw error;
+}
+
+function annotateD7EDriveWriteError_(error, kind, createdCount, alreadyCount, xml, pdf) {
+  error.driveMutationCount = createdCount;
+  if (isD7EUnknownWriteOutcomeError_(error)) {
+    error.driveWriteOutcomeUnknownCount = normalizeD7ENonNegativeInteger_(error.driveWriteOutcomeUnknownCount) || 1;
+  }
+  const failedStatus = normalizeD7EString_(error && error.writeOutcome) === 'CONFIRMED_NOT_WRITTEN' ? 'CONFIRMED_NOT_WRITTEN' : 'OUTCOME_UNKNOWN';
+  error.partialSafeResult = {
+    DRIVE_XML_STATUS: xml ? xml.status : (kind === 'XML' ? failedStatus : 'NOT_ATTEMPTED'),
+    DRIVE_PDF_STATUS: pdf ? pdf.status : (kind === 'PDF' ? failedStatus : 'NOT_ATTEMPTED'),
+    DRIVE_FILES_CREATED: createdCount,
+    DRIVE_FILES_ALREADY_PRESENT: alreadyCount
+  };
+}
+
+function annotateD7ESheetsWriteError_(error, append) {
+  error.sheetsMutationCount = Number(append && append.appendedCount || 0);
+  if (isD7EUnknownWriteOutcomeError_(error)) {
+    error.sheetsWriteOutcomeUnknownCount = normalizeD7ENonNegativeInteger_(error.sheetsWriteOutcomeUnknownCount) || 1;
+  }
+  const failedStatus = normalizeD7EString_(error && error.writeOutcome) === 'CONFIRMED_NOT_WRITTEN' ? 'CONFIRMED_NOT_WRITTEN' : 'OUTCOME_UNKNOWN';
+  error.partialSafeResult = {
+    SHEETS_TRANSACTION_STATUS: append ? append.status : failedStatus,
+    SHEETS_ROWS_APPENDED: Number(append && append.appendedCount || 0),
+    SHEETS_ROWS_ALREADY_PRESENT: append && append.idempotent ? 1 : 0
+  };
 }
 
 async function saveD7EAttachmentRecords_(store, plan) {
@@ -871,6 +916,7 @@ async function maybeMarkD7EReconciliationRequired_(jobStore, plan, job, error, r
     result.FIRESTORE_JOB_WRITE_COUNT += 1;
     result.FIRESTORE_JOB_STATUS = 'RECONCILIATION_REQUIRED';
   } catch (_ignored) {
+    mergeD7EErrorMutationEvidence_(result, _ignored);
     result.RECONCILIATION_STATUS = 'RECONCILIATION_MARK_ATTEMPTED_BUT_UNCONFIRMED';
   }
 }
@@ -1013,9 +1059,11 @@ function finalizeD7EMutationCounts_(result) {
   result.PRODUCTION_MUTATION_COUNT = Number(result.DRIVE_MUTATION_COUNT || 0)
     + Number(result.SHEETS_MUTATION_COUNT || 0)
     + Number(result.FIRESTORE_TOTAL_WRITE_OPERATIONS || 0);
-  if (result.D7_E_STATUS === 'PASS_ONE_CANDIDATE_PRODUCTION_PILOT_COMPLETED') {
-    result.PRODUCTION_MUTATION = result.PRODUCTION_MUTATION_COUNT > 0 ? 'BOUNDED_ONE_CANDIDATE_PILOT' : 'NONE';
-  }
+  result.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT = normalizeD7ENonNegativeInteger_(result.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT);
+  result.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT = normalizeD7ENonNegativeInteger_(result.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT);
+  result.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT = normalizeD7ENonNegativeInteger_(result.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT);
+  result.PRODUCTION_MUTATION_OUTCOME_UNKNOWN = hasD7EUnknownWriteOutcome_(result) ? 'YES' : 'NO';
+  result.PRODUCTION_MUTATION = deriveD7EProductionMutation_(result);
 }
 
 function finalizeD7EBlockedResult_(result, error) {
@@ -1023,6 +1071,73 @@ function finalizeD7EBlockedResult_(result, error) {
   result.BLOCKER_CODE = result.D7_E_STATUS;
   finalizeD7EMutationCounts_(result);
   return result;
+}
+
+function deriveD7EProductionMutation_(source) {
+  const result = source || {};
+  const unknownTotal = normalizeD7ENonNegativeInteger_(result.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT)
+    + normalizeD7ENonNegativeInteger_(result.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT)
+    + normalizeD7ENonNegativeInteger_(result.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT);
+  if (unknownTotal > 0) return 'OUTCOME_UNKNOWN';
+  const drive = normalizeD7ENonNegativeInteger_(result.DRIVE_MUTATION_COUNT);
+  const sheets = normalizeD7ENonNegativeInteger_(result.SHEETS_MUTATION_COUNT);
+  const firestore = normalizeD7ENonNegativeInteger_(result.FIRESTORE_TOTAL_WRITE_OPERATIONS || result.FIRESTORE_MUTATION_COUNT);
+  const subsystemTotal = drive + sheets + firestore;
+  const confirmedTotal = Math.max(subsystemTotal, normalizeD7ENonNegativeInteger_(result.PRODUCTION_MUTATION_COUNT));
+  if (result.D7_E_STATUS === 'PASS_ONE_CANDIDATE_PRODUCTION_PILOT_COMPLETED') {
+    return confirmedTotal > 0 ? 'BOUNDED_ONE_CANDIDATE_PILOT' : 'NONE';
+  }
+  if (confirmedTotal <= 0) return 'NONE';
+  const externalConfirmed = drive + sheets > 0;
+  const firestoreConfirmed = firestore > 0;
+  if (externalConfirmed && firestoreConfirmed) return 'PARTIAL';
+  if (externalConfirmed) return 'EXTERNAL_ONLY';
+  if (firestoreConfirmed) return 'FIRESTORE_ONLY';
+  return 'PARTIAL';
+}
+
+function hasD7EUnknownWriteOutcome_(result) {
+  return normalizeD7ENonNegativeInteger_(result && result.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT) > 0
+    || normalizeD7ENonNegativeInteger_(result && result.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT) > 0
+    || normalizeD7ENonNegativeInteger_(result && result.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT) > 0;
+}
+
+function mergeD7EErrorMutationEvidence_(result, error) {
+  if (!result || !error) return result;
+  result.DRIVE_MUTATION_COUNT = Math.max(
+    normalizeD7ENonNegativeInteger_(result.DRIVE_MUTATION_COUNT),
+    normalizeD7ENonNegativeInteger_(error.driveMutationCount)
+  );
+  result.SHEETS_MUTATION_COUNT = Math.max(
+    normalizeD7ENonNegativeInteger_(result.SHEETS_MUTATION_COUNT),
+    normalizeD7ENonNegativeInteger_(error.sheetsMutationCount)
+  );
+  result.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT = Math.max(
+    normalizeD7ENonNegativeInteger_(result.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT),
+    normalizeD7ENonNegativeInteger_(error.firestoreWriteOutcomeUnknownCount || (isD7EFirestoreUnknownWriteError_(error) ? 1 : 0))
+  );
+  result.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT = Math.max(
+    normalizeD7ENonNegativeInteger_(result.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT),
+    normalizeD7ENonNegativeInteger_(error.driveWriteOutcomeUnknownCount)
+  );
+  result.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT = Math.max(
+    normalizeD7ENonNegativeInteger_(result.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT),
+    normalizeD7ENonNegativeInteger_(error.sheetsWriteOutcomeUnknownCount)
+  );
+  result.PRODUCTION_MUTATION_OUTCOME_UNKNOWN = hasD7EUnknownWriteOutcome_(result) ? 'YES' : 'NO';
+  return result;
+}
+
+function isD7EFirestoreUnknownWriteError_(error) {
+  return normalizeD7EString_(error && error.code) === 'FIRESTORE_WRITE_UNCONFIRMED'
+    || (normalizeD7EString_(error && error.writeSubsystem) === 'FIRESTORE' && normalizeD7EString_(error && error.writeOutcome) === 'OUTCOME_UNKNOWN');
+}
+
+function isD7EUnknownWriteOutcomeError_(error) {
+  const outcome = normalizeD7EString_(error && error.writeOutcome);
+  if (outcome === 'CONFIRMED_NOT_WRITTEN') return false;
+  if (outcome === 'CONFIRMED_WRITTEN') return false;
+  return outcome === 'OUTCOME_UNKNOWN' || outcome === 'UNKNOWN' || !outcome;
 }
 
 function createD7EBaseResult_() {
@@ -1067,11 +1182,13 @@ function createD7EBaseResult_() {
     DRIVE_VERIFICATION_STATUS: 'NOT_ATTEMPTED',
     DRIVE_FILES_CREATED: 0,
     DRIVE_FILES_ALREADY_PRESENT: 0,
+    DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT: 0,
     DRIVE_FOLDER_CREATION_COUNT: 0,
     SHEETS_TRANSACTION_STATUS: 'NOT_ATTEMPTED',
     SHEETS_VERIFICATION_STATUS: 'NOT_ATTEMPTED',
     SHEETS_ROWS_APPENDED: 0,
     SHEETS_ROWS_ALREADY_PRESENT: 0,
+    SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT: 0,
     SHEETS_ROWS_UPDATED: 0,
     FIRESTORE_JOB_STATUS: 'NOT_ATTEMPTED',
     FIRESTORE_ATTACHMENT_RECORDS_STATUS: 'NOT_ATTEMPTED',
@@ -1088,6 +1205,7 @@ function createD7EBaseResult_() {
     FIRESTORE_ATTACHMENT_WRITE_COUNT: 0,
     FIRESTORE_RECONCILIATION_WRITE_COUNT: 0,
     FIRESTORE_TOTAL_WRITE_OPERATIONS: 0,
+    FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT: 0,
     GMAIL_PROJECTION_STATUS: 'NOT_REQUIRED_BUDGET_ZERO',
     GMAIL_LABEL_MUTATION_COUNT: 0,
     RECONCILIATION_STATUS: 'NOT_ATTEMPTED',
@@ -1100,6 +1218,7 @@ function createD7EBaseResult_() {
     TRIGGER_MUTATION_COUNT: 0,
     DESTRUCTIVE_OPERATION_COUNT: 0,
     PRODUCTION_MUTATION_COUNT: 0,
+    PRODUCTION_MUTATION_OUTCOME_UNKNOWN: 'NO',
     RAW_EMAIL_ADDRESS_LOG_COUNT: 0,
     RAW_EMAIL_SUBJECT_LOG_COUNT: 0,
     RAW_EMAIL_BODY_LOG_COUNT: 0,
@@ -1186,6 +1305,12 @@ function normalizeD7EString_(value) {
 
 function normalizeD7EErrorCode_(value) {
   return normalizeD7EString_(value).toUpperCase().replace(/[^A-Z0-9_]/g, '_').slice(0, 100) || 'BLOCKED_D7_E_UNKNOWN';
+}
+
+function normalizeD7ENonNegativeInteger_(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number) || number <= 0) return 0;
+  return Math.floor(number);
 }
 
 function cloneD7EJson_(value) {

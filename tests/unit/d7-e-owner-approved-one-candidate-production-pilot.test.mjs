@@ -54,6 +54,7 @@ const gas = loadGasSource({
     'createFakeSgdsDriveAdapter_',
     'createFakeSgdsSheetsLedgerAdapter_',
     'hashPrefixD7E_',
+    'deriveD7EProductionMutation_',
   ],
 });
 
@@ -82,6 +83,28 @@ test('metadata and public entrypoint contract are canonical', () => {
   assert.match(match[1], /const runner = createD7EOwnerApprovedOneCandidateProductionPilotRunner_\(\);/);
   assert.match(match[1], /return runner\.run\(\);/);
   assert.doesNotMatch(match[1], /runD6jCOneRecordProductionMutation/);
+});
+
+test('deriveD7EProductionMutation_ classifies confirmed and unknown outcomes', () => {
+  const cases = [
+    ['zero confirmed, zero unknown', {}, 'NONE'],
+    ['external plus Firestore confirmed', { DRIVE_MUTATION_COUNT: 1, FIRESTORE_TOTAL_WRITE_OPERATIONS: 1 }, 'PARTIAL'],
+    ['external confirmed only', { SHEETS_MUTATION_COUNT: 1 }, 'EXTERNAL_ONLY'],
+    ['Firestore confirmed only', { FIRESTORE_TOTAL_WRITE_OPERATIONS: 1 }, 'FIRESTORE_ONLY'],
+    ['positive unmatched confirmed total', { PRODUCTION_MUTATION_COUNT: 1 }, 'PARTIAL'],
+    ['Drive unknown', { DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT: 1 }, 'OUTCOME_UNKNOWN'],
+    ['Sheets unknown', { SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT: 1 }, 'OUTCOME_UNKNOWN'],
+    ['Firestore unknown', { FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT: 1 }, 'OUTCOME_UNKNOWN'],
+    ['confirmed plus unknown', { DRIVE_MUTATION_COUNT: 1, FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT: 1 }, 'OUTCOME_UNKNOWN'],
+    [
+      'successful bounded production pilot stays bounded',
+      { D7_E_STATUS: 'PASS_ONE_CANDIDATE_PRODUCTION_PILOT_COMPLETED', DRIVE_MUTATION_COUNT: 1 },
+      'BOUNDED_ONE_CANDIDATE_PILOT',
+    ],
+  ];
+  for (const [name, input, expected] of cases) {
+    assert.equal(gas.call('deriveD7EProductionMutation_', input), expected, name);
+  }
 });
 
 function props(overrides = {}) {
@@ -286,6 +309,10 @@ test('approved D7-E run completes one bounded candidate with deterministic lifec
   assert.equal(result.RECONCILIATION_STATUS, 'CONSISTENT');
   assert.equal(result.IDEMPOTENT_RERUN_STATUS, 'READY_FOR_IDEMPOTENT_RERUN');
   assert.equal(result.PRODUCTION_MUTATION, 'BOUNDED_ONE_CANDIDATE_PILOT');
+  assert.equal(result.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+  assert.equal(result.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+  assert.equal(result.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+  assert.equal(result.PRODUCTION_MUTATION_OUTCOME_UNKNOWN, 'NO');
   assert.equal(h.drive.state.mutationLog.length, 2);
   assert.equal(h.sheets.state.mutationLog.length, 1);
   assert.deepEqual(h.lockCalls.map(call => call[0]), ['tryLock', 'releaseLock']);
@@ -444,7 +471,201 @@ test('partial Drive, Sheet, Firestore, and reconciliation failures preserve boun
   });
   const reconciliationResult = fromVm(await reconciliationFailure.runner.run());
   assert.equal(reconciliationResult.RECONCILIATION_STATUS, 'RECONCILIATION_MARK_ATTEMPTED_BUT_UNCONFIRMED');
-  assert.equal(reconciliationResult.PRODUCTION_MUTATION, 'NONE');
+  assert.equal(reconciliationResult.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT, 1);
+  assert.equal(reconciliationResult.PRODUCTION_MUTATION, 'OUTCOME_UNKNOWN');
+});
+
+test('Drive persist-then-throw reports write outcome unknown without fabricating confirmation', async () => {
+  const drive = makeDrive();
+  const failingDrive = {
+    ...drive,
+    mutate: {
+      ...drive.mutate,
+      async createFileIfAbsent(request) {
+        await drive.mutate.createFileIfAbsent(request);
+        const error = new Error('D7_E_SYNTHETIC_DRIVE_RESPONSE_LOST');
+        error.code = 'D7_E_SYNTHETIC_DRIVE_RESPONSE_LOST';
+        error.writeSubsystem = 'DRIVE';
+        error.writeOutcome = 'OUTCOME_UNKNOWN';
+        throw error;
+      },
+    },
+  };
+  const h = makeHarness({ drive: failingDrive });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.D7_E_STATUS, 'D7_E_SYNTHETIC_DRIVE_RESPONSE_LOST');
+  assert.equal(h.drive.state.files.length, 1);
+  assert.equal(h.drive.state.mutationLog.length, 1);
+  assert.equal(result.DRIVE_MUTATION_COUNT, 0);
+  assert.equal(result.DRIVE_FILES_CREATED, 0);
+  assert.equal(result.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT, 1);
+  assert.equal(result.PRODUCTION_MUTATION_OUTCOME_UNKNOWN, 'YES');
+  assert.equal(result.PRODUCTION_MUTATION, 'OUTCOME_UNKNOWN');
+});
+
+test('Sheets persist-then-throw reports write outcome unknown without fabricating confirmation', async () => {
+  const sheets = makeSheets();
+  const failingSheets = {
+    ...sheets,
+    mutate: {
+      ...sheets.mutate,
+      async appendImmutableTransactionsIfAbsent(request) {
+        await sheets.mutate.appendImmutableTransactionsIfAbsent(request);
+        const error = new Error('D7_E_SYNTHETIC_SHEETS_RESPONSE_LOST');
+        error.code = 'D7_E_SYNTHETIC_SHEETS_RESPONSE_LOST';
+        error.writeSubsystem = 'SHEETS';
+        error.writeOutcome = 'OUTCOME_UNKNOWN';
+        throw error;
+      },
+    },
+  };
+  const h = makeHarness({ sheets: failingSheets });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.D7_E_STATUS, 'D7_E_SYNTHETIC_SHEETS_RESPONSE_LOST');
+  assert.equal(h.sheets.state.ledgerRows.length, 1);
+  assert.equal(h.sheets.state.mutationLog.length, 1);
+  assert.equal(result.SHEETS_MUTATION_COUNT, 0);
+  assert.equal(result.SHEETS_ROWS_APPENDED, 0);
+  assert.equal(result.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT, 1);
+  assert.equal(result.PRODUCTION_MUTATION_OUTCOME_UNKNOWN, 'YES');
+  assert.equal(result.PRODUCTION_MUTATION, 'OUTCOME_UNKNOWN');
+});
+
+test('Firestore persist-then-throw reports write outcome unknown without fabricating job confirmation', async () => {
+  const transport = createFakeFirestoreTransport({
+    failures: [{ op: 'createDocument', timing: 'after', pathIncludes: 'invoiceJobs' }],
+  });
+  const h = makeHarness({ transport });
+  const result = fromVm(await h.runner.run());
+  assert.equal(result.D7_E_STATUS, 'FIRESTORE_WRITE_UNCONFIRMED');
+  const dump = fromVm(transport.dump());
+  assert.equal(dump.some(([path]) => path === `invoiceJobs/${JOB_ID}`), true);
+  assert.equal(result.FIRESTORE_JOBS_CREATED, 0);
+  assert.equal(result.FIRESTORE_JOB_WRITE_COUNT, 0);
+  assert.equal(result.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT, 1);
+  assert.equal(result.PRODUCTION_MUTATION_OUTCOME_UNKNOWN, 'YES');
+  assert.equal(result.PRODUCTION_MUTATION, 'OUTCOME_UNKNOWN');
+});
+
+test('write outcome controls avoid false-positive unknown classification', async () => {
+  const driveMissingMutate = makeHarness({ drive: { read: makeDrive().read } });
+  const driveMissingResult = fromVm(await driveMissingMutate.runner.run());
+  assert.equal(driveMissingResult.D7_E_STATUS, 'BLOCKED_D7_E_DRIVE_ADAPTER_MISSING');
+  assert.equal(driveMissingResult.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+
+  const driveConfirmedNotWrittenBase = makeDrive();
+  const driveConfirmedNotWritten = makeHarness({
+    drive: {
+      ...driveConfirmedNotWrittenBase,
+      mutate: {
+        ...driveConfirmedNotWrittenBase.mutate,
+        async createFileIfAbsent() {
+          const error = new Error('D7_E_SYNTHETIC_DRIVE_CONFIRMED_NOT_WRITTEN');
+          error.code = 'D7_E_SYNTHETIC_DRIVE_CONFIRMED_NOT_WRITTEN';
+          error.writeSubsystem = 'DRIVE';
+          error.writeOutcome = 'CONFIRMED_NOT_WRITTEN';
+          throw error;
+        },
+      },
+    },
+  });
+  const driveConfirmedNotWrittenResult = fromVm(await driveConfirmedNotWritten.runner.run());
+  assert.equal(driveConfirmedNotWrittenResult.DRIVE_XML_STATUS, 'CONFIRMED_NOT_WRITTEN');
+  assert.equal(driveConfirmedNotWrittenResult.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+
+  const driveReadbackBase = makeDrive();
+  const driveReadback = makeHarness({
+    drive: {
+      ...driveReadbackBase,
+      read: {
+        ...driveReadbackBase.read,
+        async readFileMetadata() {
+          const error = new Error('D7_E_SYNTHETIC_DRIVE_READBACK_LOSS');
+          error.code = 'D7_E_SYNTHETIC_DRIVE_READBACK_LOSS';
+          throw error;
+        },
+      },
+    },
+  });
+  const driveReadbackResult = fromVm(await driveReadback.runner.run());
+  assert.equal(driveReadbackResult.DRIVE_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+  assert.equal(driveReadbackResult.DRIVE_MUTATION_COUNT, 2);
+  assert.equal(driveReadbackResult.DRIVE_FILES_CREATED, 2);
+
+  const sheetsMissingMutate = makeHarness({ sheets: { read: makeSheets().read } });
+  const sheetsMissingResult = fromVm(await sheetsMissingMutate.runner.run());
+  assert.equal(sheetsMissingResult.D7_E_STATUS, 'BLOCKED_D7_E_SHEETS_ADAPTER_MISSING');
+  assert.equal(sheetsMissingResult.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+
+  const sheetsConfirmedNotWrittenBase = makeSheets();
+  const sheetsConfirmedNotWritten = makeHarness({
+    sheets: {
+      ...sheetsConfirmedNotWrittenBase,
+      mutate: {
+        ...sheetsConfirmedNotWrittenBase.mutate,
+        async appendImmutableTransactionsIfAbsent() {
+          const error = new Error('D7_E_SYNTHETIC_SHEETS_CONFIRMED_NOT_WRITTEN');
+          error.code = 'D7_E_SYNTHETIC_SHEETS_CONFIRMED_NOT_WRITTEN';
+          error.writeSubsystem = 'SHEETS';
+          error.writeOutcome = 'CONFIRMED_NOT_WRITTEN';
+          throw error;
+        },
+      },
+    },
+  });
+  const sheetsConfirmedNotWrittenResult = fromVm(await sheetsConfirmedNotWritten.runner.run());
+  assert.equal(sheetsConfirmedNotWrittenResult.SHEETS_TRANSACTION_STATUS, 'CONFIRMED_NOT_WRITTEN');
+  assert.equal(sheetsConfirmedNotWrittenResult.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+
+  const sheetsReadbackBase = makeSheets();
+  const sheetsReadback = makeHarness({
+    sheets: {
+      ...sheetsReadbackBase,
+      read: {
+        ...sheetsReadbackBase.read,
+        async findTransactionByIdentity() {
+          const error = new Error('D7_E_SYNTHETIC_SHEETS_READBACK_LOSS');
+          error.code = 'D7_E_SYNTHETIC_SHEETS_READBACK_LOSS';
+          throw error;
+        },
+      },
+    },
+  });
+  const sheetsReadbackResult = fromVm(await sheetsReadback.runner.run());
+  assert.equal(sheetsReadbackResult.SHEETS_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+  assert.equal(sheetsReadbackResult.SHEETS_MUTATION_COUNT, 1);
+  assert.equal(sheetsReadbackResult.SHEETS_ROWS_APPENDED, 1);
+
+  const preWriteTransport = createFakeFirestoreTransport({
+    failures: [{ op: 'createDocument', timing: 'before', pathIncludes: 'invoiceJobs' }],
+  });
+  const firestorePreWrite = makeHarness({ transport: preWriteTransport });
+  const firestorePreWriteResult = fromVm(await firestorePreWrite.runner.run());
+  assert.equal(firestorePreWriteResult.D7_E_STATUS, 'FIRESTORE_TRANSPORT_ERROR');
+  assert.equal(fromVm(preWriteTransport.dump()).some(([path]) => path === `invoiceJobs/${JOB_ID}`), false);
+  assert.equal(firestorePreWriteResult.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
+
+  const firestoreConfirmedNotWrittenBase = makeHarness();
+  const firestoreConfirmedNotWrittenJobStore = {
+    ...firestoreConfirmedNotWrittenBase.jobStore,
+    async createJobIfAbsent() {
+      const error = new Error('D7_E_SYNTHETIC_FIRESTORE_CONFIRMED_NOT_WRITTEN');
+      error.code = 'D7_E_SYNTHETIC_FIRESTORE_CONFIRMED_NOT_WRITTEN';
+      error.writeSubsystem = 'FIRESTORE';
+      error.writeOutcome = 'CONFIRMED_NOT_WRITTEN';
+      throw error;
+    },
+  };
+  const firestoreConfirmedNotWritten = makeHarness({
+    transport: firestoreConfirmedNotWrittenBase.transport,
+    jobStore: firestoreConfirmedNotWrittenJobStore,
+    leaseStore: firestoreConfirmedNotWrittenBase.leaseStore,
+    drive: firestoreConfirmedNotWrittenBase.drive,
+    sheets: firestoreConfirmedNotWrittenBase.sheets,
+  });
+  const firestoreConfirmedNotWrittenResult = fromVm(await firestoreConfirmedNotWritten.runner.run());
+  assert.equal(firestoreConfirmedNotWrittenResult.D7_E_STATUS, 'D7_E_SYNTHETIC_FIRESTORE_CONFIRMED_NOT_WRITTEN');
+  assert.equal(firestoreConfirmedNotWrittenResult.FIRESTORE_WRITE_OUTCOME_UNKNOWN_COUNT, 0);
 });
 
 test('completed rerun is an idempotent no-op and reconciliation-required state blocks retry', async () => {
