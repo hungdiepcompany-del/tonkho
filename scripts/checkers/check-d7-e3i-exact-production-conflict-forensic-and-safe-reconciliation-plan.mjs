@@ -28,7 +28,12 @@ const d7e3rCompanionDirtyFiles = [
   'docs/08_DECISION_LOG.md',
   'docs/09_VALIDATION_LOG.md',
   'docs/99_NEXT_AI_HANDOFF.md',
-  'package.json'
+  'package.json',
+  'scripts/test/run-all-checks.mjs',
+  'D7_E3V_ExactPostHocAttributionReadOnlyDiagnostic.js',
+  'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
+  'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
+  'docs/phases/D7_E3V_TO_X_EXACT_POST_HOC_ATTRIBUTION_AND_FIRESTORE_RECONCILIATION_DECISION.md'
 ];
 
 const knownGuardDirtyPaths = new Set(['GUARD.bat']);

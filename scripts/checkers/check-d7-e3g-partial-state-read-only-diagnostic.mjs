@@ -201,7 +201,12 @@ const allowedDirty = new Set([
   'scripts/checkers/check-d7-e3r-exact-bounded-production-read-only-adapters.mjs',
   'scripts/checkers/check-d7-e3g-partial-state-read-only-diagnostic.mjs',
   'scripts/checkers/check-d7-e-owner-approved-one-candidate-production-pilot.mjs',
-  'scripts/checkers/check-d7-c-d7-d-candidate-review-and-pilot-plan.mjs'
+  'scripts/checkers/check-d7-c-d7-d-candidate-review-and-pilot-plan.mjs',
+  'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
+  'scripts/test/run-all-checks.mjs',
+  'D7_E3V_ExactPostHocAttributionReadOnlyDiagnostic.js',
+  'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
+  'docs/phases/D7_E3V_TO_X_EXACT_POST_HOC_ATTRIBUTION_AND_FIRESTORE_RECONCILIATION_DECISION.md'
 ]);
 
 const statusLines = git(['status', '--short']).split(/\r?\n/).filter(Boolean);

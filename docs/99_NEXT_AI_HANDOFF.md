@@ -1211,3 +1211,25 @@ TRIGGER_MUTATION_ALLOWED=NO
 NEXT_SAFE_PHASE=OWNER_RUN_FRESH_D7_E3I_READ_ONLY_EXACTLY_ONCE
 NEXT_REQUIRED_OWNER_ACTION=RUN_FRESH_D7_E3I_READ_ONLY_EXACTLY_ONCE
 NEXT_AI_FIRST_ACTION=Wait for owner-provided fresh D7-E3I read-only forensic execution evidence or a fresh owner instruction to run it through a proven authenticated non-mutating channel. Do not run D7-E3I, D7-E, repair, Script Property mutation, trigger mutation, deploy, or production mutation from this handoff alone.
+
+## SGDS D7-E3V Exact Post-Hoc Attribution Diagnostic Handoff
+
+CURRENT_PHASE=D7_E3V_TO_X_EXACT_POST_HOC_ATTRIBUTION_AND_FIRESTORE_RECONCILIATION_DECISION
+STATUS=SOURCE_VALIDATED_PENDING_REMOTE_SYNC
+OWNER_MARKER=OWNER_APPROVED_D7_E3V_TO_X_RESUME_PARTIAL_ATTRIBUTION_DIAGNOSTIC_CHECKER_VALIDATION_COMMIT_SOURCE_SYNC_AND_MANUAL_EXECUTION_GATE
+D7_E3V_RUNTIME_FILE=D7_E3V_ExactPostHocAttributionReadOnlyDiagnostic.js
+D7_E3V_PUBLIC_ENTRYPOINT=runD7E3VExactPostHocAttributionReadOnly
+D7_E3V_RUNNER=createD7E3VExactPostHocAttributionReadOnlyRunner_
+D7_E3V_CHECKER=scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs
+D7_E3V_PHASE_DOC=docs/phases/D7_E3V_TO_X_EXACT_POST_HOC_ATTRIBUTION_AND_FIRESTORE_RECONCILIATION_DECISION.md
+EXACT_DURABLE_LINK_REQUIRED=YES
+CONTENT_SIMILARITY_ALONE_ATTRIBUTION_PROHIBITED=YES
+GENERIC_UNKNOWN_WRITE_OUTCOME_ATTRIBUTION_PROHIBITED=YES
+RECONCILIATION_AUTOMATIC_EXECUTION_ALLOWED=NO
+RECONCILIATION_PLAN_EXECUTED=NO
+PRODUCTION_EXECUTION=NOT_RUN
+LOCAL_VALIDATION=PASS
+PRODUCTION_MUTATION=NONE
+D7_E_PILOT_RERUN=NO
+D7_E3I_RERUN=NO
+NEXT_AI_FIRST_ACTION=Complete local validation, commit and push the D7-E3V source, perform one normal clasp source sync with independent pull-based hash proof, then stop at the owner manual read-only execution gate unless a proven command channel already exists.

@@ -254,11 +254,16 @@ const allowedDirty = new Set([
   'D7_E3R_ExactBoundedProductionReadOnlyAdapters.js',
   'tests/unit/d7-e3i-exact-production-conflict-forensic-and-safe-reconciliation-plan.test.mjs',
   'tests/unit/d7-e3r-exact-bounded-production-read-only-adapters.test.mjs',
+  'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
   'docs/phases/D7_E3I_EXACT_PRODUCTION_CONFLICT_FORENSIC_AND_SAFE_RECONCILIATION_PLAN.md',
   'docs/phases/D7_E3R_TO_U_EXACT_BOUNDED_PRODUCTION_READ_ONLY_ADAPTER_IMPLEMENTATION_SOURCE_SYNC_AND_FRESH_FORENSIC.md',
+  'docs/phases/D7_E3V_TO_X_EXACT_POST_HOC_ATTRIBUTION_AND_FIRESTORE_RECONCILIATION_DECISION.md',
   'docs/phases/D7_E3G_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_CHANNEL.md',
   'docs/evidence/D7_E3G_PARTIAL_STATE_READ_ONLY_DIAGNOSTIC_EVIDENCE.md',
   'docs/operations/D7_E_PARTIAL_EXECUTION_RECONCILIATION_RUNBOOK.md',
+  'D7_E3V_ExactPostHocAttributionReadOnlyDiagnostic.js',
+  'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
+  'scripts/test/run-all-checks.mjs',
   'package.json',
 ]);
 

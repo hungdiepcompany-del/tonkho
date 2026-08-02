@@ -11,6 +11,7 @@ const commands = [
   ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-workbook-unchanged.ps1']],
   ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-internal-doc-links.ps1']],
   ['node', ['scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs']],
+  ['node', ['scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs']],
 ];
 
 for (const [cmd, args] of commands) {
