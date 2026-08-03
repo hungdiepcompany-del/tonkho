@@ -97,15 +97,15 @@ EVIDENCE_CHAIN_STATUS=NO_LEVEL_A_CHAIN_OF_CUSTODY
 
 ## Reconciliation Decision
 
-RECONCILIATION_PLAN_TYPE=OWNER_MANUAL_REVIEW_REQUIRED
+RECONCILIATION_PLAN_TYPE=OWNER_EVIDENCE_COLLECTION_REQUIRED
 RECONCILIATION_AUTOMATIC_EXECUTION_ALLOWED=NO
 RECONCILIATION_PLAN_EXECUTED=NO
 EXACT_FUTURE_MUTATION_PLAN_PREPARED=NO
 PRODUCTION_MUTATION=NONE
-NEXT_PHASE=D7_E3Z_OWNER_UNPROVEN_ATTRIBUTION_DISPOSITION
-SAFE_NEXT_ACTION=OWNER_DECIDE_KEEP_VALIDATED_ABANDON_OR_MANUAL_EXTERNAL_STATE_DISPOSITION_WITHOUT_AUTOMATIC_RECONCILIATION
+NEXT_PHASE=D7_E3Z_OWNER_EXPORT_ORIGINAL_EXECUTION_EVIDENCE
+SAFE_NEXT_ACTION=OWNER_EXPORT_ORIGINAL_D7_E_EXECUTION_EVIDENCE_WITHOUT_RUNNING_ANY_FUNCTION
 
-Because attribution remains unproven, no Firestore completion mutation, post-hoc reconciliation event, or other automatic repair plan is prepared in this phase.
+Because attribution remains unproven and the original execution history could not be retrieved through the available automated read-only channels, no Firestore completion mutation, post-hoc reconciliation event, or other automatic repair plan is prepared in this phase.
 
 ## Boundary
 
