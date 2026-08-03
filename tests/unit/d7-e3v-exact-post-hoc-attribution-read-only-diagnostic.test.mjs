@@ -58,7 +58,8 @@ function evaluatePhaseState(patch = {}) {
       ...D7_E3V_PHASE_REQUIRED_FILES,
       'package.json',
       'scripts/test/run-all-checks.mjs',
-      'docs/00_INDEX.md'
+      'docs/00_INDEX.md',
+      'docs/phases/D7_E3Y_TO_Z0_OWNER_EVIDENCE_COLLECTION_IMMUTABLE_ATTRIBUTION_REVIEW_AND_EXACT_RECONCILIATION_DECISION.md'
     ]
   });
 }
@@ -487,6 +488,14 @@ test('55 checker rejects unexpected untracked file', () => {
   const state = evaluatePhaseState({ statusLines: ['?? docs/unapproved-d7-e3v-note.md'] });
   assert.equal(state.ok, false);
   assert.match(state.failureCode, /^UNAPPROVED_DIRTY_FILE_/);
+});
+
+test('55b checker accepts the exact D7-E3Y immutable review record', () => {
+  const state = evaluatePhaseState({
+    statusLines: ['?? docs/phases/D7_E3Y_TO_Z0_OWNER_EVIDENCE_COLLECTION_IMMUTABLE_ATTRIBUTION_REVIEW_AND_EXACT_RECONCILIATION_DECISION.md']
+  });
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
 });
 
 test('56 checker ignores exact known guard paths', () => {

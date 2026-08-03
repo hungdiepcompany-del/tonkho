@@ -34,7 +34,8 @@ const approvedDirtyFiles = Object.freeze([
   'docs/07_WORK_LOG.md',
   'docs/08_DECISION_LOG.md',
   'docs/09_VALIDATION_LOG.md',
-  'docs/99_NEXT_AI_HANDOFF.md'
+  'docs/99_NEXT_AI_HANDOFF.md',
+  'docs/phases/D7_E3Y_TO_Z0_OWNER_EVIDENCE_COLLECTION_IMMUTABLE_ATTRIBUTION_REVIEW_AND_EXACT_RECONCILIATION_DECISION.md'
 ]);
 
 const knownGuardDirtyFiles = new Set([
