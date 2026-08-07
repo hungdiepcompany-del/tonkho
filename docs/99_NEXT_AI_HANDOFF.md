@@ -1327,3 +1327,21 @@ NEXT_PHASE_RECOMMENDED_MODEL=GPT-5.6_TERRA
 NEXT_PHASE_RECOMMENDED_REASONING=CAO
 SAFE_NEXT_ACTION=PROVE_EXACT_FIRESTORE_JOB_CARDINALITY_READ_ONLY_BEFORE_ANY_RECONCILIATION
 NEXT_AI_FIRST_ACTION=Wait for a fresh owner-approved bounded Firestore identity-cardinality read-only proof phase. Do not open D7-E4B or run any production mutation from this handoff alone.
+
+## SGDS D7-E4A1 Bounded Firestore Identity Cardinality Proof Handoff
+
+CURRENT_PHASE=D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF
+OWNER_APPROVAL_MARKER=OWNER_APPROVED_D7_E4A1_BOUNDED_READ_ONLY_PROOF
+IMPLEMENTATION_STATUS=LOCAL_RUNTIME_AND_TESTS_CREATED
+EXISTING_COMPLETE_READ_ONLY_CAPABILITY_FOUND=NO
+NEW_DIAGNOSTIC_REQUIRED=YES
+QUERY_BOUNDED=YES
+QUERY_LIMIT_PER_QUERY=2
+QUERY_EXECUTED=NO
+EXACT_FIRESTORE_JOB_CARDINALITY_PROVEN=NOT_YET
+SOURCE_SYNC_REQUIRED=YES
+SOURCE_SYNC_PROVEN=NOT_YET
+PRODUCTION_DATA_MUTATION=NONE
+RECONCILIATION_EXECUTED=NO
+NEXT_PHASE=D7_E4A1_REMOTE_SOURCE_SYNC_AND_OWNER_READ_ONLY_EXECUTION_GATE
+NEXT_AI_FIRST_ACTION=Run local validation. If it passes, commit and push the approved source/doc scope, perform one normal non-force clasp source sync with temporary-pull hash proof, then stop before execution unless the exact temporary owner marker is independently configured and an approved read-only execution channel is available. Do not run D7-E, D7-E3I, D7-E3V, reconciliation, repair, or mutation.

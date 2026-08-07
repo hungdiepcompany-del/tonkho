@@ -656,3 +656,15 @@ AUTOMATIC_RECONCILIATION_ALLOWED=NO
 BLOCKER_CODE=BLOCKED_EXACT_FIRESTORE_JOB_CARDINALITY_NOT_PROVEN
 FINAL_STATUS=BLOCKED_D7_E4A_EXACT_RECONCILIATION_PLAN_NOT_PROVEN
 NEXT_PHASE=D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF
+
+## 2026-08-07 - D7-E4A1 Defines Bounded Exact Firestore Cardinality Proof
+
+DECISION=Use a bounded Firestore composite equality query, capped at two matching documents, rather than infer duplicate absence from one direct document read.
+RATIONALE=The persisted durable schema retains a deterministic job ID, an invoice identity prefix, a source-thread prefix, and exact XML/PDF content hashes in the immutable commit plan. Those fields are sufficient to define the candidate identity without listing a collection, retrieving Gmail, Drive, or Sheets records, or retaining raw values in output.
+PHASE=D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF
+EXACT_IDENTITY_DEFINITION=JOB_ID_PLUS_PERSISTED_INVOICE_THREAD_AND_COMMIT_PLAN_ATTACHMENT_HASHES
+QUERY_LIMIT_PER_QUERY=2
+TERMINAL_CARDINALITY_VALUES=0|1|2_PLUS
+RECONCILIATION_EXECUTED=NO
+PRODUCTION_DATA_MUTATION=NONE
+NEXT_PHASE=D7_E4A1_REMOTE_SOURCE_SYNC_AND_OWNER_READ_ONLY_EXECUTION_GATE

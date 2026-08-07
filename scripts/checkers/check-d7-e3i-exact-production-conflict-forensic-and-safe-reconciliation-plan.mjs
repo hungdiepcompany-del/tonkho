@@ -33,7 +33,11 @@ const d7e3rCompanionDirtyFiles = [
   'D7_E3V_ExactPostHocAttributionReadOnlyDiagnostic.js',
   'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
   'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
-  'docs/phases/D7_E3V_TO_X_EXACT_POST_HOC_ATTRIBUTION_AND_FIRESTORE_RECONCILIATION_DECISION.md'
+  'docs/phases/D7_E3V_TO_X_EXACT_POST_HOC_ATTRIBUTION_AND_FIRESTORE_RECONCILIATION_DECISION.md',
+  'D7_E4A1_BoundedFirestoreIdentityCardinalityReadOnlyProof.js',
+  'tests/unit/d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.test.mjs',
+  'scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs',
+  'docs/phases/D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF.md'
 ];
 
 const knownGuardDirtyPaths = new Set(['GUARD.bat']);

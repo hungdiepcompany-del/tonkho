@@ -37,7 +37,11 @@ const approvedDirtyFiles = Object.freeze([
   'docs/99_NEXT_AI_HANDOFF.md',
   'docs/phases/D7_E3Y_TO_Z0_OWNER_EVIDENCE_COLLECTION_IMMUTABLE_ATTRIBUTION_REVIEW_AND_EXACT_RECONCILIATION_DECISION.md',
   'docs/phases/D7_E3Z_OWNER_IMMUTABLE_EVIDENCE_UNAVAILABLE_FAIL_CLOSED_CLOSEOUT.md',
-  'docs/phases/D7_E4A_OWNER_UNPROVEN_SHEET_ROW_DISPOSITION_AND_EXACT_RECONCILIATION_PLAN.md'
+  'docs/phases/D7_E4A_OWNER_UNPROVEN_SHEET_ROW_DISPOSITION_AND_EXACT_RECONCILIATION_PLAN.md',
+  'D7_E4A1_BoundedFirestoreIdentityCardinalityReadOnlyProof.js',
+  'tests/unit/d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.test.mjs',
+  'scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs',
+  'docs/phases/D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF.md'
 ]);
 
 const knownGuardDirtyFiles = new Set([
