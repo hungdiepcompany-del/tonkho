@@ -668,3 +668,18 @@ TERMINAL_CARDINALITY_VALUES=0|1|2_PLUS
 RECONCILIATION_EXECUTED=NO
 PRODUCTION_DATA_MUTATION=NONE
 NEXT_PHASE=D7_E4A1_REMOTE_SOURCE_SYNC_AND_OWNER_READ_ONLY_EXECUTION_GATE
+
+## 2026-08-07 - D7-E4A1 Stops Before Query Without Runtime Marker Evidence
+
+DECISION=Do not execute the newly synchronized production read-only diagnostic until the exact owner marker is independently present in Script Properties.
+RATIONALE=The source synchronization gate is complete, but the runtime function intentionally requires `D7_E4A1_OWNER_APPROVAL_MARKER`. This phase prohibits agent mutation of Script Properties and no sanitized read-only marker-presence evidence was supplied. Treating the owner prompt alone as a runtime property value would bypass the fail-closed gate.
+PHASE=D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF
+SOURCE_SYNC_PROVEN=YES
+OWNER_APPROVAL_MARKER_VALID=NOT_VERIFIED_IN_SCRIPT_PROPERTIES
+QUERY_EXECUTED=NO
+EXACT_FIRESTORE_JOB_CARDINALITY_PROVEN=NO
+RECONCILIATION_EXECUTED=NO
+PRODUCTION_DATA_MUTATION=NONE
+FINAL_STATUS=BLOCKED_D7_E4A1_CARDINALITY_PROOF_NOT_EXECUTABLE
+BLOCKER_CODE=BLOCKED_D7_E4A1_OWNER_MARKER_RUNTIME_PRESENCE_NOT_VERIFIED
+NEXT_PHASE=D7_E4A1_OWNER_CONFIGURE_MARKER_AND_RUN_READ_ONLY_PROOF_ONCE
