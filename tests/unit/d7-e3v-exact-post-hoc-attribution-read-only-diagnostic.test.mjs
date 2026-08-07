@@ -60,7 +60,8 @@ function evaluatePhaseState(patch = {}) {
       'scripts/test/run-all-checks.mjs',
       'docs/00_INDEX.md',
       'docs/phases/D7_E3Y_TO_Z0_OWNER_EVIDENCE_COLLECTION_IMMUTABLE_ATTRIBUTION_REVIEW_AND_EXACT_RECONCILIATION_DECISION.md',
-      'docs/phases/D7_E3Z_OWNER_IMMUTABLE_EVIDENCE_UNAVAILABLE_FAIL_CLOSED_CLOSEOUT.md'
+      'docs/phases/D7_E3Z_OWNER_IMMUTABLE_EVIDENCE_UNAVAILABLE_FAIL_CLOSED_CLOSEOUT.md',
+      'docs/phases/D7_E4A_OWNER_UNPROVEN_SHEET_ROW_DISPOSITION_AND_EXACT_RECONCILIATION_PLAN.md'
     ]
   });
 }
@@ -502,6 +503,14 @@ test('55b checker accepts the exact D7-E3Y immutable review record', () => {
 test('55c checker accepts the exact D7-E3Z immutable evidence closeout record', () => {
   const state = evaluatePhaseState({
     statusLines: ['?? docs/phases/D7_E3Z_OWNER_IMMUTABLE_EVIDENCE_UNAVAILABLE_FAIL_CLOSED_CLOSEOUT.md']
+  });
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
+});
+
+test('55d checker accepts the exact D7-E4A recovery closeout record', () => {
+  const state = evaluatePhaseState({
+    statusLines: ['?? docs/phases/D7_E4A_OWNER_UNPROVEN_SHEET_ROW_DISPOSITION_AND_EXACT_RECONCILIATION_PLAN.md']
   });
   assert.equal(state.ok, true);
   assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
