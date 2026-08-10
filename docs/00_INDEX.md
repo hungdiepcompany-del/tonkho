@@ -432,3 +432,4 @@ SGDS_CRIT_003_STATUS=PARTIALLY_CLOSED_RUNTIME_HOSTING_PENDING
 - [D7-E4A1 Bounded Firestore Identity Cardinality Read-Only Proof](phases/D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF.md)
 - [D7-E4A1A Canonical Identity Configuration Read-Only Recovery](phases/D7_E4A1A_CANONICAL_IDENTITY_CONFIGURATION_READ_ONLY_RECOVERY.md)
 - [D7-E4A1B Owner-Configured Canonical Properties Verification](phases/D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES.md)
+- [D7-E4A1C Owner Marker And Single Read-Only Cardinality Execution Closeout](phases/D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION.md)

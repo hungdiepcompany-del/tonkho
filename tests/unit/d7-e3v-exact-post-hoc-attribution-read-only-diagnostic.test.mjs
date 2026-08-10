@@ -71,7 +71,10 @@ function evaluatePhaseState(patch = {}) {
       'docs/phases/D7_E4A1A_CANONICAL_IDENTITY_CONFIGURATION_READ_ONLY_RECOVERY.md',
       'tests/unit/d7-e4a1b-owner-configure-canonical-properties.test.mjs',
       'scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs',
-      'docs/phases/D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES.md'
+      'docs/phases/D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES.md',
+      'tests/unit/d7-e4a1c-owner-marker-single-read-only-cardinality-execution.test.mjs',
+      'scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs',
+      'docs/phases/D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION.md'
     ]
   });
 }

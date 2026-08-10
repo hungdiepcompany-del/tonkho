@@ -710,3 +710,16 @@ D7_E4A1_QUERY_EXECUTED=NO
 RECONCILIATION_EXECUTED=NO
 PRODUCTION_MUTATION=CODEX_NONE
 NEXT_PHASE=D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION
+
+## 2026-08-10 - D7-E4A1C Closes Exact Cardinality Without Claiming Row Attribution
+
+DECISION=Accept one exact matching durable Firestore job as a completed bounded cardinality proof, with duplicate absence proven by the limit-two exact-field query category.
+RATIONALE=The private execution evidence reports one exact match, no non-exact candidate, no query error, and zero production-data mutations. This proves current target cardinality only; it cannot prove a historical Sheet-row creator.
+PHASE=D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION
+EXACT_FIRESTORE_JOB_CARDINALITY_PROVEN=YES
+DUPLICATE_MATCHING_JOB_ABSENCE_PROVEN=YES
+SHEET_ROW_ATTRIBUTION=ATTRIBUTION_UNPROVEN
+SHEET_ROW_CREATOR=UNKNOWN
+RECONCILIATION_EXECUTED=NO
+PRODUCTION_DATA_MUTATION=NONE
+NEXT_PHASE=D7_E4A2_EXACT_FIRESTORE_RECONCILIATION_PLAN_FINALIZATION
