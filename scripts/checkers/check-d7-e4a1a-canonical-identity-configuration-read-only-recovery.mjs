@@ -68,7 +68,10 @@ function assertDirtyScope() {
     'docs/09_VALIDATION_LOG.md',
     'docs/99_NEXT_AI_HANDOFF.md',
     'docs/phases/D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES.md',
-    'docs/phases/D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION.md'
+    'docs/phases/D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION.md',
+    'tests/unit/d7-e4a2-exact-firestore-reconciliation-plan-finalization.test.mjs',
+    'scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs',
+    'docs/phases/D7_E4A2_EXACT_FIRESTORE_RECONCILIATION_PLAN_FINALIZATION.md'
   ]);
   const status = execFileSync('git', ['status', '--short'], { encoding: 'utf8' });
   const unexpected = status.split(/\r?\n/).filter(Boolean).map(line => normalized(line.slice(3))).filter(path => path && !knownGuardDirty.some(item => path === item || path.startsWith(item)) && !allowed.has(path));

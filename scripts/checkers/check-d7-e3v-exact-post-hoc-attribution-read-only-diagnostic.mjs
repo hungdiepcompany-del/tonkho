@@ -50,7 +50,10 @@ const approvedDirtyFiles = Object.freeze([
   'docs/phases/D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES.md',
   'tests/unit/d7-e4a1c-owner-marker-single-read-only-cardinality-execution.test.mjs',
   'scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs',
-  'docs/phases/D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION.md'
+  'docs/phases/D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION.md',
+  'tests/unit/d7-e4a2-exact-firestore-reconciliation-plan-finalization.test.mjs',
+  'scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs',
+  'docs/phases/D7_E4A2_EXACT_FIRESTORE_RECONCILIATION_PLAN_FINALIZATION.md'
 ]);
 
 const knownGuardDirtyFiles = new Set([

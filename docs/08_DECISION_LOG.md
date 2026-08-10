@@ -723,3 +723,19 @@ SHEET_ROW_CREATOR=UNKNOWN
 RECONCILIATION_EXECUTED=NO
 PRODUCTION_DATA_MUTATION=NONE
 NEXT_PHASE=D7_E4A2_EXACT_FIRESTORE_RECONCILIATION_PLAN_FINALIZATION
+
+## 2026-08-10 - D7-E4A2 Selects a Durable Review-Required Target, Not Completion
+
+DECISION=Finalize one exact seven-write Firestore reconciliation plan that adopts the current Sheet row as unknown external state and leaves all external systems untouched.
+RATIONALE=The exact job is uniquely proven and has an immutable commit plan, but its workflow status remains VALIDATED while its reconciliation status and lease already require reconciliation. The legal durable transition chain is VALIDATED to FAILED_REVIEW_REQUIRED to RECONCILIATION_REQUIRED. Missing attachment records are not evidence that permits their creation.
+PHASE=D7_E4A2_EXACT_FIRESTORE_RECONCILIATION_PLAN_FINALIZATION
+EXACT_FIRESTORE_JOB_CARDINALITY_PROVEN=YES
+CURRENT_JOB_VERSION=4
+FIRESTORE_TOTAL_WRITE_COUNT=7
+FIRESTORE_WRITE_BUDGET_EXACT=YES
+FIRESTORE_ATTACHMENT_CREATE_COUNT=0
+SHEET_ROW_ATTRIBUTION=ATTRIBUTION_UNPROVEN
+SHEET_ROW_CREATOR=UNKNOWN
+RECONCILIATION_EXECUTED=NO
+PRODUCTION_DATA_MUTATION=NONE
+NEXT_PHASE=D7_E4B_OWNER_APPROVED_EXACT_FIRESTORE_RECONCILIATION

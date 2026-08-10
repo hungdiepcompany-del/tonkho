@@ -16,6 +16,7 @@ const commands = [
   ['node', ['scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs']],
   ['node', ['scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs']],
   ['node', ['scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs']],
+  ['node', ['scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs']],
 ];
 
 for (const [cmd, args] of commands) {

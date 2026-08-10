@@ -69,6 +69,7 @@
     "check:d7-e4a1-bounded-firestore-cardinality-read-only": "node scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs",
     "check:d7-e4a1a-canonical-identity-recovery": "node scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs",
     "check:d7-e4a1b-canonical-properties": "node scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs",
-    "check:d7-e4a1c-cardinality-closeout": "node scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs"
+    "check:d7-e4a1c-cardinality-closeout": "node scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs",
+    "check:d7-e4a2-exact-firestore-reconciliation-plan": "node scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs"
   }
 }
