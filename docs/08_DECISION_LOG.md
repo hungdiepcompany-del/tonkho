@@ -683,3 +683,16 @@ PRODUCTION_DATA_MUTATION=NONE
 FINAL_STATUS=BLOCKED_D7_E4A1_CARDINALITY_PROOF_NOT_EXECUTABLE
 BLOCKER_CODE=BLOCKED_D7_E4A1_OWNER_MARKER_RUNTIME_PRESENCE_NOT_VERIFIED
 NEXT_PHASE=D7_E4A1_OWNER_CONFIGURE_MARKER_AND_RUN_READ_ONLY_PROOF_ONCE
+
+## 2026-08-10 - D7-E4A1A Uses Immutable Historical Evidence For Canonical Configuration Recovery
+
+DECISION=Recover the five canonical identity hashes from the committed D7-E3G evidence rather than use absent Script Properties or infer complete hashes from prefixes.
+RATIONALE=The historical source retains four distinct full SHA-256 values. D7-B source fixes the candidate-fingerprint and attachment-set algorithms, while D7-E source proves that invoiceIdentityHash is the candidate fingerprint. This is sufficient level-1 provenance without a new production read or runtime execution.
+PHASE=D7_E4A1A_CANONICAL_IDENTITY_CONFIGURATION_READ_ONLY_RECOVERY
+SOURCE_OF_TRUTH_LEVEL=1_IMMUTABLE_TRUSTED_LOCAL_HISTORICAL_EVIDENCE
+SCRIPT_PROPERTIES_SOURCE_OF_TRUTH=NO
+PRIVATE_OWNER_ARTIFACT=OUTSIDE_REPOSITORY_NOT_COMMITTED
+RAW_CANONICAL_VALUES_COMMITTED=NO
+D7_E4A1_EXECUTION=NOT_RUN
+PRODUCTION_MUTATION=NONE
+NEXT_PHASE=D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES

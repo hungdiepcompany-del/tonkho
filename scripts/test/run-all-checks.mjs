@@ -13,6 +13,7 @@ const commands = [
   ['node', ['scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs']],
   ['node', ['scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs']],
   ['node', ['scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs']],
+  ['node', ['scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs']],
 ];
 
 for (const [cmd, args] of commands) {

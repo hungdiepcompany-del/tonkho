@@ -66,6 +66,7 @@
     "check:d7-e3g-partial-state-read-only-diagnostic": "node scripts/checkers/check-d7-e3g-partial-state-read-only-diagnostic.mjs",
     "check:d7-e3r-exact-bounded-production-read-only-adapters": "node scripts/checkers/check-d7-e3r-exact-bounded-production-read-only-adapters.mjs",
     "check:d7-e3v-exact-post-hoc-attribution-read-only": "node scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs",
-    "check:d7-e4a1-bounded-firestore-cardinality-read-only": "node scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs"
+    "check:d7-e4a1-bounded-firestore-cardinality-read-only": "node scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs",
+    "check:d7-e4a1a-canonical-identity-recovery": "node scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs"
   }
 }

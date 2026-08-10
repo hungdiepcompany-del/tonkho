@@ -65,7 +65,10 @@ function evaluatePhaseState(patch = {}) {
       'D7_E4A1_BoundedFirestoreIdentityCardinalityReadOnlyProof.js',
       'tests/unit/d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.test.mjs',
       'scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs',
-      'docs/phases/D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF.md'
+      'docs/phases/D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF.md',
+      'tests/unit/d7-e4a1a-canonical-identity-configuration-read-only-recovery.test.mjs',
+      'scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs',
+      'docs/phases/D7_E4A1A_CANONICAL_IDENTITY_CONFIGURATION_READ_ONLY_RECOVERY.md'
     ]
   });
 }
