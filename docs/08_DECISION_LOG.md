@@ -696,3 +696,17 @@ RAW_CANONICAL_VALUES_COMMITTED=NO
 D7_E4A1_EXECUTION=NOT_RUN
 PRODUCTION_MUTATION=NONE
 NEXT_PHASE=D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES
+
+## 2026-08-10 - D7-E4A1B Accepts Only Exact Private-Artifact Property Configuration
+
+DECISION=Accept the owner configuration only after the Settings page confirms each required canonical property is present, format-valid, and equal to the corresponding private artifact value in memory.
+RATIONALE=Property names or prefixes alone are insufficient. The temporary D7-E4A1 marker remains absent by design, so this phase proves configuration readiness without authorizing a Firestore query or reconciliation.
+PHASE=D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES
+ALL_CANONICAL_PROPERTIES_MATCH_PRIVATE_ARTIFACT=YES
+CANDIDATE_AND_INVOICE_IDENTITY_ALIGNED=YES
+OWNER_MARKER_PRESENT=NO
+CODEX_SCRIPT_PROPERTY_MUTATION_COUNT=0
+D7_E4A1_QUERY_EXECUTED=NO
+RECONCILIATION_EXECUTED=NO
+PRODUCTION_MUTATION=CODEX_NONE
+NEXT_PHASE=D7_E4A1C_OWNER_MARKER_AND_SINGLE_READ_ONLY_CARDINALITY_EXECUTION

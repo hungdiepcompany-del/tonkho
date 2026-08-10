@@ -40,7 +40,10 @@ const d7e3rCompanionDirtyFiles = [
   'docs/phases/D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF.md',
   'tests/unit/d7-e4a1a-canonical-identity-configuration-read-only-recovery.test.mjs',
   'scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs',
-  'docs/phases/D7_E4A1A_CANONICAL_IDENTITY_CONFIGURATION_READ_ONLY_RECOVERY.md'
+  'docs/phases/D7_E4A1A_CANONICAL_IDENTITY_CONFIGURATION_READ_ONLY_RECOVERY.md',
+  'tests/unit/d7-e4a1b-owner-configure-canonical-properties.test.mjs',
+  'scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs',
+  'docs/phases/D7_E4A1B_OWNER_CONFIGURE_CANONICAL_PROPERTIES.md'
 ];
 
 const knownGuardDirtyPaths = new Set(['GUARD.bat']);
