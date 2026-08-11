@@ -16,6 +16,11 @@ function runD7EOwnerApprovedOneCandidateProductionPilot() {
   return runner.run();
 }
 
+function runD7E4BExactFirestoreReconciliation() {
+  const runner = createD7E4BExactFirestoreReconciliationRunner_();
+  return runner.run();
+}
+
 function runD7EPartialStateReadOnlyDiagnostic() {
   const runner = createD7EPartialStateReadOnlyDiagnosticRunner_();
   return runner.run();

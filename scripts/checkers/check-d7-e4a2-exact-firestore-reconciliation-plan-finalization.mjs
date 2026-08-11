@@ -46,7 +46,12 @@ function assertDirtyScope() {
     'docs/07_WORK_LOG.md',
     'docs/08_DECISION_LOG.md',
     'docs/09_VALIDATION_LOG.md',
-    'docs/99_NEXT_AI_HANDOFF.md'
+    'docs/99_NEXT_AI_HANDOFF.md',
+    'D7_E4B_ExactFirestoreReconciliationRuntime.js',
+    'Operator_Entrypoints.js',
+    'tests/unit/d7-e4b-exact-firestore-reconciliation-runtime.test.mjs',
+    'scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs',
+    'docs/phases/D7_E4B1_EXACT_RECONCILIATION_RUNTIME_IMPLEMENTATION_AND_SOURCE_SYNC.md'
   ]);
   const unexpected = execFileSync('git', ['status', '--short'], { encoding: 'utf8' })
     .split(/\r?\n/)
