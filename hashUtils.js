@@ -23,7 +23,7 @@ function getExistingHashIndex_() {
  * ========================*/
 function filterRowsByHashIndex_(items, stats) {
   const existed = getExistingHashIndex_();
-  const batchSet = new Set();
+  const batchHashSources = new Map();
   const safeStats = ensureCommitStats_(stats);
 
   return items.map(item => {
@@ -33,22 +33,39 @@ function filterRowsByHashIndex_(items, stats) {
     if (!row) return { ...item, status: 'skip' };
 
     const hash = row[CONFIG.NHAPXUAT_INDEX.hash];
+    const sourceKey = String(item.sourceKey || '').trim();
 
     if (!hash) return { ...item, status: 'skip' };
 
+    // Existing ledger rows stay authoritative for replay protection.
     if (existed.has(hash)) {
       safeStats.duplicateExisting++;
       bucket.duplicate++;
       return { ...item, status: 'duplicated' };
     }
 
-    if (batchSet.has(hash)) {
-      safeStats.duplicateBatch++;
-      bucket.duplicate++;
-      return { ...item, status: 'duplicated' };
+    const priorSources = batchHashSources.get(hash);
+    if (priorSources) {
+      const canProveDistinctSourceLine =
+        sourceKey && priorSources.size > 0 && !priorSources.has(sourceKey);
+
+      if (!canProveDistinctSourceLine) {
+        safeStats.duplicateBatch++;
+        bucket.duplicate++;
+        return { ...item, status: 'duplicated' };
+      }
+
+      // Same legacy hash, but a different deterministic source-line identity.
+      // Keep both rows and surface the collision instead of silently dropping one.
+      priorSources.add(sourceKey);
+      safeStats.hashCollisionBatch++;
+      safeStats.accepted++;
+      bucket.accepted++;
+      debugLog_('HASH_COLLISION_DISTINCT_SOURCE: ' + hash.slice(0, 12));
+      return { ...item, status: 'accepted', hashCollision: true };
     }
 
-    batchSet.add(hash);
+    batchHashSources.set(hash, new Set(sourceKey ? [sourceKey] : []));
     safeStats.accepted++;
     bucket.accepted++;
     return { ...item, status: 'accepted' };
@@ -62,6 +79,7 @@ function ensureCommitStats_(stats) {
     out: { scanned: 0, accepted: 0, duplicate: 0 },
     duplicateExisting: 0,
     duplicateBatch: 0,
+    hashCollisionBatch: 0,
     accepted: 0,
     emptyHash: 0,
     hashed: 0
@@ -138,11 +156,17 @@ function prepareInvoiceRowsForCommit_(items, stats, options = {}) {
 }
 
 function buildCommitSourceKey_(item, invoiceKey, index) {
+  // Only explicit source identity or a real source line number may prove that
+  // two rows with the same legacy hash are distinct business lines.
+  // A transient batch index is NOT sufficient proof and must not weaken dedup.
   if (item.sourceKey) return item.sourceKey;
-  if (item.thread && typeof item.thread.getId === "function") {
-    return "THREAD:" + item.thread.getId() + ":" + (invoiceKey || index);
-  }
-  return (invoiceKey ? "INVOICE:" + invoiceKey : "ROW:" + index);
+
+  const lineNo = Number(item.sourceLineNo || 0);
+  const base = item.thread && typeof item.thread.getId === "function"
+    ? "THREAD:" + item.thread.getId() + ":" + (invoiceKey || "NO_KEY")
+    : (invoiceKey ? "INVOICE:" + invoiceKey : "UNPROVEN_SOURCE");
+
+  return lineNo > 0 ? base + ":LINE:" + lineNo : base;
 }
 
 function commitPreparedInvoiceRows_(processed) {
@@ -227,7 +251,7 @@ function generateHashForExistingRows_() {
     2,
     CONFIG.HASH_COLUME_BEGIN,
     numRows,
-    CONFIG.HASH_COLUME_END
+    CONFIG.HASH_COLUME_END - CONFIG.HASH_COLUME_BEGIN + 1
   );
   const dataValues = dataRange.getValues();
 
