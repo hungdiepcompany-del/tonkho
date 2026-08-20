@@ -1,0 +1,178 @@
+name: Deploy GAS Production
+
+on:
+  push:
+    branches:
+      - gas-production
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tonkho-gas-production
+  cancel-in-progress: false
+
+env:
+  EXPECTED_SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+  CLASP_VERSION: 3.3.0
+
+jobs:
+  validate-and-deploy:
+    name: Validate and deploy Apps Script
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout approved production ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned clasp
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global "@google/clasp@${CLASP_VERSION}"
+          clasp --version
+
+      - name: Validate deployment contract
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f .clasp.json
+          test -f deploy/gas-runtime-files.txt
+
+          ACTUAL_SCRIPT_ID="$(node -e "const f=require('fs'); const j=JSON.parse(f.readFileSync('.clasp.json','utf8').replace(/^\uFEFF/,'')); process.stdout.write(String(j.scriptId||''));")"
+          if [ "$ACTUAL_SCRIPT_ID" != "$EXPECTED_SCRIPT_ID" ]; then
+            echo "::error::SCRIPT_ID_MISMATCH expected=$EXPECTED_SCRIPT_ID actual=$ACTUAL_SCRIPT_ID"
+            exit 1
+          fi
+
+          DUPLICATES="$(grep -vE '^[[:space:]]*(#|$)' deploy/gas-runtime-files.txt | sort | uniq -d || true)"
+          if [ -n "$DUPLICATES" ]; then
+            echo "::error::Duplicate entries in deploy/gas-runtime-files.txt"
+            echo "$DUPLICATES"
+            exit 1
+          fi
+
+          while IFS= read -r path; do
+            path="${path%$'\r'}"
+            [ -z "$path" ] && continue
+            [[ "$path" =~ ^[[:space:]]*# ]] && continue
+
+            if [ ! -f "$path" ]; then
+              echo "::error::Allowlisted GAS source is missing: $path"
+              exit 1
+            fi
+
+            case "$path" in
+              *.js)
+                node --check "$path" >/dev/null
+                ;;
+              *.html|appsscript.json)
+                ;;
+              *)
+                echo "::error::Unsupported file type in GAS allowlist: $path"
+                exit 1
+                ;;
+            esac
+          done < deploy/gas-runtime-files.txt
+
+          echo "DEPLOY_CONTRACT=PASS"
+          echo "SCRIPT_ID=$ACTUAL_SCRIPT_ID"
+
+      - name: Build isolated GAS staging directory
+        id: stage
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          STAGE="$RUNNER_TEMP/gas-stage"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+
+          cp .clasp.json "$STAGE/.clasp.json"
+
+          COUNT=0
+          while IFS= read -r path; do
+            path="${path%$'\r'}"
+            [ -z "$path" ] && continue
+            [[ "$path" =~ ^[[:space:]]*# ]] && continue
+
+            mkdir -p "$STAGE/$(dirname "$path")"
+            cp -- "$path" "$STAGE/$path"
+            COUNT=$((COUNT + 1))
+          done < deploy/gas-runtime-files.txt
+
+          echo "stage=$STAGE" >> "$GITHUB_OUTPUT"
+          echo "file_count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "STAGED_GAS_FILES=$COUNT"
+
+      - name: Install clasp OAuth credential
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CLASPRC_JSON:-}" ]; then
+            echo "::error::Missing repository secret CLASPRC_JSON"
+            exit 1
+          fi
+
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          chmod 600 "$HOME/.clasprc.json"
+
+          node -e "JSON.parse(require('fs').readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));"
+          echo "CLASPRC_JSON_FORMAT=PASS"
+
+      - name: Verify Google authorization and target
+        shell: bash
+        working-directory: ${{ steps.stage.outputs.stage }}
+        run: |
+          set -euo pipefail
+
+          clasp show-authorized-user --json
+          clasp status
+
+          LIST_OUTPUT="$(clasp list-scripts)"
+          printf '%s\n' "$LIST_OUTPUT"
+
+          if ! printf '%s\n' "$LIST_OUTPUT" | grep -Fq "$EXPECTED_SCRIPT_ID"; then
+            echo "::error::Authenticated Google account cannot see expected Apps Script project."
+            exit 1
+          fi
+
+          echo "GOOGLE_TARGET_GATE=PASS"
+
+      - name: Deploy exact allowlisted GAS source
+        shell: bash
+        working-directory: ${{ steps.stage.outputs.stage }}
+        run: |
+          set -euo pipefail
+          clasp push
+          echo "DEPLOY_RESULT=PASS"
+          echo "DEPLOYED_GITHUB_SHA=${GITHUB_SHA}"
+          echo "DEPLOYED_SCRIPT_ID=${EXPECTED_SCRIPT_ID}"
+
+      - name: Deployment summary
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          {
+            echo "## GAS production deployment"
+            echo ""
+            echo "- Result: PASS"
+            echo "- Repository: $GITHUB_REPOSITORY"
+            echo "- Ref: $GITHUB_REF_NAME"
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Script ID: $EXPECTED_SCRIPT_ID"
+            echo "- Allowlisted files: ${{ steps.stage.outputs.file_count }}"
+          } >> "$GITHUB_STEP_SUMMARY"
