@@ -1,0 +1,78 @@
+name: Probe GAS Runtime Execution
+
+on:
+  push:
+    branches:
+      - gas-runtime-probe-20260820
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  EXPECTED_SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+  CLASP_VERSION: 3.3.0
+  STATUS_ISSUE: '2'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install clasp and credential
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          npm install --global "@google/clasp@${CLASP_VERSION}"
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          chmod 600 "$HOME/.clasprc.json"
+      - name: Probe read-only execution capability
+        id: probe
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          PROBE="$RUNNER_TEMP/gas-probe"
+          rm -rf "$PROBE"
+          mkdir -p "$PROBE"
+          cd "$PROBE"
+          clasp clone-script "$EXPECTED_SCRIPT_ID" >/tmp/clone.out 2>&1
+          CLONE_RC=$?
+
+          clasp list-deployments > /tmp/deployments.out 2>&1
+          DEPLOYMENTS_RC=$?
+
+          clasp run-function getProgressNX > /tmp/run.out 2>&1
+          RUN_RC=$?
+
+          SAFE_RUN="$(tail -n 12 /tmp/run.out | sed 's/`/'\''/g')"
+          SAFE_DEPLOY="$(tail -n 20 /tmp/deployments.out | sed 's/`/'\''/g')"
+
+          BODY="$(cat <<EOF
+          PROBE=GAS_RUNTIME_EXECUTION
+          COMMIT=$GITHUB_SHA
+          CLONE_RC=$CLONE_RC
+          LIST_DEPLOYMENTS_RC=$DEPLOYMENTS_RC
+          RUN_GET_PROGRESS_NX_RC=$RUN_RC
+          RUN_OUTPUT_BEGIN
+          $SAFE_RUN
+          RUN_OUTPUT_END
+          DEPLOYMENTS_OUTPUT_BEGIN
+          $SAFE_DEPLOY
+          DEPLOYMENTS_OUTPUT_END
+          EOF
+          )"
+          gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+
+          echo "CLONE_RC=$CLONE_RC"
+          echo "LIST_DEPLOYMENTS_RC=$DEPLOYMENTS_RC"
+          echo "RUN_GET_PROGRESS_NX_RC=$RUN_RC"
+          cat /tmp/run.out
+          exit 0
