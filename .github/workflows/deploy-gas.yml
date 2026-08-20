@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: tonkho-gas-production
@@ -15,6 +16,7 @@ concurrency:
 env:
   EXPECTED_SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
   CLASP_VERSION: 3.3.0
+  DEPLOY_STATUS_ISSUE: '2'
 
 jobs:
   validate-and-deploy:
@@ -163,6 +165,7 @@ jobs:
           echo "CLONED_SOURCE_FILES=$COUNT"
 
       - name: Deploy exact allowlisted GAS source
+        id: deploy
         shell: bash
         working-directory: ${{ steps.stage.outputs.stage }}
         run: |
@@ -172,6 +175,40 @@ jobs:
           echo "DEPLOY_RESULT=PASS"
           echo "DEPLOYED_GITHUB_SHA=${GITHUB_SHA}"
           echo "DEPLOYED_SCRIPT_ID=${EXPECTED_SCRIPT_ID}"
+
+      - name: Publish machine-readable deployment status
+        if: ${{ always() }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          set -euo pipefail
+
+          RESULT="FAIL"
+          if [ "$JOB_STATUS" = "success" ] && [ "${DEPLOY_OUTCOME:-}" = "success" ]; then
+            RESULT="PASS"
+          fi
+
+          BODY="$(cat <<EOF
+          RESULT=$RESULT
+          JOB_STATUS=$JOB_STATUS
+          DEPLOY_STEP=${DEPLOY_OUTCOME:-unknown}
+          COMMIT=$GITHUB_SHA
+          SCRIPT_ID=$EXPECTED_SCRIPT_ID
+          RUN_ID=$GITHUB_RUN_ID
+          REF=$GITHUB_REF_NAME
+          UTC=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          EOF
+          )"
+
+          gh issue comment "$DEPLOY_STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          echo "$BODY"
+
+          if [ "$RESULT" != "PASS" ]; then
+            exit 1
+          fi
 
       - name: Deployment summary
         if: ${{ success() }}
