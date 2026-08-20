@@ -133,30 +133,41 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));"
           echo "CLASPRC_JSON_FORMAT=PASS"
 
-      - name: Verify Google authorization and target
+      - name: Verify Google authorization and exact target
         shell: bash
-        working-directory: ${{ steps.stage.outputs.stage }}
         run: |
           set -euo pipefail
 
           clasp show-authorized-user --json
-          clasp status
 
-          LIST_OUTPUT="$(clasp list-scripts)"
-          printf '%s\n' "$LIST_OUTPUT"
+          PROBE="$RUNNER_TEMP/gas-target-probe"
+          rm -rf "$PROBE"
+          mkdir -p "$PROBE"
+          cd "$PROBE"
+          clasp clone-script "$EXPECTED_SCRIPT_ID"
 
-          if ! printf '%s\n' "$LIST_OUTPUT" | grep -Fq "$EXPECTED_SCRIPT_ID"; then
-            echo "::error::Authenticated Google account cannot see expected Apps Script project."
+          test -f .clasp.json
+          ACTUAL_SCRIPT_ID="$(node -e "const j=JSON.parse(require('fs').readFileSync('.clasp.json','utf8').replace(/^\uFEFF/,'')); process.stdout.write(String(j.scriptId||''));")"
+          if [ "$ACTUAL_SCRIPT_ID" != "$EXPECTED_SCRIPT_ID" ]; then
+            echo "::error::Clone target mismatch expected=$EXPECTED_SCRIPT_ID actual=$ACTUAL_SCRIPT_ID"
+            exit 1
+          fi
+
+          COUNT="$(find . -maxdepth 1 -type f ! -name '.clasp.json' | wc -l | tr -d ' ')"
+          if [ "$COUNT" -lt 1 ]; then
+            echo "::error::Clone succeeded but no Apps Script source files were returned"
             exit 1
           fi
 
           echo "GOOGLE_TARGET_GATE=PASS"
+          echo "CLONED_SOURCE_FILES=$COUNT"
 
       - name: Deploy exact allowlisted GAS source
         shell: bash
         working-directory: ${{ steps.stage.outputs.stage }}
         run: |
           set -euo pipefail
+          clasp status
           clasp push
           echo "DEPLOY_RESULT=PASS"
           echo "DEPLOYED_GITHUB_SHA=${GITHUB_SHA}"
