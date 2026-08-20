@@ -132,6 +132,7 @@ function capNhatTonKho(ngayDen) {
         }
       });
 
+      // ✅ FIX PROGRESS – KHÔNG RESET, KHÔNG GIẬT
       const done = Math.min(i + slice.length, TOTAL);
       const percent = PROGRESS_START + Math.round(
         (done / TOTAL) * (PROGRESS_END - PROGRESS_START)
