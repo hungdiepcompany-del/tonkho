@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - gas-production
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,6 +19,7 @@ env:
 jobs:
   validate-and-deploy:
     name: Validate and deploy Apps Script
+    if: ${{ github.ref == 'refs/heads/gas-production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
