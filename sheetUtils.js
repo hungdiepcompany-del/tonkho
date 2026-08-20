@@ -1,6 +1,6 @@
 const ProgressService = (() => {
   const cache = CacheService.getScriptCache();
-  const TTL = 100; // giây
+  const TTL = 600; // giây - đủ phủ execution Apps Script tối đa
 
   function key(name) {
     return "PROGRESS_" + name;
