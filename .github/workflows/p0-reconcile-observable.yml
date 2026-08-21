@@ -1,4 +1,4 @@
-name: P0 Trigger Discovery
+name: P0 API Executable Probe
 
 on:
   pull_request:
@@ -15,81 +15,127 @@ env:
   STATUS_ISSUE: '2'
 
 jobs:
-  discover-triggers:
-    name: Discover recent GAS trigger executions
+  api-executable-probe:
+    name: Probe temporary API executable with getProgressNX
     if: ${{ github.head_ref == 'gas-p0-runtime-20260821' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install clasp credential and query Apps Script processes
+      - name: Probe temporary API executable
         shell: bash
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
           npm install --global "@google/clasp@${CLASP_VERSION}" >/dev/null
           test -n "${CLASPRC_JSON:-}"
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           chmod 600 "$HOME/.clasprc.json"
-          clasp show-authorized-user --json
 
-          ACCESS_TOKEN="$(node <<'NODE'
-          const fs=require('fs');
-          const j=JSON.parse(fs.readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));
-          function find(v){
-            if (!v || typeof v!=='object') return '';
-            for (const [k,x] of Object.entries(v)) {
-              if ((k==='access_token' || k==='accessToken') && typeof x==='string' && x) return x;
-            }
-            for (const x of Object.values(v)) { const r=find(x); if(r) return r; }
-            return '';
-          }
-          process.stdout.write(find(j));
-          NODE
-          )"
-          test -n "$ACCESS_TOKEN"
+          ORIG="$RUNNER_TEMP/api-probe-original"
+          TEMP="$RUNNER_TEMP/api-probe-temp"
+          DEPLOYMENT_ID=""
+          HEAD_DIRTY=0
+          RESTORE_RESULT="NOT_NEEDED"
+          DELETE_RESULT="NOT_CREATED"
+          RUN_RC="NOT_RUN"
+          RUN_OUTPUT=""
+          STAGE="INIT"
 
-          HTTP="$(curl -sS -G -o /tmp/processes.json -w '%{http_code}' \
-            -H "Authorization: Bearer $ACCESS_TOKEN" \
-            --data-urlencode "scriptId=$SCRIPT_ID" \
-            --data-urlencode "pageSize=100" \
-            'https://script.googleapis.com/v1/processes:listScriptProcesses')"
-
-          node <<'NODE' >/tmp/process-summary.txt
-          const fs=require('fs');
-          let j={};
-          try { j=JSON.parse(fs.readFileSync('/tmp/processes.json','utf8')); } catch(e) {}
-          if (j.error) {
-            console.log('API_ERROR='+String(j.error.status||'UNKNOWN')+':'+String(j.error.message||''));
-            process.exit(0);
-          }
-          const ps=j.processes||[];
-          console.log('PROCESS_COUNT='+ps.length);
-          const rows=ps.map(p=>({
-            functionName:p.functionName||'',
-            processType:p.processType||'',
-            processStatus:p.processStatus||'',
-            startTime:p.startTime||'',
-            duration:p.duration||''
-          }));
-          rows.slice(0,100).forEach(r=>console.log([r.startTime,r.functionName,r.processType,r.processStatus,r.duration].join('\t')));
-          NODE
-
-          SUMMARY="$(cat /tmp/process-summary.txt)"
-          BODY="$(cat <<EOF
-          P0=TRIGGER_DISCOVERY
-          HTTP=$HTTP
+          post_status() {
+            BODY="$(cat <<EOF
+          P0=API_EXECUTABLE_PROBE
+          STAGE=$STAGE
           COMMIT=$GITHUB_SHA
-          SUMMARY_BEGIN
-          $SUMMARY
-          SUMMARY_END
+          DEPLOYMENT_ID=${DEPLOYMENT_ID:-NONE}
+          RESTORE_RESULT=$RESTORE_RESULT
+          DELETE_RESULT=$DELETE_RESULT
+          RUN_RC=$RUN_RC
+          RUN_OUTPUT_BEGIN
+          $RUN_OUTPUT
+          RUN_OUTPUT_END
           EOF
           )"
-          gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
-          printf '%s\n' "$BODY"
+            gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY" >/dev/null 2>&1 || true
+          }
+
+          cleanup() {
+            rc=$?
+            trap - EXIT
+            set +e
+            if [ "$HEAD_DIRTY" = "1" ] && [ -d "$ORIG" ]; then
+              cd "$ORIG"
+              clasp push >/tmp/api-probe-final-restore.log 2>&1
+              if [ $? -eq 0 ]; then RESTORE_RESULT="PASS_IN_TRAP"; else RESTORE_RESULT="FAIL_IN_TRAP"; fi
+              HEAD_DIRTY=0
+            fi
+            if [ -n "$DEPLOYMENT_ID" ] && [ -d "$ORIG" ]; then
+              cd "$ORIG"
+              clasp delete-deployment "$DEPLOYMENT_ID" >/tmp/api-probe-delete.log 2>&1
+              if [ $? -eq 0 ]; then DELETE_RESULT="PASS"; else DELETE_RESULT="FAIL"; fi
+            fi
+            post_status
+            if [ "$RESTORE_RESULT" = "FAIL_IN_TRAP" ] || [ "$DELETE_RESULT" = "FAIL" ]; then rc=1; fi
+            exit "$rc"
+          }
+          trap cleanup EXIT
+
+          STAGE="AUTH"
+          clasp show-authorized-user --json
+
+          STAGE="CLONE_LIVE"
+          rm -rf "$ORIG" "$TEMP"
+          mkdir -p "$ORIG"
+          cd "$ORIG"
+          clasp clone-script "$SCRIPT_ID" >/tmp/api-probe-clone.log 2>&1
+          test -f appsscript.json
+          test -f .clasp.json
+
+          STAGE="PREPARE_EXECUTION_API"
+          mkdir -p "$TEMP"
+          cp -a "$ORIG/." "$TEMP/"
+          export TEMP
+          python3 <<'PY'
+          import json, os, pathlib
+          p=pathlib.Path(os.environ['TEMP'])/'appsscript.json'
+          j=json.loads(p.read_text(encoding='utf-8-sig'))
+          j['executionApi']={'access':'ANYONE'}
+          p.write_text(json.dumps(j,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+
+          STAGE="TEMP_PUSH"
+          cd "$TEMP"
+          clasp push >/tmp/api-probe-temp-push.log 2>&1
+          HEAD_DIRTY=1
+
+          STAGE="CREATE_VERSION"
+          VERSION_OUTPUT="$(clasp create-version "P0 API executable probe ${GITHUB_RUN_ID}" 2>&1)"
+          VERSION="$(printf '%s\n' "$VERSION_OUTPUT" | grep -oE '[0-9]+' | tail -1)"
+          test -n "$VERSION"
+
+          STAGE="CREATE_DEPLOYMENT"
+          DEPLOY_OUTPUT="$(clasp create-deployment -V "$VERSION" -d "P0 API executable probe ${GITHUB_RUN_ID}" 2>&1)"
+          DEPLOYMENT_ID="$(printf '%s\n' "$DEPLOY_OUTPUT" | grep -oE 'AKfy[A-Za-z0-9_-]+' | head -1)"
+          test -n "$DEPLOYMENT_ID"
+
+          STAGE="RESTORE_HEAD"
+          cd "$ORIG"
+          clasp push >/tmp/api-probe-restore.log 2>&1
+          HEAD_DIRTY=0
+          RESTORE_RESULT="PASS"
+
+          STAGE="RUN_READ_ONLY"
+          set +e
+          RUN_OUTPUT="$(clasp run-function getProgressNX --nondev 2>&1)"
+          RUN_RC=$?
+          set -e
+
+          STAGE="PROBE_COMPLETE"
+          printf '%s\n' "$RUN_OUTPUT"
+          exit 0
