@@ -39,83 +39,82 @@ jobs:
           test -n "${CLASPRC_JSON:-}"
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           chmod 600 "$HOME/.clasprc.json"
-          clasp show-authorized-user --json >/tmp/who.json
 
-          node <<'NODE'
-          const fs=require('fs');
-          const j=JSON.parse(fs.readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));
-          function walk(v, out={}) {
-            if (!v || typeof v !== 'object') return out;
-            for (const [k,x] of Object.entries(v)) {
-              if (['client_id','clientId','client_secret','clientSecret','refresh_token'].includes(k) && typeof x==='string' && x && !(k in out)) out[k]=x;
-              if (x && typeof x==='object') walk(x,out);
-            }
-            return out;
-          }
-          const f=walk(j);
-          const client_id=f.client_id||f.clientId||'';
-          const client_secret=f.client_secret||f.clientSecret||'';
-          const refresh_token=f.refresh_token||'';
-          if (!client_id || !client_secret || !refresh_token) process.exit(2);
-          fs.writeFileSync('/tmp/oauth-client-id',client_id,{mode:0o600});
-          fs.writeFileSync('/tmp/oauth-client-secret',client_secret,{mode:0o600});
-          fs.writeFileSync('/tmp/oauth-refresh-token',refresh_token,{mode:0o600});
-          NODE
+          PROBE="$RUNNER_TEMP/gcp-project-probe"
+          rm -rf "$PROBE"
+          mkdir -p "$PROBE"
+          cd "$PROBE"
+          clasp clone-script "$SCRIPT_ID" >/tmp/gcp-probe-clone.log 2>&1
 
-          CLIENT_ID="$(cat /tmp/oauth-client-id)"
-          CLIENT_SECRET="$(cat /tmp/oauth-client-secret)"
-          REFRESH_TOKEN="$(cat /tmp/oauth-refresh-token)"
+          python3 <<'PY'
+          import json, os, pathlib
+          p = pathlib.Path(os.environ['HOME']) / '.clasprc.json'
+          data = json.loads(p.read_text(encoding='utf-8-sig'))
+          found = []
+          def walk(v):
+              if isinstance(v, dict):
+                  if isinstance(v.get('access_token'), str) and v.get('access_token'):
+                      found.append((int(v.get('expiry_date') or 0), v['access_token']))
+                  for x in v.values(): walk(x)
+              elif isinstance(v, list):
+                  for x in v: walk(x)
+          walk(data)
+          if not found:
+              raise SystemExit('NO_ACCESS_TOKEN_AFTER_CLASP_CLONE')
+          found.sort(key=lambda x: x[0], reverse=True)
+          pathlib.Path('/tmp/access-token').write_text(found[0][1], encoding='utf-8')
+          PY
 
-          TOKEN_HTTP="$(curl -sS -o /tmp/token.json -w '%{http_code}' \
-            -X POST 'https://oauth2.googleapis.com/token' \
-            --data-urlencode "client_id=$CLIENT_ID" \
-            --data-urlencode "client_secret=$CLIENT_SECRET" \
-            --data-urlencode "refresh_token=$REFRESH_TOKEN" \
-            --data-urlencode 'grant_type=refresh_token')"
+          ACCESS_TOKEN="$(cat /tmp/access-token)"
+          test -n "$ACCESS_TOKEN"
 
-          ACCESS_TOKEN="$(node -e "const j=require('/tmp/token.json'); process.stdout.write(j.access_token||'')")"
-          if [ "$TOKEN_HTTP" != "200" ] || [ -z "$ACCESS_TOKEN" ]; then
-            echo "TOKEN_REFRESH_HTTP=$TOKEN_HTTP" > /tmp/summary.txt
-          else
-            CR_HTTP="$(curl -sS -o /tmp/project.json -w '%{http_code}' \
-              -H "Authorization: Bearer $ACCESS_TOKEN" \
-              "https://cloudresourcemanager.googleapis.com/v1/projects/$PROJECT_ID")"
-            SU_HTTP="$(curl -sS -o /tmp/service.json -w '%{http_code}' \
-              -H "Authorization: Bearer $ACCESS_TOKEN" \
-              "https://serviceusage.googleapis.com/v1/projects/$PROJECT_NUMBER/services/script.googleapis.com")"
-            AS_HTTP="$(curl -sS -o /tmp/script.json -w '%{http_code}' \
-              -H "Authorization: Bearer $ACCESS_TOKEN" \
-              "https://script.googleapis.com/v1/projects/$SCRIPT_ID")"
-            export CR_HTTP SU_HTTP AS_HTTP
+          CR_HTTP="$(curl -sS -o /tmp/project.json -w '%{http_code}' \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://cloudresourcemanager.googleapis.com/v1/projects/$PROJECT_ID")"
+          SU_HTTP="$(curl -sS -o /tmp/service.json -w '%{http_code}' \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://serviceusage.googleapis.com/v1/projects/$PROJECT_NUMBER/services/script.googleapis.com")"
+          AS_HTTP="$(curl -sS -o /tmp/script.json -w '%{http_code}' \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            "https://script.googleapis.com/v1/projects/$SCRIPT_ID")"
+          TI_HTTP="$(curl -sS -o /tmp/tokeninfo.json -w '%{http_code}' \
+            "https://oauth2.googleapis.com/tokeninfo?access_token=$ACCESS_TOKEN")"
+          export CR_HTTP SU_HTTP AS_HTTP TI_HTTP
 
-            node <<'NODE' > /tmp/summary.txt
-            const fs=require('fs');
-            function read(p){try{return JSON.parse(fs.readFileSync(p,'utf8'))}catch{return {}}}
-            const project=read('/tmp/project.json');
-            const service=read('/tmp/service.json');
-            const script=read('/tmp/script.json');
-            const env=process.env;
-            const safeErr = x => x && x.error ? String(x.error.status||'ERROR')+':'+String(x.error.message||'') : '';
-            console.log('PROJECT_ID_EXPECTED='+env.PROJECT_ID);
-            console.log('PROJECT_NUMBER_EXPECTED='+env.PROJECT_NUMBER);
-            console.log('PROJECT_HTTP='+env.CR_HTTP);
-            console.log('PROJECT_ID_ACTUAL='+(project.projectId||''));
-            console.log('PROJECT_NUMBER_ACTUAL='+(project.projectNumber||''));
-            console.log('PROJECT_LIFECYCLE='+(project.lifecycleState||''));
-            if (project.error) console.log('PROJECT_ERROR='+safeErr(project));
-            console.log('APPS_SCRIPT_API_HTTP='+env.SU_HTTP);
-            console.log('APPS_SCRIPT_API_STATE='+(service.state||''));
-            if (service.error) console.log('APPS_SCRIPT_API_ERROR='+safeErr(service));
-            console.log('SCRIPT_API_HTTP='+env.AS_HTTP);
-            console.log('SCRIPT_TITLE='+(script.title||''));
-            if (script.error) console.log('SCRIPT_API_ERROR='+safeErr(script));
-            NODE
-          fi
+          python3 <<'PY' > /tmp/summary.txt
+          import json, os, pathlib
+          def read(path):
+              try: return json.loads(pathlib.Path(path).read_text(encoding='utf-8'))
+              except Exception: return {}
+          project=read('/tmp/project.json')
+          service=read('/tmp/service.json')
+          script=read('/tmp/script.json')
+          tokeninfo=read('/tmp/tokeninfo.json')
+          def err(x):
+              e=x.get('error') if isinstance(x,dict) else None
+              return '' if not e else f"{e.get('status','ERROR')}:{e.get('message','')}"
+          print('PROJECT_ID_EXPECTED='+os.environ['PROJECT_ID'])
+          print('PROJECT_NUMBER_EXPECTED='+os.environ['PROJECT_NUMBER'])
+          print('PROJECT_HTTP='+os.environ['CR_HTTP'])
+          print('PROJECT_ID_ACTUAL='+str(project.get('projectId','')))
+          print('PROJECT_NUMBER_ACTUAL='+str(project.get('projectNumber','')))
+          print('PROJECT_LIFECYCLE='+str(project.get('lifecycleState','')))
+          if err(project): print('PROJECT_ERROR='+err(project))
+          print('APPS_SCRIPT_API_HTTP='+os.environ['SU_HTTP'])
+          print('APPS_SCRIPT_API_STATE='+str(service.get('state','')))
+          if err(service): print('APPS_SCRIPT_API_ERROR='+err(service))
+          print('SCRIPT_API_HTTP='+os.environ['AS_HTTP'])
+          print('SCRIPT_TITLE='+str(script.get('title','')))
+          if err(script): print('SCRIPT_API_ERROR='+err(script))
+          print('TOKENINFO_HTTP='+os.environ['TI_HTTP'])
+          scopes=str(tokeninfo.get('scope','')).split()
+          print('HAS_CLOUD_PLATFORM_SCOPE='+str('https://www.googleapis.com/auth/cloud-platform' in scopes).lower())
+          print('HAS_SCRIPT_PROJECTS_SCOPE='+str('https://www.googleapis.com/auth/script.projects' in scopes).lower())
+          PY
 
           SUMMARY="$(cat /tmp/summary.txt)"
           BODY="$(cat <<EOF
           P0=GCP_PROJECT_PROBE
-          TOKEN_HTTP=$TOKEN_HTTP
           SUMMARY_BEGIN
           $SUMMARY
           SUMMARY_END
