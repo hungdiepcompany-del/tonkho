@@ -16,7 +16,7 @@ env:
   EXPECTED_SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
   CLASP_VERSION: 3.3.0
   STATUS_ISSUE: '2'
-  PROBE_VERSION: '2'
+  PROBE_VERSION: '3'
 
 jobs:
   probe:
@@ -36,48 +36,55 @@ jobs:
           npm install --global "@google/clasp@${CLASP_VERSION}"
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           chmod 600 "$HOME/.clasprc.json"
-      - name: Probe read-only execution capability
-        id: probe
+          clasp show-authorized-user --json >/tmp/authorized-user.json
+      - name: Probe owner-only web app access
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -u
-          PROBE="$RUNNER_TEMP/gas-probe"
-          rm -rf "$PROBE"
-          mkdir -p "$PROBE"
-          cd "$PROBE"
-          clasp clone-script "$EXPECTED_SCRIPT_ID" >/tmp/clone.out 2>&1
-          CLONE_RC=$?
 
-          clasp list-deployments > /tmp/deployments.out 2>&1
-          DEPLOYMENTS_RC=$?
-
-          clasp run-function getProgressNX > /tmp/run.out 2>&1
-          RUN_RC=$?
-
-          SAFE_RUN="$(tail -n 12 /tmp/run.out | sed 's/`/'\''/g')"
-          SAFE_DEPLOY="$(tail -n 20 /tmp/deployments.out | sed 's/`/'\''/g')"
-
-          BODY="$(cat <<EOF
-          PROBE=GAS_RUNTIME_EXECUTION
-          PROBE_VERSION=$PROBE_VERSION
-          COMMIT=$GITHUB_SHA
-          CLONE_RC=$CLONE_RC
-          LIST_DEPLOYMENTS_RC=$DEPLOYMENTS_RC
-          RUN_GET_PROGRESS_NX_RC=$RUN_RC
-          RUN_OUTPUT_BEGIN
-          $SAFE_RUN
-          RUN_OUTPUT_END
-          DEPLOYMENTS_OUTPUT_BEGIN
-          $SAFE_DEPLOY
-          DEPLOYMENTS_OUTPUT_END
-          EOF
+          ACCESS_TOKEN="$(node <<'NODE'
+          const fs=require('fs');
+          const j=JSON.parse(fs.readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));
+          function find(v){
+            if (!v || typeof v!=='object') return '';
+            for (const [k,x] of Object.entries(v)) {
+              if ((k==='access_token' || k==='accessToken') && typeof x==='string' && x) return x;
+            }
+            for (const x of Object.values(v)) { const r=find(x); if(r) return r; }
+            return '';
+          }
+          process.stdout.write(find(j));
+          NODE
           )"
-          gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
 
-          echo "CLONE_RC=$CLONE_RC"
-          echo "LIST_DEPLOYMENTS_RC=$DEPLOYMENTS_RC"
-          echo "RUN_GET_PROGRESS_NX_RC=$RUN_RC"
-          cat /tmp/run.out
+          if [ -z "$ACCESS_TOKEN" ]; then
+            gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "PROBE=GAS_WEBAPP_OWNER_ACCESS\nPROBE_VERSION=$PROBE_VERSION\nCOMMIT=$GITHUB_SHA\nRESULT=NO_ACCESS_TOKEN_FOUND"
+            exit 0
+          fi
+
+          IDS=(
+            'AKfycbwNKEdA4WQyqV7zr9ziRMo3mcHuaFbwT9_kD_IKuGU'
+            'AKfycbwP3c7Q57DerZVGgGzlvX-wsGnG-RNExrGEb--k48ou6v2ZqsuobYS33QMQ87_UyZ2W'
+            'AKfycbyg3ya-ZyfyFdiqJg0-gu8coQg-7YIbAw4rfFeP8XwWvTbvgJxtFtiXyE0znHA-4Jac'
+            'AKfycby4Utucm23N-jjGWU01Xi27fty0y_KaCx0GB2mcId8y7_q4AI_AHCM4eGraeWjmESIy'
+            'AKfycbzBr8mROWrQxAOe1lZJUKR93DZxYq_v0QYgH_PKlOxCF4MiPghQbE36lT2Pk2ABoOsL'
+          )
+
+          RESULTS=""
+          for ID in "${IDS[@]}"; do
+            URL="https://script.google.com/macros/s/${ID}/exec"
+            rm -f /tmp/body /tmp/headers
+            INITIAL="$(curl -sS -o /tmp/body -D /tmp/headers -H "Authorization: Bearer $ACCESS_TOKEN" -w '%{http_code}' "$URL" || true)"
+            LOCATION="$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]*:[[:space:]]*/,""); gsub(/\r/,""); print; exit}' /tmp/headers)"
+            HOST="$(printf '%s' "$LOCATION" | sed -E 's#^[a-zA-Z]+://([^/]+).*#\1#')"
+            FINAL="$(curl -sS -L -o /tmp/body -H "Authorization: Bearer $ACCESS_TOKEN" -w '%{http_code}' "$URL" || true)"
+            TITLE=0
+            if grep -qi 'Viết hóa đơn\|Viet hoa don\|MENU QUẢN LÝ' /tmp/body 2>/dev/null; then TITLE=1; fi
+            RESULTS="${RESULTS}${ID}: initial=${INITIAL} final=${FINAL} redirect_host=${HOST:-none} content_match=${TITLE}\n"
+          done
+
+          BODY="$(printf 'PROBE=GAS_WEBAPP_OWNER_ACCESS\nPROBE_VERSION=%s\nCOMMIT=%s\nRESULTS_BEGIN\n%bRESULTS_END' "$PROBE_VERSION" "$GITHUB_SHA" "$RESULTS")"
+          gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
           exit 0
