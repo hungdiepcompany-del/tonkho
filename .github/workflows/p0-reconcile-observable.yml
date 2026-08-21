@@ -1,0 +1,73 @@
+name: P0 Observable Reconciliation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+  SPREADSHEET_ID: 1yBbalX91VZkGIBaUJZQRt5eVllVlo53696M5hMLNAoc
+  CLASP_VERSION: 3.3.0
+  STATUS_ISSUE: '2'
+
+jobs:
+  p0-reconcile:
+    name: P0 raw one-shot NX/TonKho reconciliation
+    if: ${{ github.head_ref == 'gas-p0-runtime-20260821' }}
+    concurrency:
+      group: tonkho-p0-raw-20260821
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout pinned P0 runner source
+        uses: actions/checkout@v4
+        with:
+          ref: e308d7bbf8947d4267de40dfd1eff09cd674c0a4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install clasp
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global "@google/clasp@${CLASP_VERSION}"
+          clasp --version
+
+      - name: Extract canonical shell body without YAML parsing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('.github/workflows/run-p0-reconcile.yml')
+          lines = p.read_text(encoding='utf-8').splitlines()
+          marker = '- name: Execute one-shot P0 through temporary immutable bridge'
+          step = next(i for i,l in enumerate(lines) if marker in l)
+          run_idx = next(i for i in range(step + 1, len(lines)) if lines[i].strip() == 'run: |')
+          body = []
+          for line in lines[run_idx + 1:]:
+              body.append(line[10:] if line.startswith('          ') else line)
+          text = '\n'.join(body) + '\n'
+          if 'set -Eeuo pipefail' not in text or 'STAGE="CALL_BRIDGE"' not in text:
+              raise SystemExit('P0_RAW_EXTRACTION_INCOMPLETE')
+          Path('/tmp/run-p0.sh').write_text(text, encoding='utf-8')
+          PY
+          bash -n /tmp/run-p0.sh
+          echo P0_RAW_EXTRACTION=PASS
+
+      - name: Execute canonical one-shot P0 runner
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash /tmp/run-p0.sh
