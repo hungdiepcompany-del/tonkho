@@ -1,0 +1,56 @@
+name: P0 One-shot Reconciliation Launcher
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: tonkho-gas-production
+  cancel-in-progress: false
+
+env:
+  SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+  SPREADSHEET_ID: 1yBbalX91VZkGIBaUJZQRt5eVllVlo53696M5hMLNAoc
+  CLASP_VERSION: 3.3.0
+  STATUS_ISSUE: '2'
+
+jobs:
+  run-p0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout canonical P0 runner branch
+        uses: actions/checkout@v4
+        with:
+          ref: gas-p0-runtime-20260821
+          path: p0src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install clasp and YAML parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global "@google/clasp@${CLASP_VERSION}"
+          python3 -m pip install --quiet pyyaml
+      - name: Execute canonical P0 runner body
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import yaml, pathlib
+          p = pathlib.Path('p0src/.github/workflows/run-p0-reconcile.yml')
+          doc = yaml.safe_load(p.read_text(encoding='utf-8'))
+          steps = doc['jobs']['run-p0']['steps']
+          target = next(s for s in steps if s.get('name') == 'Execute one-shot P0 through temporary immutable bridge')
+          pathlib.Path('/tmp/run-p0.sh').write_text(target['run'], encoding='utf-8')
+          PY
+          bash /tmp/run-p0.sh
