@@ -4,22 +4,28 @@ on:
   push:
     branches:
       - gas-production
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
-
-concurrency:
-  group: tonkho-gas-production
-  cancel-in-progress: false
+  issues: write
 
 env:
   EXPECTED_SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
   CLASP_VERSION: 3.3.0
+  SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+  SPREADSHEET_ID: 1yBbalX91VZkGIBaUJZQRt5eVllVlo53696M5hMLNAoc
+  STATUS_ISSUE: '2'
 
 jobs:
   validate-and-deploy:
     name: Validate and deploy Apps Script
-    if: ${{ github.ref == 'refs/heads/gas-production' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/gas-production' }}
+    concurrency:
+      group: tonkho-gas-production
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -45,46 +51,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           test -f .clasp.json
           test -f deploy/gas-runtime-files.txt
-
           ACTUAL_SCRIPT_ID="$(node -e "const f=require('fs'); const j=JSON.parse(f.readFileSync('.clasp.json','utf8').replace(/^\uFEFF/,'')); process.stdout.write(String(j.scriptId||''));")"
           if [ "$ACTUAL_SCRIPT_ID" != "$EXPECTED_SCRIPT_ID" ]; then
             echo "::error::SCRIPT_ID_MISMATCH expected=$EXPECTED_SCRIPT_ID actual=$ACTUAL_SCRIPT_ID"
             exit 1
           fi
-
           DUPLICATES="$(grep -vE '^[[:space:]]*(#|$)' deploy/gas-runtime-files.txt | sort | uniq -d || true)"
           if [ -n "$DUPLICATES" ]; then
             echo "::error::Duplicate entries in deploy/gas-runtime-files.txt"
             echo "$DUPLICATES"
             exit 1
           fi
-
           while IFS= read -r path; do
             path="${path%$'\r'}"
             [ -z "$path" ] && continue
             [[ "$path" =~ ^[[:space:]]*# ]] && continue
-
             if [ ! -f "$path" ]; then
               echo "::error::Allowlisted GAS source is missing: $path"
               exit 1
             fi
-
             case "$path" in
-              *.js)
-                node --check "$path" >/dev/null
-                ;;
-              *.html|appsscript.json)
-                ;;
-              *)
-                echo "::error::Unsupported file type in GAS allowlist: $path"
-                exit 1
-                ;;
+              *.js) node --check "$path" >/dev/null ;;
+              *.html|appsscript.json) ;;
+              *) echo "::error::Unsupported file type in GAS allowlist: $path"; exit 1 ;;
             esac
           done < deploy/gas-runtime-files.txt
-
           echo "DEPLOY_CONTRACT=PASS"
           echo "SCRIPT_ID=$ACTUAL_SCRIPT_ID"
 
@@ -93,24 +86,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           STAGE="$RUNNER_TEMP/gas-stage"
           rm -rf "$STAGE"
           mkdir -p "$STAGE"
-
           cp .clasp.json "$STAGE/.clasp.json"
-
           COUNT=0
           while IFS= read -r path; do
             path="${path%$'\r'}"
             [ -z "$path" ] && continue
             [[ "$path" =~ ^[[:space:]]*# ]] && continue
-
             mkdir -p "$STAGE/$(dirname "$path")"
             cp -- "$path" "$STAGE/$path"
             COUNT=$((COUNT + 1))
           done < deploy/gas-runtime-files.txt
-
           echo "stage=$STAGE" >> "$GITHUB_OUTPUT"
           echo "file_count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "STAGED_GAS_FILES=$COUNT"
@@ -121,15 +109,12 @@ jobs:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: |
           set -euo pipefail
-
           if [ -z "${CLASPRC_JSON:-}" ]; then
             echo "::error::Missing repository secret CLASPRC_JSON"
             exit 1
           fi
-
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           chmod 600 "$HOME/.clasprc.json"
-
           node -e "JSON.parse(require('fs').readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));"
           echo "CLASPRC_JSON_FORMAT=PASS"
 
@@ -137,28 +122,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           clasp show-authorized-user --json
-
           PROBE="$RUNNER_TEMP/gas-target-probe"
           rm -rf "$PROBE"
           mkdir -p "$PROBE"
           cd "$PROBE"
           clasp clone-script "$EXPECTED_SCRIPT_ID"
-
           test -f .clasp.json
           ACTUAL_SCRIPT_ID="$(node -e "const j=JSON.parse(require('fs').readFileSync('.clasp.json','utf8').replace(/^\uFEFF/,'')); process.stdout.write(String(j.scriptId||''));")"
           if [ "$ACTUAL_SCRIPT_ID" != "$EXPECTED_SCRIPT_ID" ]; then
             echo "::error::Clone target mismatch expected=$EXPECTED_SCRIPT_ID actual=$ACTUAL_SCRIPT_ID"
             exit 1
           fi
-
           COUNT="$(find . -maxdepth 1 -type f ! -name '.clasp.json' | wc -l | tr -d ' ')"
           if [ "$COUNT" -lt 1 ]; then
             echo "::error::Clone succeeded but no Apps Script source files were returned"
             exit 1
           fi
-
           echo "GOOGLE_TARGET_GATE=PASS"
           echo "CLONED_SOURCE_FILES=$COUNT"
 
@@ -187,3 +167,48 @@ jobs:
             echo "- Script ID: $EXPECTED_SCRIPT_ID"
             echo "- Allowlisted files: ${{ steps.stage.outputs.file_count }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  p0-reconcile:
+    name: Owner-approved P0 NX/TonKho reconciliation
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'gas-p0-runtime-20260821' }}
+    concurrency:
+      group: tonkho-p0-reconcile-20260821
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout pinned canonical P0 runner
+        uses: actions/checkout@v4
+        with:
+          ref: e308d7bbf8947d4267de40dfd1eff09cd674c0a4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install clasp and YAML parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global "@google/clasp@${CLASP_VERSION}"
+          python3 -m pip install --quiet pyyaml
+          clasp --version
+
+      - name: Execute canonical one-shot P0 runner
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import yaml, pathlib
+          p = pathlib.Path('.github/workflows/run-p0-reconcile.yml')
+          doc = yaml.safe_load(p.read_text(encoding='utf-8'))
+          steps = doc['jobs']['run-p0']['steps']
+          target = next(s for s in steps if s.get('name') == 'Execute one-shot P0 through temporary immutable bridge')
+          pathlib.Path('/tmp/run-p0.sh').write_text(target['run'], encoding='utf-8')
+          PY
+          bash /tmp/run-p0.sh
