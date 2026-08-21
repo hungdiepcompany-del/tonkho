@@ -10,7 +10,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: tonkho-gas-production
+  group: tonkho-gas-production-p0-20260821
   cancel-in-progress: false
 
 env:
@@ -213,10 +213,10 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout canonical P0 runner
+      - name: Checkout pinned canonical P0 runner
         uses: actions/checkout@v4
         with:
-          ref: gas-p0-runtime-20260821
+          ref: e308d7bbf8947d4267de40dfd1eff09cd674c0a4
           path: p0src
 
       - name: Install YAML parser for P0 launcher
