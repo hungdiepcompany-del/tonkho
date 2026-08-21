@@ -1,4 +1,4 @@
-name: P0 Observable Reconciliation
+name: P0 Trigger Discovery
 
 on:
   pull_request:
@@ -11,63 +11,85 @@ permissions:
 
 env:
   SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
-  SPREADSHEET_ID: 1yBbalX91VZkGIBaUJZQRt5eVllVlo53696M5hMLNAoc
   CLASP_VERSION: 3.3.0
   STATUS_ISSUE: '2'
 
 jobs:
-  p0-reconcile:
-    name: P0 raw one-shot NX/TonKho reconciliation
+  discover-triggers:
+    name: Discover recent GAS trigger executions
     if: ${{ github.head_ref == 'gas-p0-runtime-20260821' }}
-    concurrency:
-      group: tonkho-p0-raw-20260821
-      cancel-in-progress: false
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout pinned P0 runner source
-        uses: actions/checkout@v4
-        with:
-          ref: e308d7bbf8947d4267de40dfd1eff09cd674c0a4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Install clasp
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm install --global "@google/clasp@${CLASP_VERSION}"
-          clasp --version
-
-      - name: Extract canonical shell body without YAML parsing
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          from pathlib import Path
-          p = Path('.github/workflows/run-p0-reconcile.yml')
-          lines = p.read_text(encoding='utf-8').splitlines()
-          marker = '- name: Execute one-shot P0 through temporary immutable bridge'
-          step = next(i for i,l in enumerate(lines) if marker in l)
-          run_idx = next(i for i in range(step + 1, len(lines)) if lines[i].strip() == 'run: |')
-          body = []
-          for line in lines[run_idx + 1:]:
-              body.append(line[10:] if line.startswith('          ') else line)
-          text = '\n'.join(body) + '\n'
-          if 'set -Eeuo pipefail' not in text or 'STAGE="CALL_BRIDGE"' not in text:
-              raise SystemExit('P0_RAW_EXTRACTION_INCOMPLETE')
-          Path('/tmp/run-p0.sh').write_text(text, encoding='utf-8')
-          PY
-          bash -n /tmp/run-p0.sh
-          echo P0_RAW_EXTRACTION=PASS
-
-      - name: Execute canonical one-shot P0 runner
+      - name: Install clasp credential and query Apps Script processes
         shell: bash
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           GH_TOKEN: ${{ github.token }}
-        run: bash /tmp/run-p0.sh
+        run: |
+          set -euo pipefail
+          npm install --global "@google/clasp@${CLASP_VERSION}" >/dev/null
+          test -n "${CLASPRC_JSON:-}"
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          chmod 600 "$HOME/.clasprc.json"
+          clasp show-authorized-user --json
+
+          ACCESS_TOKEN="$(node <<'NODE'
+          const fs=require('fs');
+          const j=JSON.parse(fs.readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));
+          function find(v){
+            if (!v || typeof v!=='object') return '';
+            for (const [k,x] of Object.entries(v)) {
+              if ((k==='access_token' || k==='accessToken') && typeof x==='string' && x) return x;
+            }
+            for (const x of Object.values(v)) { const r=find(x); if(r) return r; }
+            return '';
+          }
+          process.stdout.write(find(j));
+          NODE
+          )"
+          test -n "$ACCESS_TOKEN"
+
+          HTTP="$(curl -sS -G -o /tmp/processes.json -w '%{http_code}' \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            --data-urlencode "scriptId=$SCRIPT_ID" \
+            --data-urlencode "pageSize=100" \
+            'https://script.googleapis.com/v1/processes:listScriptProcesses')"
+
+          node <<'NODE' >/tmp/process-summary.txt
+          const fs=require('fs');
+          let j={};
+          try { j=JSON.parse(fs.readFileSync('/tmp/processes.json','utf8')); } catch(e) {}
+          if (j.error) {
+            console.log('API_ERROR='+String(j.error.status||'UNKNOWN')+':'+String(j.error.message||''));
+            process.exit(0);
+          }
+          const ps=j.processes||[];
+          console.log('PROCESS_COUNT='+ps.length);
+          const rows=ps.map(p=>({
+            functionName:p.functionName||'',
+            processType:p.processType||'',
+            processStatus:p.processStatus||'',
+            startTime:p.startTime||'',
+            duration:p.duration||''
+          }));
+          rows.slice(0,100).forEach(r=>console.log([r.startTime,r.functionName,r.processType,r.processStatus,r.duration].join('\t')));
+          NODE
+
+          SUMMARY="$(cat /tmp/process-summary.txt)"
+          BODY="$(cat <<EOF
+          P0=TRIGGER_DISCOVERY
+          HTTP=$HTTP
+          COMMIT=$GITHUB_SHA
+          SUMMARY_BEGIN
+          $SUMMARY
+          SUMMARY_END
+          EOF
+          )"
+          gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          printf '%s\n' "$BODY"
