@@ -1,4 +1,4 @@
-name: P0 API Executable Probe
+name: P0 GCP Project Probe
 
 on:
   pull_request:
@@ -11,131 +11,119 @@ permissions:
 
 env:
   SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+  PROJECT_ID: tonkhohd
+  PROJECT_NUMBER: '587745071207'
   CLASP_VERSION: 3.3.0
   STATUS_ISSUE: '2'
 
 jobs:
-  api-executable-probe:
-    name: Probe temporary API executable with getProgressNX
+  gcp-probe:
+    name: Read-only verify tonkhohd project and Apps Script API
     if: ${{ github.head_ref == 'gas-p0-runtime-20260821' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Probe temporary API executable
+      - name: Read-only Google Cloud verification
         shell: bash
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -Eeuo pipefail
+          set -euo pipefail
           npm install --global "@google/clasp@${CLASP_VERSION}" >/dev/null
           test -n "${CLASPRC_JSON:-}"
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           chmod 600 "$HOME/.clasprc.json"
+          clasp show-authorized-user --json >/tmp/who.json
 
-          ORIG="$RUNNER_TEMP/api-probe-original"
-          TEMP="$RUNNER_TEMP/api-probe-temp"
-          DEPLOYMENT_ID=""
-          HEAD_DIRTY=0
-          RESTORE_RESULT="NOT_NEEDED"
-          DELETE_RESULT="NOT_CREATED"
-          RUN_RC="NOT_RUN"
-          RUN_OUTPUT=""
-          STAGE="INIT"
+          node <<'NODE' >/tmp/oauth-fields.json
+          const fs=require('fs');
+          const j=JSON.parse(fs.readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));
+          function walk(v, out={}) {
+            if (!v || typeof v !== 'object') return out;
+            for (const [k,x] of Object.entries(v)) {
+              if (['client_id','clientId','client_secret','clientSecret','refresh_token'].includes(k) && typeof x==='string' && x && !(k in out)) out[k]=x;
+              if (x && typeof x==='object') walk(x,out);
+            }
+            return out;
+          }
+          const f=walk(j);
+          const client_id=f.client_id||f.clientId||'';
+          const client_secret=f.client_secret||f.clientSecret||'';
+          const refresh_token=f.refresh_token||'';
+          if (!client_id || !client_secret || !refresh_token) process.exit(2);
+          fs.writeFileSync('/tmp/oauth-client-id',client_id,{mode:0o600});
+          fs.writeFileSync('/tmp/oauth-client-secret',client_secret,{mode:0o600});
+          fs.writeFileSync('/tmp/oauth-refresh-token',refresh_token,{mode:0o600});
+          console.log(JSON.stringify({credentialFields:'PASS'}));
+          NODE
 
-          post_status() {
-            BODY="$(cat <<EOF
-          P0=API_EXECUTABLE_PROBE
-          STAGE=$STAGE
-          COMMIT=$GITHUB_SHA
-          DEPLOYMENT_ID=${DEPLOYMENT_ID:-NONE}
-          RESTORE_RESULT=$RESTORE_RESULT
-          DELETE_RESULT=$DELETE_RESULT
-          RUN_RC=$RUN_RC
-          RUN_OUTPUT_BEGIN
-          $RUN_OUTPUT
-          RUN_OUTPUT_END
+          CLIENT_ID="$(cat /tmp/oauth-client-id)"
+          CLIENT_SECRET="$(cat /tmp/oauth-client-secret)"
+          REFRESH_TOKEN="$(cat /tmp/oauth-refresh-token)"
+
+          TOKEN_HTTP="$(curl -sS -o /tmp/token.json -w '%{http_code}' \
+            -X POST 'https://oauth2.googleapis.com/token' \
+            --data-urlencode "client_id=$CLIENT_ID" \
+            --data-urlencode "client_secret=$CLIENT_SECRET" \
+            --data-urlencode "refresh_token=$REFRESH_TOKEN" \
+            --data-urlencode 'grant_type=refresh_token')"
+
+          ACCESS_TOKEN="$(node -e "const j=require('/tmp/token.json'); process.stdout.write(j.access_token||'')")"
+          if [ "$TOKEN_HTTP" != "200" ] || [ -z "$ACCESS_TOKEN" ]; then
+            echo "TOKEN_REFRESH_HTTP=$TOKEN_HTTP" > /tmp/summary.txt
+          else
+            CR_HTTP="$(curl -sS -o /tmp/project.json -w '%{http_code}' \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              "https://cloudresourcemanager.googleapis.com/v1/projects/$PROJECT_ID")"
+            SU_HTTP="$(curl -sS -o /tmp/service.json -w '%{http_code}' \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              "https://serviceusage.googleapis.com/v1/projects/$PROJECT_NUMBER/services/script.googleapis.com")"
+            AS_HTTP="$(curl -sS -o /tmp/script.json -w '%{http_code}' \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              "https://script.googleapis.com/v1/projects/$SCRIPT_ID")"
+
+            node <<'NODE' > /tmp/summary.txt
+            const fs=require('fs');
+            function read(p){try{return JSON.parse(fs.readFileSync(p,'utf8'))}catch{return {}}}
+            const project=read('/tmp/project.json');
+            const service=read('/tmp/service.json');
+            const script=read('/tmp/script.json');
+            const env=process.env;
+            const safeErr = x => x && x.error ? String(x.error.status||'ERROR')+':'+String(x.error.message||'') : '';
+            console.log('PROJECT_ID_EXPECTED='+env.PROJECT_ID);
+            console.log('PROJECT_NUMBER_EXPECTED='+env.PROJECT_NUMBER);
+            console.log('PROJECT_HTTP='+env.CR_HTTP);
+            console.log('PROJECT_ID_ACTUAL='+(project.projectId||''));
+            console.log('PROJECT_NUMBER_ACTUAL='+(project.projectNumber||''));
+            console.log('PROJECT_LIFECYCLE='+(project.lifecycleState||''));
+            if (project.error) console.log('PROJECT_ERROR='+safeErr(project));
+            console.log('APPS_SCRIPT_API_HTTP='+env.SU_HTTP);
+            console.log('APPS_SCRIPT_API_STATE='+(service.state||''));
+            if (service.error) console.log('APPS_SCRIPT_API_ERROR='+safeErr(service));
+            console.log('SCRIPT_API_HTTP='+env.AS_HTTP);
+            console.log('SCRIPT_TITLE='+(script.title||''));
+            if (script.error) console.log('SCRIPT_API_ERROR='+safeErr(script));
+            NODE
+          fi
+
+          SUMMARY="$(cat /tmp/summary.txt)"
+          BODY="$(cat <<EOF
+          P0=GCP_PROJECT_PROBE
+          TOKEN_HTTP=$TOKEN_HTTP
+          SUMMARY_BEGIN
+          $SUMMARY
+          SUMMARY_END
           EOF
           )"
-            gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY" >/dev/null 2>&1 || true
-          }
-
-          cleanup() {
-            rc=$?
-            trap - EXIT
-            set +e
-            if [ "$HEAD_DIRTY" = "1" ] && [ -d "$ORIG" ]; then
-              cd "$ORIG"
-              clasp push >/tmp/api-probe-final-restore.log 2>&1
-              if [ $? -eq 0 ]; then RESTORE_RESULT="PASS_IN_TRAP"; else RESTORE_RESULT="FAIL_IN_TRAP"; fi
-              HEAD_DIRTY=0
-            fi
-            if [ -n "$DEPLOYMENT_ID" ] && [ -d "$ORIG" ]; then
-              cd "$ORIG"
-              clasp delete-deployment "$DEPLOYMENT_ID" >/tmp/api-probe-delete.log 2>&1
-              if [ $? -eq 0 ]; then DELETE_RESULT="PASS"; else DELETE_RESULT="FAIL"; fi
-            fi
-            post_status
-            if [ "$RESTORE_RESULT" = "FAIL_IN_TRAP" ] || [ "$DELETE_RESULT" = "FAIL" ]; then rc=1; fi
-            exit "$rc"
-          }
-          trap cleanup EXIT
-
-          STAGE="AUTH"
-          clasp show-authorized-user --json
-
-          STAGE="CLONE_LIVE"
-          rm -rf "$ORIG" "$TEMP"
-          mkdir -p "$ORIG"
-          cd "$ORIG"
-          clasp clone-script "$SCRIPT_ID" >/tmp/api-probe-clone.log 2>&1
-          test -f appsscript.json
-          test -f .clasp.json
-
-          STAGE="PREPARE_EXECUTION_API"
-          mkdir -p "$TEMP"
-          cp -a "$ORIG/." "$TEMP/"
-          export TEMP
-          python3 <<'PY'
-          import json, os, pathlib
-          p=pathlib.Path(os.environ['TEMP'])/'appsscript.json'
-          j=json.loads(p.read_text(encoding='utf-8-sig'))
-          j['executionApi']={'access':'ANYONE'}
-          p.write_text(json.dumps(j,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          PY
-
-          STAGE="TEMP_PUSH"
-          cd "$TEMP"
-          clasp push >/tmp/api-probe-temp-push.log 2>&1
-          HEAD_DIRTY=1
-
-          STAGE="CREATE_VERSION"
-          VERSION_OUTPUT="$(clasp create-version "P0 API executable probe ${GITHUB_RUN_ID}" 2>&1)"
-          VERSION="$(printf '%s\n' "$VERSION_OUTPUT" | grep -oE '[0-9]+' | tail -1)"
-          test -n "$VERSION"
-
-          STAGE="CREATE_DEPLOYMENT"
-          DEPLOY_OUTPUT="$(clasp create-deployment -V "$VERSION" -d "P0 API executable probe ${GITHUB_RUN_ID}" 2>&1)"
-          DEPLOYMENT_ID="$(printf '%s\n' "$DEPLOY_OUTPUT" | grep -oE 'AKfy[A-Za-z0-9_-]+' | head -1)"
-          test -n "$DEPLOYMENT_ID"
-
-          STAGE="RESTORE_HEAD"
-          cd "$ORIG"
-          clasp push >/tmp/api-probe-restore.log 2>&1
-          HEAD_DIRTY=0
-          RESTORE_RESULT="PASS"
-
-          STAGE="RUN_READ_ONLY"
-          set +e
-          RUN_OUTPUT="$(clasp run-function getProgressNX --nondev 2>&1)"
-          RUN_RC=$?
-          set -e
-
-          STAGE="PROBE_COMPLETE"
-          printf '%s\n' "$RUN_OUTPUT"
-          exit 0
+          gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          printf '%s\n' "$BODY"
+        env:
+          CR_HTTP: ${{ env.CR_HTTP }}
+          SU_HTTP: ${{ env.SU_HTTP }}
+          AS_HTTP: ${{ env.AS_HTTP }}
