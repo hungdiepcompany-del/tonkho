@@ -1,0 +1,90 @@
+name: Probe GAS Runtime Execution
+
+on:
+  push:
+    branches:
+      - gas-runtime-probe-20260820
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  EXPECTED_SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+  CLASP_VERSION: 3.3.0
+  STATUS_ISSUE: '2'
+  PROBE_VERSION: '3'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install clasp and credential
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          npm install --global "@google/clasp@${CLASP_VERSION}"
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          chmod 600 "$HOME/.clasprc.json"
+          clasp show-authorized-user --json >/tmp/authorized-user.json
+      - name: Probe owner-only web app access
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+
+          ACCESS_TOKEN="$(node <<'NODE'
+          const fs=require('fs');
+          const j=JSON.parse(fs.readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));
+          function find(v){
+            if (!v || typeof v!=='object') return '';
+            for (const [k,x] of Object.entries(v)) {
+              if ((k==='access_token' || k==='accessToken') && typeof x==='string' && x) return x;
+            }
+            for (const x of Object.values(v)) { const r=find(x); if(r) return r; }
+            return '';
+          }
+          process.stdout.write(find(j));
+          NODE
+          )"
+
+          if [ -z "$ACCESS_TOKEN" ]; then
+            gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "PROBE=GAS_WEBAPP_OWNER_ACCESS\nPROBE_VERSION=$PROBE_VERSION\nCOMMIT=$GITHUB_SHA\nRESULT=NO_ACCESS_TOKEN_FOUND"
+            exit 0
+          fi
+
+          IDS=(
+            'AKfycbwNKEdA4WQyqV7zr9ziRMo3mcHuaFbwT9_kD_IKuGU'
+            'AKfycbwP3c7Q57DerZVGgGzlvX-wsGnG-RNExrGEb--k48ou6v2ZqsuobYS33QMQ87_UyZ2W'
+            'AKfycbyg3ya-ZyfyFdiqJg0-gu8coQg-7YIbAw4rfFeP8XwWvTbvgJxtFtiXyE0znHA-4Jac'
+            'AKfycby4Utucm23N-jjGWU01Xi27fty0y_KaCx0GB2mcId8y7_q4AI_AHCM4eGraeWjmESIy'
+            'AKfycbzBr8mROWrQxAOe1lZJUKR93DZxYq_v0QYgH_PKlOxCF4MiPghQbE36lT2Pk2ABoOsL'
+          )
+
+          RESULTS=""
+          for ID in "${IDS[@]}"; do
+            URL="https://script.google.com/macros/s/${ID}/exec"
+            rm -f /tmp/body /tmp/headers
+            INITIAL="$(curl -sS -o /tmp/body -D /tmp/headers -H "Authorization: Bearer $ACCESS_TOKEN" -w '%{http_code}' "$URL" || true)"
+            LOCATION="$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]*:[[:space:]]*/,""); gsub(/\r/,""); print; exit}' /tmp/headers)"
+            HOST="$(printf '%s' "$LOCATION" | sed -E 's#^[a-zA-Z]+://([^/]+).*#\1#')"
+            FINAL="$(curl -sS -L -o /tmp/body -H "Authorization: Bearer $ACCESS_TOKEN" -w '%{http_code}' "$URL" || true)"
+            TITLE=0
+            if grep -qi 'Viết hóa đơn\|Viet hoa don\|MENU QUẢN LÝ' /tmp/body 2>/dev/null; then TITLE=1; fi
+            RESULTS="${RESULTS}${ID}: initial=${INITIAL} final=${FINAL} redirect_host=${HOST:-none} content_match=${TITLE}\n"
+          done
+
+          BODY="$(printf 'PROBE=GAS_WEBAPP_OWNER_ACCESS\nPROBE_VERSION=%s\nCOMMIT=%s\nRESULTS_BEGIN\n%bRESULTS_END' "$PROBE_VERSION" "$GITHUB_SHA" "$RESULTS")"
+          gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          exit 0

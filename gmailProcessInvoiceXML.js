@@ -87,10 +87,9 @@ function processInvoiceXMLAttachment_(parsed, type, results, thread) {
     return false;
   }
 
-  parsed.items.forEach(item => {
+  parsed.items.forEach((item, itemIndex) => {
 
     const invoiceDate = parsed.meta?.invoiceDate || "";
-    const yyyyMMdd = invoiceDate.replace(/-/g, "");
 
     const taxCode =
       (type === "XUAT"
@@ -100,8 +99,11 @@ function processInvoiceXMLAttachment_(parsed, type, results, thread) {
     const invoiceNo =
       normalizeInvoiceNo_(parsed.meta.invoiceNo);
 
-    const invoiceKey =
-      `${yyyyMMdd}_${taxCode}_${invoiceNo}`;
+    const invoiceKey = buildInvoiceKey_(
+      invoiceDate,
+      taxCode,
+      invoiceNo
+    );
 
     results.push({
       row: [
@@ -117,7 +119,9 @@ function processInvoiceXMLAttachment_(parsed, type, results, thread) {
         item.price,
         invoiceKey
       ],
-      thread
+      thread,
+      invoiceKey,
+      sourceLineNo: itemIndex + 1
     });
 
   });
@@ -133,10 +137,19 @@ function saveInvoiceXmlToDrive_(
   rootFolderId,
   logPrefix
 ) {
-  const year = issueDate.slice(0, 4);
+  const parsedDate = parseInvoiceDateValue_(issueDate);
+  if (!parsedDate) {
+    throw new Error("Ngay hoa don khong hop le khi luu XML: " + issueDate);
+  }
+
+  const year = String(parsedDate.getFullYear());
   const yearFolder = getOrCreateYearFolder_(year, rootFolderId);
 
-  const yyyyMMdd = issueDate.replace(/-/g, "");
+  const yyyyMMdd = Utilities.formatDate(
+    parsedDate,
+    Session.getScriptTimeZone(),
+    "yyyyMMdd"
+  );
   const safeInvoiceNo = normalizeInvoiceNo_(invoiceNo);
 
   const fileName =

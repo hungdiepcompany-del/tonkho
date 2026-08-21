@@ -176,44 +176,50 @@ function capNhatTonKho(ngayDen) {
         .setValues(output);
     }
 
-    /* ================= FORMAT CỘT A (MÃ HÀNG) ================= */
-    setProgressTK_(90, "Định dạng mã hàng...");
-
-    const itemFmtMap = buildTonKhoItemCodeFormatMap_(); // tu MaHangHoa
-
-    const rowCount = output.length;
-    if (rowCount > 0) {
-      const maHangList = shTK
-        .getRange(START_ROW_OUTPUT, 1, rowCount, 1)
-        .getValues()
-        .map(r => r[0]);
-
-      const fontColors = [];
-      const fontFamilies = [];
-      const fontSizes = [];
-      const fontWeights = [];
-
-      for (let i = 0; i < rowCount; i++) {
-        const key = String(maHangList[i] || "").trim();
-        const fmt = itemFmtMap[key];
-
-        fontColors.push([fmt?.fontColor || "#000000"]);
-        fontFamilies.push([fmt?.fontFamily || "Arial"]);
-        fontSizes.push([fmt?.fontSize || 10]);
-        fontWeights.push([fmt?.fontWeight || "normal"]);
-      }
-
-      shTK.getRange(START_ROW_OUTPUT, 1, rowCount, 1)
-        .setFontColors(fontColors)
-        .setFontFamilies(fontFamilies)
-        .setFontSizes(fontSizes)
-        .setFontWeights(fontWeights);
-    }
-
+    // Persist AS-OF date immediately with the materialized inventory values.
+    // Presentation-format failures must not leave H6 stale behind fresh A:F data.
     const ngayCapNhat = (ngayDen instanceof Date) ? ngayDen : ngayMax;
     shTK.getRange("H6")
       .setValue(ngayCapNhat)
       .setNumberFormat("dd/MM/yyyy");
+
+    /* ================= FORMAT CỘT A (MÃ HÀNG) ================= */
+    setProgressTK_(90, "Định dạng mã hàng...");
+
+    try {
+      const itemFmtMap = buildTonKhoItemCodeFormatMap_(); // tu MaHangHoa
+
+      const rowCount = output.length;
+      if (rowCount > 0) {
+        const maHangList = shTK
+          .getRange(START_ROW_OUTPUT, 1, rowCount, 1)
+          .getValues()
+          .map(r => r[0]);
+
+        const fontColors = [];
+        const fontFamilies = [];
+        const fontSizes = [];
+        const fontWeights = [];
+
+        for (let i = 0; i < rowCount; i++) {
+          const key = String(maHangList[i] || "").trim();
+          const fmt = itemFmtMap[key];
+
+          fontColors.push([fmt?.fontColor || "#000000"]);
+          fontFamilies.push([fmt?.fontFamily || "Arial"]);
+          fontSizes.push([fmt?.fontSize || 10]);
+          fontWeights.push([fmt?.fontWeight || "normal"]);
+        }
+
+        shTK.getRange(START_ROW_OUTPUT, 1, rowCount, 1)
+          .setFontColors(fontColors)
+          .setFontFamilies(fontFamilies)
+          .setFontSizes(fontSizes)
+          .setFontWeights(fontWeights);
+      }
+    } catch (formatErr) {
+      debugLog_("TonKho format warning: " + sanitizeLogValue_(formatErr.message || formatErr));
+    }
 
     const elapsed = ((Date.now() - t0) / 1000).toFixed(2);
 

@@ -43,6 +43,8 @@ function capNhatNhapXuatBQGQ() {
     const dataRange = sh.getRange(2, 2, lastRow - 1, lastCol - 1);
     const data = dataRange.getValues();
 
+    validateNhapXuatPhysicalOrder_(data);
+
     logSh.getRange(2, 1, logSh.getMaxRows(), 2).clearContent();
     logSh.getRange("A1:B1").setValues([["Dong", "Dien giai"]]);
 
@@ -169,4 +171,50 @@ function setNXRunning_(flag) {
   } else {
     cache.remove("NX_RUNNING");
   }
+}
+
+
+function validateNhapXuatPhysicalOrder_(data) {
+  let prevDate = null;
+  let prevTypeRank = -1;
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const sheetRow = i + 2;
+    const rawDate = row[0];
+    const itemCode = String(row[3] || "").trim();
+    const type = String(row[5] || "").toUpperCase();
+    const qty = Number(row[6]) || 0;
+
+    if (!itemCode && !type && !qty && !rawDate) continue;
+
+    const date = parseInvoiceDateValue_(rawDate);
+    if (!date) {
+      throw new Error("NHAP_XUAT_INVALID_DATE_AT_ROW:" + sheetRow);
+    }
+
+    const dayKey = Utilities.formatDate(
+      date,
+      Session.getScriptTimeZone(),
+      "yyyyMMdd"
+    );
+    const typeRank = type === "NHAP" ? 0 : type === "XUAT" ? 1 : 2;
+
+    if (prevDate !== null && dayKey < prevDate) {
+      throw new Error("NHAP_XUAT_PHYSICAL_ORDER_INVALID_AT_ROW:" + sheetRow);
+    }
+
+    if (dayKey === prevDate && typeRank < prevTypeRank) {
+      throw new Error("NHAP_XUAT_SAME_DAY_TYPE_ORDER_INVALID_AT_ROW:" + sheetRow);
+    }
+
+    if (dayKey !== prevDate) {
+      prevTypeRank = typeRank;
+    } else {
+      prevTypeRank = Math.max(prevTypeRank, typeRank);
+    }
+    prevDate = dayKey;
+  }
+
+  return true;
 }

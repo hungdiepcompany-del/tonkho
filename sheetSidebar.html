@@ -311,6 +311,11 @@
         bar("nx", p);
 
         if (p.value >= 100) {
+          if (!isCompletedProgress(p)) {
+            finishProgressFailure("Nhập/Xuất", p);
+            return;
+          }
+
           nxDone = true;
 
           if (!tkStarted) {
@@ -340,11 +345,29 @@
         bar("tk", p);
 
         if (p.value >= 100) {
+          if (!isCompletedProgress(p)) {
+            finishProgressFailure("Tồn kho", p);
+            return;
+          }
+
           tkDone = true;
           checkAllDone();
         }
       }).getProgressTK();
     }
+  }
+
+
+  function isCompletedProgress(p) {
+    const msg = String((p && p.message) || "");
+    return Number(p && p.value) >= 100 && msg.indexOf("COMPLETED:") === 0;
+  }
+
+  function finishProgressFailure(scope, p) {
+    if (timer) clearInterval(timer);
+    unlockButtons();
+    const msg = String((p && p.message) || "UNKNOWN_TERMINAL_STATE");
+    setStatus("❌ " + scope + ": " + msg);
   }
 
   /* ================= BAR ================= */

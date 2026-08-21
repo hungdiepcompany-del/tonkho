@@ -46,6 +46,8 @@ function onEdit(e) {
   if (numRows > 50 && e.value === undefined && e.oldValue !== undefined) {
     PropertiesService.getScriptProperties()
       .setProperty("NEED_RECALC_NX", "true");
+    PropertiesService.getScriptProperties()
+      .setProperty("NEED_RECONCILE_INVOICEKEY", "true");
     return;
   }
 
@@ -63,9 +65,18 @@ function onEdit(e) {
     1
   );
 
+  const touchesInvoiceIdentity = !(editEndCol < 2 || editStartCol > 3);
+  const invoiceKeyRange = touchesInvoiceIdentity
+    ? sh.getRange(startRow, CONFIG.HASH_COLUME + 1, numRows, 1)
+    : null;
+
   const dataValues = dataRange.getValues();
   const hashValues = hashRange.getValues();
-  let needUpdate = false;
+  const invoiceKeyValues = invoiceKeyRange ? invoiceKeyRange.getValues() : null;
+
+  let hashChanged = false;
+  let invoiceKeyChanged = false;
+  let invoiceKeyNeedsReview = false;
 
   for (let i = 0; i < numRows; i++) {
     const row = dataValues[i];
@@ -76,20 +87,39 @@ function onEdit(e) {
     if (!newHash) {
       if (oldHash) {
         hashValues[i][0] = "";
-        needUpdate = true;
+        hashChanged = true;
       }
-      continue;
+    } else if (newHash !== oldHash) {
+      hashValues[i][0] = newHash;
+      hashChanged = true;
     }
 
-    if (newHash === oldHash) continue;
+    if (invoiceKeyValues) {
+      const currentKey = invoiceKeyValues[i][0];
+      const reconciliation = reconcileInvoiceKeyFromExisting_(
+        row[0],
+        row[1],
+        currentKey
+      );
 
-    hashValues[i][0] = newHash;
-    needUpdate = true;
+      if (reconciliation.changed) {
+        invoiceKeyValues[i][0] = reconciliation.value;
+        invoiceKeyChanged = true;
+      }
+      if (reconciliation.needsReview) {
+        invoiceKeyNeedsReview = true;
+      }
+    }
   }
 
-  if (!needUpdate) return;
+  if (hashChanged) {
+    hashRange.setValues(hashValues);
+  }
+  if (invoiceKeyChanged && invoiceKeyRange) {
+    invoiceKeyRange.setValues(invoiceKeyValues);
+  }
 
-  hashRange.setValues(hashValues);
+  if (!hashChanged && !invoiceKeyChanged && !invoiceKeyNeedsReview) return;
 
   applyInvoiceFormatsForRows_(
     sh,
@@ -97,12 +127,49 @@ function onEdit(e) {
     numRows
   );
 
-  PropertiesService.getScriptProperties()
-    .setProperty("NEED_RECALC_NX", "true");
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty("NEED_RECALC_NX", "true");
+  if (invoiceKeyChanged || invoiceKeyNeedsReview) {
+    props.setProperty("NEED_RECONCILE_INVOICEKEY", "true");
+  }
 
   SpreadsheetApp.getActive().toast(
-    `Hash + Format da cap nhat cho ${numRows} dong. Hay chay cap nhat Nhap/Xuat tu menu/sidebar.`,
+    invoiceKeyChanged
+      ? `Hash + InvoiceKey da cap nhat cho ${numRows} dong. Can reconcile Hoa-Don va chay cap nhat Nhap/Xuat.`
+      : `Hash + Format da cap nhat cho ${numRows} dong. Hay chay cap nhat Nhap/Xuat tu menu/sidebar.`,
     "Trigger",
-    3
+    4
   );
+}
+
+function reconcileInvoiceKeyFromExisting_(invoiceDate, invoiceNo, existingKey) {
+  const key = String(existingKey || "").trim();
+  if (!key) {
+    return { value: key, changed: false, needsReview: false };
+  }
+
+  if (!parseInvoiceDateValue_(invoiceDate) || !String(invoiceNo ?? "").trim()) {
+    return { value: key, changed: false, needsReview: true };
+  }
+
+  const match = key.match(/^\d{8}_([0-9]{8,14})_(.+)$/);
+  if (!match) {
+    return { value: key, changed: false, needsReview: true };
+  }
+
+  try {
+    const rebuilt = buildInvoiceKey_(
+      invoiceDate,
+      match[1],
+      normalizeInvoiceNo_(invoiceNo)
+    );
+    return {
+      value: rebuilt,
+      changed: rebuilt !== key,
+      needsReview: rebuilt !== key
+    };
+  } catch (err) {
+    debugLog_("InvoiceKey reconcile failed: " + sanitizeLogValue_(err.message || err));
+    return { value: key, changed: false, needsReview: true };
+  }
 }
