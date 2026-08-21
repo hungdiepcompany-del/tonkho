@@ -41,7 +41,7 @@ jobs:
           chmod 600 "$HOME/.clasprc.json"
           clasp show-authorized-user --json >/tmp/who.json
 
-          node <<'NODE' >/tmp/oauth-fields.json
+          node <<'NODE'
           const fs=require('fs');
           const j=JSON.parse(fs.readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,''));
           function walk(v, out={}) {
@@ -60,7 +60,6 @@ jobs:
           fs.writeFileSync('/tmp/oauth-client-id',client_id,{mode:0o600});
           fs.writeFileSync('/tmp/oauth-client-secret',client_secret,{mode:0o600});
           fs.writeFileSync('/tmp/oauth-refresh-token',refresh_token,{mode:0o600});
-          console.log(JSON.stringify({credentialFields:'PASS'}));
           NODE
 
           CLIENT_ID="$(cat /tmp/oauth-client-id)"
@@ -87,6 +86,7 @@ jobs:
             AS_HTTP="$(curl -sS -o /tmp/script.json -w '%{http_code}' \
               -H "Authorization: Bearer $ACCESS_TOKEN" \
               "https://script.googleapis.com/v1/projects/$SCRIPT_ID")"
+            export CR_HTTP SU_HTTP AS_HTTP
 
             node <<'NODE' > /tmp/summary.txt
             const fs=require('fs');
@@ -123,7 +123,3 @@ jobs:
           )"
           gh issue comment "$STATUS_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
           printf '%s\n' "$BODY"
-        env:
-          CR_HTTP: ${{ env.CR_HTTP }}
-          SU_HTTP: ${{ env.SU_HTTP }}
-          AS_HTTP: ${{ env.AS_HTTP }}
