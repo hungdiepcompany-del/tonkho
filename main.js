@@ -1,4 +1,3 @@
-
 function main() {
   // SECURITY PIPELINE
   assertScriptOwner_();
@@ -28,7 +27,9 @@ function _mainInternal_() {
       ...scanInvoiceInEmails_().map(x => ({ type: "IN", ...x }))
     ];
 
+    // Keep both formula-owned link columns canonical even on a no-op scan.
     ensureViewFormula_();
+    ensureInvoicePdfLinkFormulas_();
 
     stats.scanned = items.length;
     if (!items.length) {
@@ -48,11 +49,19 @@ function _mainInternal_() {
       return;
     }
 
-    const commitResults = commitPreparedInvoiceRows_(prepared);
+    const committed = commitPreparedInvoiceRows_(prepared);
+
+    // A replay can be a legitimate existing ledger row whose column O was
+    // historically blank. Reconcile only when hash->InvoiceKey is unambiguous.
+    const commitResults = reconcileDuplicateInvoiceKeysAfterCommit_(committed);
     projectCommitLabelsByThread_(commitResults);
 
     if (commitResults.some(x => x.writeStatus === "COMMITTED")) {
-      // Main chi ghi du lieu moi va sap xep. NX/TK la job nang, chay qua menu/sidebar.
+      // New rows are appended through A:O. Ensure P is formula-owned afterward.
+      ensureInvoicePdfLinkFormulas_();
+
+      // Main only writes new invoice rows and sorts. NX/TK remains a heavy
+      // operator job through the existing menu/sidebar path.
       sortSheetBySTT_();
     }
   } finally {
