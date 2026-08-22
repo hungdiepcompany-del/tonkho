@@ -2,8 +2,8 @@
 // Function names are preserved for Apps Script global compatibility.
 
 /**
- * Parse XML hóa đơn (dùng chung cho NHAP / XUAT)
- * @param {Blob|string} xmlInput Blob XML hoặc string XML
+ * Parse XML hoa don (dung chung cho NHAP / XUAT)
+ * @param {Blob|string} xmlInput Blob XML hoac string XML
  * @param {Object} options { type: "NHAP" | "XUAT" }
  */
 function parseInvoiceXML_(xmlInput, options = {}) {
@@ -11,25 +11,23 @@ function parseInvoiceXML_(xmlInput, options = {}) {
   const type = options.type || null;
 
   const result = {
-    meta: parseInvoiceMeta_(xmlDoc),      // 1️⃣ thông tin chung (luôn cần)
-    items: parseInvoiceItems_(xmlDoc),    // 4️⃣ danh sách hàng hóa (luôn cần)
+    meta: parseInvoiceMeta_(xmlDoc),
+    items: parseInvoiceItems_(xmlDoc),
     rawXml: null,
-    invoiceType: type                     // NHAP / XUAT
+    invoiceType: type
   };
 
   if (type === "NHAP") {
-    result.seller = parseSeller_(xmlDoc); // 2️⃣ người bán
+    result.seller = parseSeller_(xmlDoc);
   } else if (type === "XUAT") {
-    result.buyer = parseBuyer_(xmlDoc);   // 3️⃣ người mua
+    result.buyer = parseBuyer_(xmlDoc);
   } else {
     throw new Error("parseInvoiceXML_: invoice type (NHAP/XUAT) is required");
   }
-  // result.rawXml = xmlDoc; // ← bật khi cần debug
 
   return result;
 }
 
-// KIỂM TRA CÓ ĐÚNG LÀ HÓA ĐƠN GTGT
 function isVatInvoiceXML_(meta) {
   if (!meta?.invoiceName) return false;
 
@@ -37,7 +35,6 @@ function isVatInvoiceXML_(meta) {
     === normalizeTextForCompare_("Hóa đơn giá trị gia tăng");
 }
 
-// 🔹 Helper: load XML
 function loadXmlDocument_(xmlInput) {
   let xmlString = xmlInput;
 
@@ -48,7 +45,6 @@ function loadXmlDocument_(xmlInput) {
   return XmlService.parse(xmlString);
 }
 
-// 1️⃣ THÔNG TIN CHUNG – Ngày lập, Số hóa đơn
 function parseInvoiceMeta_(xmlDoc) {
   const root = xmlDoc.getRootElement();
   const dlhdon = root.getChild("DLHDon");
@@ -57,14 +53,13 @@ function parseInvoiceMeta_(xmlDoc) {
   if (!ttChung) return null;
 
   return {
-    invoiceName: ttChung.getChildText("THDon") || null, //Hóa đơn giá trị gia tăng
-    invoiceDate: ttChung.getChildText("NLap") || null,     // 2026-01-12
-    invoiceNo: ttChung.getChildText("SHDon") || null,   // 00000086
-    invoiceSymbol: ttChung.getChildText("KHHDon") || null // C26TKC
+    invoiceName: ttChung.getChildText("THDon") || null,
+    invoiceDate: ttChung.getChildText("NLap") || null,
+    invoiceNo: ttChung.getChildText("SHDon") || null,
+    invoiceSymbol: ttChung.getChildText("KHHDon") || null
   };
 }
 
-// 2️⃣ NGƯỜI BÁN
 function extractXmlMeta_(doc) {
   try {
     if (!doc) return {};
@@ -91,7 +86,6 @@ function parseSeller_(xmlDoc) {
   };
 }
 
-// 3️⃣ NGƯỜI MUA
 function parseBuyer_(xmlDoc) {
   const root = xmlDoc.getRootElement();
   const nMua = root
@@ -107,46 +101,6 @@ function parseBuyer_(xmlDoc) {
   };
 }
 
-// // 4️⃣ DANH SÁCH HÀNG HÓA
-// function parseInvoiceItems_(xmlDoc) {
-//   const root = xmlDoc.getRootElement();
-
-//   const itemsNode = root
-//     .getChild("DLHDon")
-//     ?.getChild("NDHDon")
-//     ?.getChild("DSHHDVu");
-
-//   if (!itemsNode) return [];
-
-//   const itemNodes = itemsNode.getChildren("HHDVu");
-//   const items = [];
-
-//   itemNodes.forEach(node => {
-//     const name = node.getChildText("THHDVu");
-//     items.push({
-//       name: name || null,
-//       code: generateProductCode_(name) || null,
-//       qty: Number(node.getChildText("SLuong") || 0),
-//       price: Number(node.getChildText("DGia") || 0)
-//     });
-//   });
-
-//   return items;
-// }
-
-// // 5️⃣ HÀM SINH MÃ SẢN PHẨM THEO TÊN SẢN PHẨM (Thép tấm các loại -> THEPTAM)
-// function generateProductCode_(text) {
-//   if (!text) return '';
-
-//   return text
-//     .normalize('NFD')
-//     .replace(/[\u0300-\u036f]/g, '')
-//     .split(/\s+/)
-//     .slice(0, 2)
-//     .join('')
-//     .toUpperCase();
-// }
-
 function parseInvoiceItems_(xmlDoc) {
   const root = xmlDoc.getRootElement();
 
@@ -159,8 +113,6 @@ function parseInvoiceItems_(xmlDoc) {
 
   const itemNodes = itemsNode.getChildren("HHDVu");
   const items = [];
-
-  // Load 1 lần duy nhất
   const itemCodeList = buildItemCodeList_();
 
   itemNodes.forEach(node => {
@@ -177,18 +129,16 @@ function parseInvoiceItems_(xmlDoc) {
   return items;
 }
 
-// BUILD LIST [{code, normalizedName}]
 function buildItemCodeList_() {
   const sh = SpreadsheetApp.getActive()
     .getSheetByName(CONFIG.SHEET_ITEMCODE);
 
-  if (!sh) throw new Error("Không tìm thấy sheet " + CONFIG.SHEET_ITEMCODE);
+  if (!sh) throw new Error("Khong tim thay sheet " + CONFIG.SHEET_ITEMCODE);
 
   const lastRow = sh.getLastRow();
   if (lastRow < 2) return [];
 
-  const values = sh.getRange(2, 1, lastRow - 1, 2).getValues(); // A:B
-
+  const values = sh.getRange(2, 1, lastRow - 1, 2).getValues();
   const list = [];
 
   values.forEach(row => {
@@ -211,7 +161,6 @@ function getItemCodeFromSheet_(itemName, itemCodeList) {
 
   const normalizedXmlName = normalizeTextForCompare_(itemName);
 
-  // 🔹 Duyệt từng tên chuẩn trong sheet
   for (let i = 0; i < itemCodeList.length; i++) {
     const item = itemCodeList[i];
 
@@ -235,7 +184,6 @@ function isVatInvoicePDF_(text) {
   return head.includes("HÓA ĐƠN GIÁ TRỊ GIA TĂNG");
 }
 
-// Trích xuất text từ file pdf
 function extractPdfText_(pdfBlob) {
   let tempDocId = null;
   let parseError = null;
@@ -273,88 +221,215 @@ function extractPdfText_(pdfBlob) {
   }
 }
 
-// Extract meta tối thiểu từ PDF text (để đặt tên file)
 function extractVatMetaFromPDFText_(text) {
+  const source = String(text || "");
 
-  // ---------- SỐ HÓA ĐƠN ----------
-  const invoiceNoMatch = text.match(
+  const invoiceNoMatch = source.match(
     /SỐ\s*(H[ÓO]A?\s*ĐƠN)?\s*(\(NO\.\))?\s*[:\-]?\s*([0-9]+)/i
   );
 
   const rawInvoiceNo = invoiceNoMatch?.[3] || null;
-
-  // bỏ các số 0 ở đầu
-  const invoiceNo = rawInvoiceNo
-    ? rawInvoiceNo.replace(/^0+/, "") || "0"
+  const invoiceNo = rawInvoiceNo !== null
+    ? normalizeInvoiceNo_(rawInvoiceNo)
     : null;
 
-  const counterpartyTaxCode =
+  const myTaxCode =
     typeof CONFIG !== "undefined" && CONFIG.MY_TAXCODE
-      ? pickCounterpartyTaxCode_(text, CONFIG.MY_TAXCODE)
-      : null;
+      ? normalizeInvoiceTaxCode_(CONFIG.MY_TAXCODE)
+      : "";
 
-  const fallbackTaxCode = text.match(
-    /(MÃ\s*SỐ\s*THUẾ|MST)\s*[:\-]?\s*([0-9]{8,14})/i
-  )?.[2] || null;
+  // Fail closed: PDF fallback may only pick a counterparty when our own MST
+  // is present and the other business MST can be located relative to it.
+  const counterpartyOccurrence = myTaxCode
+    ? pickCounterpartyTaxCodeOccurrence_(source, myTaxCode)
+    : null;
 
-  const taxCode = counterpartyTaxCode || fallbackTaxCode;
+  const taxCode = counterpartyOccurrence?.code || null;
+  const invoiceDate = extractInvoiceDateFromPDFText_(source);
+  const companyName = counterpartyOccurrence
+    ? extractCompanyNameNearTaxCode_(source, counterpartyOccurrence)
+    : null;
 
   return {
     taxCode,
-
     invoiceNo,
-
-    invoiceDate: text.match(
-      /NGÀY[^0-9]{0,10}([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{4})/i
-    )?.[1] || null,
-
-    companyName: text.match(
-      /(CÔNG TY[^0-9\n\r]{5,100})/i
-    )?.[1]?.trim() || null
+    invoiceDate,
+    companyName
   };
 }
 
-function extractAllTaxCodes_(text) {
-  return [...text.matchAll(
-    /(MÃ\s*SỐ\s*THUẾ|MA\s*SO\s*THUE|MST)[^0-9]{0,50}([0-9]{8,14})/gi
-  )].map(m => m[2]);
-}
+function extractInvoiceDateFromPDFText_(text) {
+  const source = String(text || "");
 
-function pickCounterpartyTaxCode_(text, myTaxCode) {
-  const taxCodes = extractAllTaxCodes_(text);
+  let match = source.match(
+    /NGÀY(?:\s*\(DATE\))?(?:\s+LẬP)?[^0-9]{0,25}([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{4})/i
+  );
+  if (match) {
+    const parsed = parseInvoiceDateValue_(match[1]);
+    if (parsed) return Utilities.formatDate(parsed, "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+  }
 
-  for (const taxCode of taxCodes) {
-    if (taxCode === myTaxCode) continue;   // loại chính mình
-    return taxCode;                        // lấy cái đầu tiên hợp lệ
+  match = source.match(
+    /NGÀY(?:\s*\(DATE\))?\s*([0-9]{1,2})\s*THÁNG(?:\s*\(MONTH\))?\s*([0-9]{1,2})\s*NĂM(?:\s*\(YEAR\))?\s*([0-9]{4})/i
+  );
+  if (match) {
+    const parsed = parseInvoiceDateValue_(`${match[1]}/${match[2]}/${match[3]}`);
+    if (parsed) return Utilities.formatDate(parsed, "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
   }
 
   return null;
 }
 
-// Build tên file chuẩn thuế
-function buildVatPdfFileName_(meta) {
+function extractTaxCodeOccurrences_(text) {
+  const source = String(text || "");
+  const occurrences = [];
+  const regex = /(MÃ\s*SỐ\s*THUẾ|MA\s*SO\s*THUE|MST|TAX\s*CODE)[^0-9]{0,60}([0-9][0-9 \t.\-]{6,28}[0-9])/gi;
+  let match;
 
+  while ((match = regex.exec(source)) !== null) {
+    const code = normalizeInvoiceTaxCode_(match[2]);
+    if (!code) continue;
+
+    const lineStart = source.lastIndexOf("\n", match.index) + 1;
+    const nextLineBreak = source.indexOf("\n", regex.lastIndex);
+    const lineEnd = nextLineBreak >= 0 ? nextLineBreak : source.length;
+    const context = source.slice(lineStart, lineEnd);
+
+    occurrences.push({
+      code,
+      index: match.index,
+      context,
+      provider: isInvoiceProviderContext_(context)
+    });
+  }
+
+  return occurrences;
+}
+
+function isInvoiceProviderContext_(context) {
+  const normalized = normalizeTextForCompare_(context || "");
+  return (
+    normalized.includes("don vi cung cap") ||
+    normalized.includes("phat hanh boi") ||
+    normalized.includes("giai phap hoa don") ||
+    normalized.includes("phan mem meinvoice") ||
+    normalized.includes("softdreams") ||
+    normalized.includes("bkav")
+  );
+}
+
+function pickCounterpartyTaxCodeOccurrence_(text, myTaxCode) {
+  const own = normalizeInvoiceTaxCode_(myTaxCode);
+  if (!own) return null;
+
+  const businessOccurrences = extractTaxCodeOccurrences_(text)
+    .filter(x => !x.provider);
+
+  const ownOccurrences = businessOccurrences.filter(x => x.code === own);
+  if (!ownOccurrences.length) return null;
+
+  const ownOccurrence = ownOccurrences[0];
+  const before = businessOccurrences
+    .filter(x => x.code !== own && x.index < ownOccurrence.index)
+    .sort((a, b) => b.index - a.index);
+  const after = businessOccurrences
+    .filter(x => x.code !== own && x.index > ownOccurrence.index)
+    .sort((a, b) => a.index - b.index);
+
+  const roleWindow = normalizeTextForCompare_(
+    String(text || "").slice(Math.max(0, ownOccurrence.index - 500), ownOccurrence.index + 80)
+  );
+  const lastBuyerMarker = Math.max(
+    roleWindow.lastIndexOf("nguoi mua"),
+    roleWindow.lastIndexOf("buyer"),
+    roleWindow.lastIndexOf("customer")
+  );
+  const lastSellerMarker = Math.max(
+    roleWindow.lastIndexOf("don vi ban"),
+    roleWindow.lastIndexOf("nguoi ban"),
+    roleWindow.lastIndexOf("seller")
+  );
+
+  // NHAP: our MST is in the buyer block -> seller MST should be immediately before it.
+  if (lastBuyerMarker > lastSellerMarker && before.length) {
+    return before[0];
+  }
+
+  // XUAT: our MST is in the seller block -> buyer MST should be immediately after it.
+  if (lastSellerMarker > lastBuyerMarker && after.length) {
+    return after[0];
+  }
+
+  // Deterministic fallback only when there is a single side to choose from.
+  if (before.length && !after.length) return before[0];
+  if (after.length && !before.length) return after[0];
+
+  // Ambiguous PDF: do not guess.
+  return null;
+}
+
+function extractAllTaxCodes_(text) {
+  return extractTaxCodeOccurrences_(text).map(x => x.code);
+}
+
+function pickCounterpartyTaxCode_(text, myTaxCode) {
+  return pickCounterpartyTaxCodeOccurrence_(text, myTaxCode)?.code || null;
+}
+
+function extractCompanyNameNearTaxCode_(text, occurrence) {
+  if (!occurrence) return null;
+
+  const source = String(text || "");
+  const before = source.slice(Math.max(0, occurrence.index - 450), occurrence.index);
+  const lines = before
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean)
+    .reverse();
+
+  for (const line of lines) {
+    const normalized = normalizeTextForCompare_(line);
+    if (!normalized.includes("cong ty")) continue;
+    if (isInvoiceProviderContext_(line)) continue;
+    return line.replace(
+      /^(?:TÊN\s*ĐƠN\s*VỊ(?:\s*\(COMPANY(?:'S)?\s*NAME\))?|ĐƠN\s*VỊ\s*BÁN(?:\s*HÀNG)?|SELLER)\s*:?\s*/i,
+      ""
+    ).trim();
+  }
+
+  return null;
+}
+
+function buildVatPdfFileName_(meta) {
   const parsedDate = meta.invoiceDate
     ? parseInvoiceDateValue_(meta.invoiceDate)
     : null;
 
-  const date = parsedDate
-    ? Utilities.formatDate(parsedDate, "Asia/Ho_Chi_Minh", "yyyyMMdd")
-    : "UNKNOWNDATE";
+  if (!parsedDate) {
+    throw new Error("PDF invoice date missing or invalid");
+  }
+
+  const canonicalTaxCode = normalizeInvoiceTaxCode_(meta.taxCode);
+  if (!canonicalTaxCode) {
+    throw new Error("PDF counterparty tax code missing or ambiguous");
+  }
+
+  const safeInvoiceNo = normalizeInvoiceNo_(meta.invoiceNo);
+  buildInvoiceKey_(parsedDate, canonicalTaxCode, safeInvoiceNo);
+
+  const date = Utilities.formatDate(parsedDate, "Asia/Ho_Chi_Minh", "yyyyMMdd");
 
   const safeCompany = (meta.companyName || meta.company || "UNKNOWNCOMPANY")
     .replace(/[\\/:*?"<>|]/g, "")
     .substring(0, 80);
 
-  const invoiceNo =
-    String(meta.invoiceNo || "UNKNOWNINVOICE")
-      .replace(/[^\w]/g, "");
+  const invoiceNo = String(safeInvoiceNo).replace(/[^\w]/g, "");
 
   return [
     date,
-    meta.taxCode || "UNKNOWNMST",
+    canonicalTaxCode,
     safeCompany,
-    invoiceNo || "UNKNOWNINVOICE"
+    invoiceNo
   ].join("_") + ".pdf";
 }
 
