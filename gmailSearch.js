@@ -1,9 +1,19 @@
 function buildInvoiceQuery_(invoiceLabel, doneLabel1, doneLabel2) {
+  const incompleteConditions = [doneLabel1, doneLabel2]
+    .filter(Boolean)
+    .map(label => `-label:"${label}"`);
+
+  // PENDING is authoritative for partial states. A thread must remain
+  // discoverable even when the normal done-label pair is already present.
+  if (CONFIG.PENDING_LABEL) {
+    incompleteConditions.push(`label:"${CONFIG.PENDING_LABEL}"`);
+  }
+
   return [
     `label:"${invoiceLabel}"`,
     `after:${formatGmailQueryDate_(CONFIG.INVOICE_FROMDATE)}`,
-    `(-label:"${doneLabel1}" OR -label:"${doneLabel2}")`
-  ].join(" ");
+    incompleteConditions.length ? `(${incompleteConditions.join(" OR ")})` : ""
+  ].filter(Boolean).join(" ");
 }
 
 function searchInvoiceThreads_(query, emptyLog) {
