@@ -1,0 +1,2 @@
+L2 isolated invoice-link live probe trigger.
+No production deploy. No Sheet/Drive/Gmail mutation.
