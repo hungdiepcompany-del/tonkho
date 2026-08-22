@@ -1,0 +1,95 @@
+name: Invoice Canonical Hardening CI
+
+on:
+  push:
+    branches:
+      - gas-invoice-canonical-hardening-20260822
+  pull_request:
+    branches:
+      - gas-production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: invoice-canonical-hardening-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Static syntax and regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify GAS allowlist and JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f deploy/gas-runtime-files.txt
+
+          DUPLICATES="$(grep -vE '^[[:space:]]*(#|$)' deploy/gas-runtime-files.txt | sort | uniq -d || true)"
+          if [ -n "$DUPLICATES" ]; then
+            echo "::error::Duplicate GAS allowlist entries"
+            echo "$DUPLICATES"
+            exit 1
+          fi
+
+          while IFS= read -r path; do
+            path="${path%$'\r'}"
+            [ -z "$path" ] && continue
+            [[ "$path" =~ ^[[:space:]]*# ]] && continue
+
+            if [ ! -f "$path" ]; then
+              echo "::error::Missing allowlisted runtime file: $path"
+              exit 1
+            fi
+
+            case "$path" in
+              *.js)
+                node --check "$path"
+                ;;
+              *.html|appsscript.json)
+                ;;
+              *)
+                echo "::error::Unsupported GAS allowlist file type: $path"
+                exit 1
+                ;;
+            esac
+          done < deploy/gas-runtime-files.txt
+
+      - name: Run unit regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:unit
+
+      - name: Run complete local test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test
+
+      - name: Safety summary
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          {
+            echo "## Invoice canonical hardening"
+            echo ""
+            echo "- GAS syntax: PASS"
+            echo "- Unit tests: PASS"
+            echo "- Full local tests: PASS"
+            echo "- Google credentials: NOT USED"
+            echo "- clasp: NOT USED"
+            echo "- Production deploy: NOT PERFORMED"
+          } >> "$GITHUB_STEP_SUMMARY"
