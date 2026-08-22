@@ -10,20 +10,23 @@ permissions:
   issues: write
 
 concurrency:
-  group: tonkho-gas-production
+  group: tonkho-gas-production-p0-20260821
   cancel-in-progress: false
 
 env:
   EXPECTED_SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
   CLASP_VERSION: 3.3.0
   DEPLOY_STATUS_ISSUE: '2'
+  SCRIPT_ID: 19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
+  SPREADSHEET_ID: 1yBbalX91VZkGIBaUJZQRt5eVllVlo53696M5hMLNAoc
+  STATUS_ISSUE: '2'
 
 jobs:
   validate-and-deploy:
-    name: Validate and deploy Apps Script
+    name: Validate, deploy, and run P0 reconciliation
     if: ${{ github.ref == 'refs/heads/gas-production' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Checkout approved production ref
@@ -210,14 +213,42 @@ jobs:
             exit 1
           fi
 
-      - name: Deployment summary
+      - name: Checkout pinned canonical P0 runner
+        uses: actions/checkout@v4
+        with:
+          ref: e308d7bbf8947d4267de40dfd1eff09cd674c0a4
+          path: p0src
+
+      - name: Install YAML parser for P0 launcher
+        shell: bash
+        run: python3 -m pip install --quiet pyyaml
+
+      - name: Execute Owner-approved one-shot P0 reconciliation
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import yaml, pathlib
+          p = pathlib.Path('p0src/.github/workflows/run-p0-reconcile.yml')
+          doc = yaml.safe_load(p.read_text(encoding='utf-8'))
+          steps = doc['jobs']['run-p0']['steps']
+          target = next(s for s in steps if s.get('name') == 'Execute one-shot P0 through temporary immutable bridge')
+          pathlib.Path('/tmp/run-p0.sh').write_text(target['run'], encoding='utf-8')
+          PY
+          bash /tmp/run-p0.sh
+
+      - name: Deployment and P0 summary
         if: ${{ success() }}
         shell: bash
         run: |
           {
-            echo "## GAS production deployment"
+            echo "## GAS production deployment + P0"
             echo ""
-            echo "- Result: PASS"
+            echo "- Deployment: PASS"
+            echo "- P0 runtime reconciliation: PASS"
             echo "- Repository: $GITHUB_REPOSITORY"
             echo "- Ref: $GITHUB_REF_NAME"
             echo "- Commit: $GITHUB_SHA"
