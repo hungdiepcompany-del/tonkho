@@ -42,12 +42,20 @@ jobs:
           test -s "$RUNNER_TEMP/misa.url"
           echo "L2_URL_DECRYPT=PASS"
 
-      - name: Run live HTTP probe and emit sanitized result only
+      - name: Run deep live HTTP probe and emit sanitized result only
         shell: bash
         run: |
           set -euo pipefail
           cat > "$RUNNER_TEMP/probe.mjs" <<'NODE'
           import fs from 'node:fs';
+
+          const chromeHeaders = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
+            'Accept': 'application/pdf,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.7',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          };
 
           function sanitizeUrl(raw) {
             try {
@@ -64,29 +72,68 @@ jobs:
             return buf.subarray(0,8).toString('latin1').replace(/[^\x20-\x7E]/g,'.');
           }
 
-          function candidatePathsFromHtml(html) {
-            const out = [];
-            const re = /https?:\/\/[^\s"'<>]+/gi;
-            for (const m of (html.match(re) || [])) {
-              try {
-                const u = new URL(String(m).replace(/&amp;/gi,'&'));
-                if (/pdf|download|invoice|api/i.test(u.href)) {
-                  out.push({host:u.hostname,path:u.pathname,queryKeys:[...u.searchParams.keys()].sort()});
-                }
-              } catch {}
+          function cookieNames(setCookieHeaders) {
+            const names = [];
+            for (const c of setCookieHeaders || []) {
+              const m = String(c).match(/^\s*([^=;\s]+)=/);
+              if (m) names.push(m[1]);
             }
-            return out.slice(0,20);
+            return [...new Set(names)].sort();
           }
 
-          async function probe(name, rawUrl) {
+          function cookieHeader(setCookieHeaders) {
+            return (setCookieHeaders || []).map(c => String(c).split(';',1)[0]).filter(Boolean).join('; ');
+          }
+
+          function getSetCookies(headers) {
+            if (typeof headers.getSetCookie === 'function') return headers.getSetCookie();
+            const one = headers.get('set-cookie');
+            return one ? [one] : [];
+          }
+
+          function resolveCandidate(raw, baseUrl) {
+            try {
+              const decoded = String(raw || '').replace(/&amp;/gi,'&').trim();
+              if (!decoded || decoded.startsWith('javascript:') || decoded.startsWith('mailto:') || decoded.startsWith('#')) return '';
+              return new URL(decoded, baseUrl).href;
+            } catch { return ''; }
+          }
+
+          function discoverCandidates(html, baseUrl) {
+            const raw = [];
+            let m;
+            const attrRe = /(?:href|src|action)\s*=\s*["']([^"']+)["']/gi;
+            while ((m = attrRe.exec(html)) !== null) raw.push(m[1]);
+            const quotedRe = /["']([^"']{1,500}(?:download|pdf|invoice|api|tra-cuu)[^"']{0,500})["']/gi;
+            while ((m = quotedRe.exec(html)) !== null) raw.push(m[1]);
+            const absRe = /https?:\/\/[^\s"'<>]+/gi;
+            for (const u of (html.match(absRe) || [])) raw.push(u);
+
+            const resolved = [...new Set(raw.map(x => resolveCandidate(x, baseUrl)).filter(Boolean))];
+            return resolved.filter(u => /download|pdf|invoice|api|tra-cuu|\.js(?:[?#]|$)/i.test(u)).slice(0,40);
+          }
+
+          function classifyHtml(html) {
+            return {
+              hasCaptchaText: /captcha|recaptcha|m[aã]\s*x[aá]c\s*th[uự]c/i.test(html),
+              hasPdfText: /pdf/i.test(html),
+              hasDownloadText: /download|tải\s*(hóa\s*đơn|file|pdf)/i.test(html),
+              antiBotMarker: /cloudflare|cf-chl|just a moment|access denied|forbidden|bot protection|ray id/i.test(html),
+              expiredMarker: /hết\s*hạn|expired|không\s*tồn\s*tại|not\s*found|invalid\s*token|token\s*invalid/i.test(html),
+              loginMarker: /đăng\s*nhập|login|sign\s*in/i.test(html)
+            };
+          }
+
+          async function fetchOnce(label, rawUrl, headers={}) {
             const started = Date.now();
-            const res = await fetch(rawUrl, {redirect:'follow'});
+            const res = await fetch(rawUrl, {redirect:'follow', headers});
             const buf = Buffer.from(await res.arrayBuffer());
             const ct = res.headers.get('content-type') || '';
             const cd = res.headers.get('content-disposition') || '';
             const pdfMagic = buf.subarray(0,5).toString('latin1') === '%PDF-';
+            const setCookies = getSetCookies(res.headers);
             const item = {
-              provider:name,
+              label,
               source:sanitizeUrl(rawUrl),
               httpStatus:res.status,
               contentType:ct,
@@ -96,42 +143,139 @@ jobs:
               firstBytes:magic(buf),
               pdfMagic,
               final:sanitizeUrl(res.url),
-              elapsedMs:Date.now()-started
+              elapsedMs:Date.now()-started,
+              serverHeader:res.headers.get('server') || '',
+              hasCfRay:Boolean(res.headers.get('cf-ray')),
+              setCookieNames:cookieNames(setCookies)
             };
-            if (/text\/html/i.test(ct) || (!pdfMagic && buf.length < 5000000)) {
+            if (/text\/html/i.test(ct) || (!pdfMagic && buf.length < 5_000_000)) {
               const html = buf.toString('utf8');
-              const candidates = candidatePathsFromHtml(html);
-              item.htmlCandidateCount = candidates.length;
-              item.htmlCandidates = candidates;
-              item.hasCaptchaText = /captcha|recaptcha|m[aã]\s*x[aá]c\s*th[uự]c/i.test(html);
-              item.hasPdfText = /pdf/i.test(html);
-              item.hasDownloadText = /download|tải\s*(hóa\s*đơn|file|pdf)/i.test(html);
+              const rawCandidates = discoverCandidates(html, res.url);
+              item.html = classifyHtml(html);
+              item.candidateCount = rawCandidates.length;
+              item.candidates = rawCandidates.map(sanitizeUrl);
+              item._rawCandidates = rawCandidates;
+              item._setCookies = setCookies;
+            } else {
+              item._rawCandidates = [];
+              item._setCookies = setCookies;
             }
             return item;
           }
 
+          function publicItem(item) {
+            const x = {...item};
+            delete x._rawCandidates;
+            delete x._setCookies;
+            return x;
+          }
+
+          async function easyInvoiceChain(downloadUrl) {
+            const results = [];
+            const direct = await fetchOnce('direct_default', downloadUrl, {});
+            results.push(publicItem(direct));
+
+            const browser = await fetchOnce('direct_chrome', downloadUrl, chromeHeaders);
+            results.push(publicItem(browser));
+            if (browser.pdfMagic) return results;
+
+            const u = new URL(downloadUrl);
+            const viewUrl = new URL(u.href);
+            viewUrl.pathname = viewUrl.pathname.replace(/\/DownloadInvPdf$/i, '/ViewFromEmail');
+            const view = await fetchOnce('view_chrome', viewUrl.href, {...chromeHeaders, Referer:u.origin + '/'});
+            results.push(publicItem(view));
+
+            const cookies = cookieHeader(view._setCookies);
+            const sessionHeaders = {...chromeHeaders, Referer:viewUrl.href};
+            if (cookies) sessionHeaders.Cookie = cookies;
+            const afterView = await fetchOnce('download_after_view_session', downloadUrl, sessionHeaders);
+            results.push(publicItem(afterView));
+            if (afterView.pdfMagic) return results;
+
+            const candidatePool = [...new Set([...(browser._rawCandidates||[]), ...(view._rawCandidates||[]), ...(afterView._rawCandidates||[])])]
+              .filter(x => {
+                try {
+                  const cu = new URL(x);
+                  return cu.hostname === u.hostname && /download|pdf|invoice/i.test(cu.pathname + cu.search);
+                } catch { return false; }
+              })
+              .slice(0,8);
+
+            for (let i=0; i<candidatePool.length; i++) {
+              const candidate = await fetchOnce(`candidate_${i+1}`, candidatePool[i], sessionHeaders);
+              results.push(publicItem(candidate));
+              if (candidate.pdfMagic) break;
+            }
+            return results;
+          }
+
+          async function misaChain(lookupUrl) {
+            const results = [];
+            const direct = await fetchOnce('direct_default', lookupUrl, {});
+            results.push(publicItem(direct));
+            const browser = await fetchOnce('direct_chrome', lookupUrl, {...chromeHeaders, Referer:'https://www.meinvoice.vn/tra-cuu/'});
+            results.push(publicItem(browser));
+            if (browser.pdfMagic || browser.httpStatus !== 200) return results;
+
+            const cookies = cookieHeader(browser._setCookies);
+            const sessionHeaders = {...chromeHeaders, Referer:lookupUrl};
+            if (cookies) sessionHeaders.Cookie = cookies;
+            const repeat = await fetchOnce('repeat_with_session', lookupUrl, sessionHeaders);
+            results.push(publicItem(repeat));
+            if (repeat.pdfMagic) return results;
+
+            const base = new URL(lookupUrl);
+            const candidates = [...new Set([...(browser._rawCandidates||[]), ...(repeat._rawCandidates||[])])]
+              .filter(x => {
+                try {
+                  const u = new URL(x);
+                  return u.hostname === base.hostname && /download|pdf|invoice|api/i.test(u.pathname + u.search);
+                } catch { return false; }
+              })
+              .slice(0,8);
+            for (let i=0; i<candidates.length; i++) {
+              const r = await fetchOnce(`candidate_${i+1}`, candidates[i], sessionHeaders);
+              results.push(publicItem(r));
+              if (r.pdfMagic) break;
+            }
+            return results;
+          }
+
           const easy = fs.readFileSync(process.env.RUNNER_TEMP + '/easy.url','utf8').trim();
           const misa = fs.readFileSync(process.env.RUNNER_TEMP + '/misa.url','utf8').trim();
-          const report = {mode:'LIVE_HTTP_READ_ONLY',productionMutation:false,gmailMutation:false,driveMutation:false,sheetMutation:false,providers:[]};
-          for (const [name,url] of [['EASYINVOICE',easy],['MISA',misa]]) {
-            try {
-              const r = await probe(name,url);
-              report.providers.push(r);
-              console.log(`${name}_HTTP_STATUS=${r.httpStatus}`);
-              console.log(`${name}_CONTENT_TYPE=${r.contentType || 'NONE'}`);
-              console.log(`${name}_PDF_MAGIC=${r.pdfMagic ? 'PASS':'NO'}`);
-              console.log(`${name}_FINAL_HOST=${r.final.host}`);
-              console.log(`${name}_FINAL_PATH=${r.final.path}`);
-              console.log(`${name}_BYTES=${r.bytes}`);
-              if (typeof r.htmlCandidateCount === 'number') console.log(`${name}_HTML_CANDIDATES=${r.htmlCandidateCount}`);
-              if (typeof r.hasCaptchaText === 'boolean') console.log(`${name}_CAPTCHA_TEXT=${r.hasCaptchaText ? 'YES':'NO'}`);
-            } catch (e) {
-              report.providers.push({provider:name,status:'ERROR',error:String(e?.message||e)});
-              console.log(`${name}_PROBE=ERROR`);
-            }
+          const report = {
+            mode:'LIVE_HTTP_READ_ONLY_DEEP',
+            productionMutation:false,
+            gmailMutation:false,
+            driveMutation:false,
+            sheetMutation:false,
+            providers:[]
+          };
+
+          try {
+            const attempts = await easyInvoiceChain(easy);
+            report.providers.push({provider:'EASYINVOICE', attempts});
+            const pass = attempts.some(x => x.pdfMagic);
+            console.log('EASYINVOICE_PDF_RETRIEVED=' + (pass ? 'PASS' : 'NO'));
+            for (const a of attempts) console.log(`EASYINVOICE_${a.label}_STATUS=${a.httpStatus};CT=${a.contentType || 'NONE'};PDF=${a.pdfMagic ? 'YES':'NO'};PATH=${a.final.path}`);
+          } catch (e) {
+            report.providers.push({provider:'EASYINVOICE', error:String(e?.message||e)});
+            console.log('EASYINVOICE_CHAIN=ERROR');
           }
+
+          try {
+            const attempts = await misaChain(misa);
+            report.providers.push({provider:'MISA', attempts});
+            const pass = attempts.some(x => x.pdfMagic);
+            console.log('MISA_PDF_RETRIEVED=' + (pass ? 'PASS' : 'NO'));
+            for (const a of attempts) console.log(`MISA_${a.label}_STATUS=${a.httpStatus};CT=${a.contentType || 'NONE'};PDF=${a.pdfMagic ? 'YES':'NO'};PATH=${a.final.path};CF=${a.hasCfRay ? 'YES':'NO'}`);
+          } catch (e) {
+            report.providers.push({provider:'MISA', error:String(e?.message||e)});
+            console.log('MISA_CHAIN=ERROR');
+          }
+
           report.status='COMPLETED';
-          fs.writeFileSync('l2-encrypted-live-report.json',JSON.stringify(report,null,2));
+          fs.writeFileSync('l2-encrypted-live-report-v2.json',JSON.stringify(report,null,2));
           NODE
           node "$RUNNER_TEMP/probe.mjs"
 
@@ -146,8 +290,8 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: l2-encrypted-live-report
-          path: l2-encrypted-live-report.json
+          name: l2-encrypted-live-report-v2
+          path: l2-encrypted-live-report-v2.json
           if-no-files-found: error
           retention-days: 3
 
