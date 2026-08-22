@@ -1,0 +1,68 @@
+name: L2 Isolated Invoice Link Live Probe PR
+
+on:
+  pull_request:
+    branches:
+      - gas-production
+
+permissions:
+  contents: read
+
+env:
+  CLASP_VERSION: '3.3.0'
+
+jobs:
+  live-probe:
+    name: Probe provider links without production mutation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install clasp and auth helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global "@google/clasp@${CLASP_VERSION}"
+          npm install --no-save google-auth-library@9
+
+      - name: Install existing clasp credential without printing it
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "${CLASPRC_JSON:-}"
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          chmod 600 "$HOME/.clasprc.json"
+          node -e "JSON.parse(require('fs').readFileSync(process.env.HOME+'/.clasprc.json','utf8').replace(/^\uFEFF/,'')); console.log('CLASPRC_JSON_FORMAT=PASS')"
+          clasp show-authorized-user --json >/dev/null
+          echo "CLASP_AUTH_REFRESH=PASS"
+
+      - name: Run sanitized Gmail-to-HTTP probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/l2-link-live-probe.mjs
+
+      - name: Upload sanitized report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: l2-link-probe-report
+          path: l2-probe-report.json
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Safety closeout
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          echo "L2_PROBE_PRODUCTION_MUTATION=0"
+          echo "L2_PROBE_GMAIL_MUTATION=0"
+          echo "L2_PROBE_DRIVE_MUTATION=0"
+          echo "L2_PROBE_SHEET_MUTATION=0"
