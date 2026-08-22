@@ -1,0 +1,35 @@
+name: L2 Probe Ephemeral Keygen
+
+on:
+  pull_request:
+    branches:
+      - gas-production
+
+permissions:
+  contents: read
+
+jobs:
+  keygen:
+    name: Generate encrypted ephemeral probe key
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Generate key material without exposing clasp secret
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "${CLASPRC_JSON:-}"
+          umask 077
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out private.pem >/dev/null 2>&1
+          openssl pkey -in private.pem -pubout -out public.pem >/dev/null 2>&1
+          DERIVED_KEY="$(printf '%s' "$CLASPRC_JSON" | sha256sum | awk '{print $1}')"
+          export DERIVED_KEY
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in private.pem -out private.pem.enc -pass env:DERIVED_KEY
+          PUB_B64="$(base64 -w0 public.pem)"
+          PRIV_ENC_B64="$(base64 -w0 private.pem.enc)"
+          echo "L2_PUBLIC_KEY_B64=$PUB_B64"
+          echo "L2_ENCRYPTED_PRIVATE_KEY_B64=$PRIV_ENC_B64"
+          echo "L2_KEYGEN=PASS"
+          rm -f private.pem public.pem private.pem.enc
