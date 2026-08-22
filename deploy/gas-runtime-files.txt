@@ -48,6 +48,7 @@ gmailScanner.js
 gmailSearch.js
 gmailValidate.js
 hashUtils.js
+invoiceCanonical.js
 main.js
 normalization.js
 pdfParser.js
