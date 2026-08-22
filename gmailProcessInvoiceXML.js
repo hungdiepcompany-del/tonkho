@@ -15,11 +15,11 @@ function processInvoiceAllXMLAttachments_(
     try {
       if (EmailDedupService.isDuplicateAttachment(att, "XML")) continue;
 
-      //PARSE DUY NHẤT 1 LẦN
+      // Parse exactly once. Canonical identity is validated before rows are emitted.
       const parsed = parseInvoiceXML_(att, { type });
 
       const ok = processInvoiceXMLAttachment_(
-        parsed,        // truyền parsed
+        parsed,
         type,
         results,
         thread
@@ -31,20 +31,27 @@ function processInvoiceAllXMLAttachments_(
         sheetWritten = true;
         hasAnyVatInvoice = true;
 
+        const issueDate = parsed.meta?.invoiceDate;
+        const invoiceNo = normalizeInvoiceNo_(parsed.meta?.invoiceNo);
+        const taxCode = normalizeInvoiceTaxCode_(
+          type === "XUAT"
+            ? parsed.buyer?.taxCode
+            : parsed.seller?.taxCode
+        );
+        const invoiceKey = buildInvoiceKey_(issueDate, taxCode, invoiceNo);
+
         meta = {
-          issueDate: parsed.meta?.invoiceDate,
-          invoiceNo: normalizeInvoiceNo_(parsed.meta?.invoiceNo),
-          taxCode:
-            (type === "XUAT"
-              ? parsed.buyer?.taxCode
-              : parsed.seller?.taxCode) || "UNKNOWNTAXCODE",
+          issueDate,
+          invoiceNo,
+          taxCode,
+          invoiceKey,
           companyName:
             type === "XUAT"
               ? parsed.buyer?.name
-              : parsed.seller?.name // NHAP
+              : parsed.seller?.name
         };
 
-        debugLog_(type + " - Đã nạp dữ liệu XML: " + att.getName());
+        debugLog_(type + " - Da nap du lieu XML: " + att.getName());
 
         if (options.breakOnFirst) {
           invoices.push({ ...meta, blob: att, ok: true });
@@ -59,7 +66,7 @@ function processInvoiceAllXMLAttachments_(
       });
 
     } catch (err) {
-      debugLog_("Lỗi xử lý XML (" + type + "): " + att.getName());
+      debugLog_("Loi xu ly XML (" + type + "): " + att.getName());
       debugLog_(err.stack || err);
 
       invoices.push({
@@ -78,33 +85,24 @@ function processInvoiceAllXMLAttachments_(
 }
 
 function processInvoiceXMLAttachment_(parsed, type, results, thread) {
-
   if (!isVatInvoiceXML_(parsed.meta)) {
     debugLog_(
-      "Email " + type + " có XML nhưng không phải là XML hóa đơn:\n"
-      + thread.getSubject()
+      "Email " + type + " co XML nhung khong phai XML hoa don:\n" +
+      thread.getSubject()
     );
     return false;
   }
 
+  const invoiceDate = parsed.meta?.invoiceDate || "";
+  const rawTaxCode =
+    type === "XUAT"
+      ? parsed.buyer?.taxCode
+      : parsed.seller?.taxCode;
+  const taxCode = normalizeInvoiceTaxCode_(rawTaxCode);
+  const invoiceNo = normalizeInvoiceNo_(parsed.meta?.invoiceNo);
+  const invoiceKey = buildInvoiceKey_(invoiceDate, taxCode, invoiceNo);
+
   parsed.items.forEach((item, itemIndex) => {
-
-    const invoiceDate = parsed.meta?.invoiceDate || "";
-
-    const taxCode =
-      (type === "XUAT"
-        ? parsed.buyer?.taxCode
-        : parsed.seller?.taxCode) || "UNKNOWNTAXCODE";
-
-    const invoiceNo =
-      normalizeInvoiceNo_(parsed.meta.invoiceNo);
-
-    const invoiceKey = buildInvoiceKey_(
-      invoiceDate,
-      taxCode,
-      invoiceNo
-    );
-
     results.push({
       row: [
         invoiceDate,
@@ -123,9 +121,9 @@ function processInvoiceXMLAttachment_(parsed, type, results, thread) {
       invoiceKey,
       sourceLineNo: itemIndex + 1
     });
-
   });
-  return true; // có VAT invoice
+
+  return true;
 }
 
 function saveInvoiceXmlToDrive_(
@@ -142,6 +140,15 @@ function saveInvoiceXmlToDrive_(
     throw new Error("Ngay hoa don khong hop le khi luu XML: " + issueDate);
   }
 
+  const canonicalTaxCode = normalizeInvoiceTaxCode_(taxCode);
+  if (!canonicalTaxCode) {
+    throw new Error("MST hoa don khong hop le khi luu XML: " + taxCode);
+  }
+
+  const safeInvoiceNo = normalizeInvoiceNo_(invoiceNo);
+  // Reuse the same validator as the registry identity before creating a file.
+  buildInvoiceKey_(parsedDate, canonicalTaxCode, safeInvoiceNo);
+
   const year = String(parsedDate.getFullYear());
   const yearFolder = getOrCreateYearFolder_(year, rootFolderId);
 
@@ -150,29 +157,29 @@ function saveInvoiceXmlToDrive_(
     Session.getScriptTimeZone(),
     "yyyyMMdd"
   );
-  const safeInvoiceNo = normalizeInvoiceNo_(invoiceNo);
+
+  const safeCompanyName = String(companyName || "UNKNOWNCOMPANY")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim()
+    .substring(0, 80) || "UNKNOWNCOMPANY";
 
   const fileName =
-    `${yyyyMMdd}_${taxCode}_${companyName}_${safeInvoiceNo}.xml`;
+    `${yyyyMMdd}_${canonicalTaxCode}_${safeCompanyName}_${safeInvoiceNo}.xml`;
 
-  // 🔎 Kiểm tra file đã tồn tại
   const files = yearFolder.getFilesByName(fileName);
 
   if (files.hasNext()) {
     const file = files.next();
-
     debugLog_(
-      `📄 XML ${logPrefix} đã tồn tại trên Drive: ${fileName}`
+      `XML ${logPrefix} da ton tai tren Drive: ${fileName}`
     );
-
-    return file.getId();   // ✅ trả về id thật
+    return file.getId();
   }
 
-  // 📁 tạo file mới
   const file = yearFolder.createFile(blob.setName(fileName));
 
   debugLog_(
-    `📄 XML ${logPrefix} đã lưu Drive: ${fileName}`
+    `XML ${logPrefix} da luu Drive: ${fileName}`
   );
 
   return file.getId();
