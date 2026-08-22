@@ -5,6 +5,14 @@ function getOrCreateLabel_(name) {
 
 function threadHasAllLabel_(thread, labelNames = []) {
   const set = new Set(thread.getLabels().map(l => l.getName()));
+  const pendingName = typeof CONFIG !== 'undefined' && CONFIG
+    ? String(CONFIG.PENDING_LABEL || '')
+    : '';
+
+  // A partial-state marker always wins over done labels. This prevents an
+  // early skip after one side effect completed while another still needs retry.
+  if (pendingName && set.has(pendingName)) return false;
+
   return labelNames.every(n => set.has(n));
 }
 
@@ -15,7 +23,8 @@ function setExclusiveLabel_(thread, target) {
   switch (target) {
     case 'SAVED_SHEET':
       thread.addLabel(labelSaved);
-      thread.removeLabel(labelPending);
+      // Do not clear PENDING here. Scanner file-state reconciliation owns that
+      // marker because XML/PDF may still be incomplete after ledger commit.
       break;
     case 'PENDING':
       thread.addLabel(labelPending);
