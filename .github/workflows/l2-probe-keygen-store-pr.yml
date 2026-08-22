@@ -1,0 +1,48 @@
+name: L2 Probe Keygen Store
+
+on:
+  pull_request:
+    branches:
+      - gas-production
+
+permissions:
+  contents: write
+
+jobs:
+  keygen-store:
+    name: Store encrypted ephemeral key material
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout probe head branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+
+      - name: Generate and commit encrypted key material once
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "${CLASPRC_JSON:-}"
+          mkdir -p tests/l2-key-material
+          if [ -s tests/l2-key-material/public.pem ] && [ -s tests/l2-key-material/private.pem.enc.b64 ]; then
+            echo "L2_KEY_MATERIAL_ALREADY_PRESENT=1"
+            exit 0
+          fi
+          umask 077
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out "$RUNNER_TEMP/private.pem" >/dev/null 2>&1
+          openssl pkey -in "$RUNNER_TEMP/private.pem" -pubout -out tests/l2-key-material/public.pem >/dev/null 2>&1
+          DERIVED_KEY="$(printf '%s' "$CLASPRC_JSON" | sha256sum | awk '{print $1}')"
+          export DERIVED_KEY
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in "$RUNNER_TEMP/private.pem" -out "$RUNNER_TEMP/private.pem.enc" -pass env:DERIVED_KEY
+          base64 -w0 "$RUNNER_TEMP/private.pem.enc" > tests/l2-key-material/private.pem.enc.b64
+          rm -f "$RUNNER_TEMP/private.pem" "$RUNNER_TEMP/private.pem.enc"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/l2-key-material/public.pem tests/l2-key-material/private.pem.enc.b64
+          git commit -m "test(l2): store encrypted ephemeral probe keys"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          echo "L2_KEY_MATERIAL_STORED=PASS"
