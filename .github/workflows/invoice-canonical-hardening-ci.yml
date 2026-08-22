@@ -20,6 +20,8 @@ jobs:
     name: Static syntax and regression tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TZ: Asia/Ho_Chi_Minh
 
     steps:
       - name: Checkout
@@ -99,6 +101,7 @@ jobs:
             echo "- GAS syntax: PASS"
             echo "- Unit tests: PASS"
             echo "- Full local tests: PASS"
+            echo "- Test timezone: Asia/Ho_Chi_Minh"
             echo "- Google credentials: NOT USED"
             echo "- clasp: NOT USED"
             echo "- Production deploy: NOT PERFORMED"
