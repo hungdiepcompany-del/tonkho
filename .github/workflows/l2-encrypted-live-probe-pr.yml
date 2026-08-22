@@ -1,0 +1,161 @@
+name: L2 Encrypted Live Provider Probe
+
+on:
+  pull_request:
+    branches:
+      - gas-production
+
+permissions:
+  contents: read
+
+jobs:
+  encrypted-probe:
+    name: Decrypt in RAM and probe provider responses
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout probe branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Decrypt probe URLs without logging secrets
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "${CLASPRC_JSON:-}"
+          umask 077
+          DERIVED_KEY="$(printf '%s' "$CLASPRC_JSON" | sha256sum | awk '{print $1}')"
+          export DERIVED_KEY
+          base64 -d tests/l2-key-material/private.pem.enc.b64 > "$RUNNER_TEMP/private.pem.enc"
+          openssl enc -d -aes-256-cbc -pbkdf2 -in "$RUNNER_TEMP/private.pem.enc" -out "$RUNNER_TEMP/private.pem" -pass env:DERIVED_KEY
+          base64 -d tests/l2-key-material/easyinvoice.url.enc.b64 > "$RUNNER_TEMP/easy.enc"
+          base64 -d tests/l2-key-material/misa.url.enc.b64 > "$RUNNER_TEMP/misa.enc"
+          openssl pkeyutl -decrypt -inkey "$RUNNER_TEMP/private.pem" -in "$RUNNER_TEMP/easy.enc" -out "$RUNNER_TEMP/easy.url" -pkeyopt rsa_padding_mode:oaep
+          openssl pkeyutl -decrypt -inkey "$RUNNER_TEMP/private.pem" -in "$RUNNER_TEMP/misa.enc" -out "$RUNNER_TEMP/misa.url" -pkeyopt rsa_padding_mode:oaep
+          test -s "$RUNNER_TEMP/easy.url"
+          test -s "$RUNNER_TEMP/misa.url"
+          echo "L2_URL_DECRYPT=PASS"
+
+      - name: Run live HTTP probe and emit sanitized result only
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/probe.mjs" <<'NODE'
+          import fs from 'node:fs';
+
+          function sanitizeUrl(raw) {
+            try {
+              const u = new URL(raw);
+              return {host: u.hostname, path: u.pathname, queryKeys: [...u.searchParams.keys()].sort()};
+            } catch {
+              return {host: 'INVALID', path: '', queryKeys: []};
+            }
+          }
+
+          function magic(buf) {
+            if (!buf.length) return 'EMPTY';
+            if (buf.subarray(0,5).toString('latin1') === '%PDF-') return '%PDF-';
+            return buf.subarray(0,8).toString('latin1').replace(/[^\x20-\x7E]/g,'.');
+          }
+
+          function candidatePathsFromHtml(html) {
+            const out = [];
+            const re = /https?:\/\/[^\s"'<>]+/gi;
+            for (const m of (html.match(re) || [])) {
+              try {
+                const u = new URL(String(m).replace(/&amp;/gi,'&'));
+                if (/pdf|download|invoice|api/i.test(u.href)) {
+                  out.push({host:u.hostname,path:u.pathname,queryKeys:[...u.searchParams.keys()].sort()});
+                }
+              } catch {}
+            }
+            return out.slice(0,20);
+          }
+
+          async function probe(name, rawUrl) {
+            const started = Date.now();
+            const res = await fetch(rawUrl, {redirect:'follow'});
+            const buf = Buffer.from(await res.arrayBuffer());
+            const ct = res.headers.get('content-type') || '';
+            const cd = res.headers.get('content-disposition') || '';
+            const pdfMagic = buf.subarray(0,5).toString('latin1') === '%PDF-';
+            const item = {
+              provider:name,
+              source:sanitizeUrl(rawUrl),
+              httpStatus:res.status,
+              contentType:ct,
+              hasContentDisposition:Boolean(cd),
+              contentDispositionMentionsPdf:/\.pdf/i.test(cd),
+              bytes:buf.length,
+              firstBytes:magic(buf),
+              pdfMagic,
+              final:sanitizeUrl(res.url),
+              elapsedMs:Date.now()-started
+            };
+            if (/text\/html/i.test(ct) || (!pdfMagic && buf.length < 5000000)) {
+              const html = buf.toString('utf8');
+              const candidates = candidatePathsFromHtml(html);
+              item.htmlCandidateCount = candidates.length;
+              item.htmlCandidates = candidates;
+              item.hasCaptchaText = /captcha|recaptcha|m[aã]\s*x[aá]c\s*th[uự]c/i.test(html);
+              item.hasPdfText = /pdf/i.test(html);
+              item.hasDownloadText = /download|tải\s*(hóa\s*đơn|file|pdf)/i.test(html);
+            }
+            return item;
+          }
+
+          const easy = fs.readFileSync(process.env.RUNNER_TEMP + '/easy.url','utf8').trim();
+          const misa = fs.readFileSync(process.env.RUNNER_TEMP + '/misa.url','utf8').trim();
+          const report = {mode:'LIVE_HTTP_READ_ONLY',productionMutation:false,gmailMutation:false,driveMutation:false,sheetMutation:false,providers:[]};
+          for (const [name,url] of [['EASYINVOICE',easy],['MISA',misa]]) {
+            try {
+              const r = await probe(name,url);
+              report.providers.push(r);
+              console.log(`${name}_HTTP_STATUS=${r.httpStatus}`);
+              console.log(`${name}_CONTENT_TYPE=${r.contentType || 'NONE'}`);
+              console.log(`${name}_PDF_MAGIC=${r.pdfMagic ? 'PASS':'NO'}`);
+              console.log(`${name}_FINAL_HOST=${r.final.host}`);
+              console.log(`${name}_FINAL_PATH=${r.final.path}`);
+              console.log(`${name}_BYTES=${r.bytes}`);
+              if (typeof r.htmlCandidateCount === 'number') console.log(`${name}_HTML_CANDIDATES=${r.htmlCandidateCount}`);
+              if (typeof r.hasCaptchaText === 'boolean') console.log(`${name}_CAPTCHA_TEXT=${r.hasCaptchaText ? 'YES':'NO'}`);
+            } catch (e) {
+              report.providers.push({provider:name,status:'ERROR',error:String(e?.message||e)});
+              console.log(`${name}_PROBE=ERROR`);
+            }
+          }
+          report.status='COMPLETED';
+          fs.writeFileSync('l2-encrypted-live-report.json',JSON.stringify(report,null,2));
+          NODE
+          node "$RUNNER_TEMP/probe.mjs"
+
+      - name: Destroy decrypted secrets from runner temp
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/private.pem" "$RUNNER_TEMP/private.pem.enc" "$RUNNER_TEMP/easy.enc" "$RUNNER_TEMP/misa.enc" "$RUNNER_TEMP/easy.url" "$RUNNER_TEMP/misa.url"
+          echo "L2_DECRYPTED_MATERIAL_DESTROYED=1"
+
+      - name: Upload sanitized report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: l2-encrypted-live-report
+          path: l2-encrypted-live-report.json
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Safety closeout
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          echo "L2_PROBE_PRODUCTION_MUTATION=0"
+          echo "L2_PROBE_GMAIL_MUTATION=0"
+          echo "L2_PROBE_DRIVE_MUTATION=0"
+          echo "L2_PROBE_SHEET_MUTATION=0"
