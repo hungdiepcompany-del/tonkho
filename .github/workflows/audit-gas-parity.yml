@@ -31,27 +31,37 @@ jobs:
           test -n "${CLASPRC_JSON:-}"
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           chmod 600 "$HOME/.clasprc.json"
-      - name: Clone exact GAS production source read-only
+          clasp show-authorized-user --json >/dev/null
+          echo "CLASP_AUTH=PASS"
+      - name: Pull exact GAS production source read-only
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf "$RUNNER_TEMP/gas-live"
-          mkdir -p "$RUNNER_TEMP/gas-live"
-          cd "$RUNNER_TEMP/gas-live"
-          clasp clone-script "$SCRIPT_ID" >/dev/null
-          echo "GAS_CLONE=PASS"
-          echo "GAS_LIVE_FILE_COUNT=$(find . -type f ! -name '.clasp.json' | wc -l | tr -d ' ')"
+          LIVE="$RUNNER_TEMP/gas-live"
+          rm -rf "$LIVE"
+          mkdir -p "$LIVE"
+          printf '{"scriptId":"%s","rootDir":"."}\n' "$SCRIPT_ID" > "$LIVE/.clasp.json"
+          cd "$LIVE"
+          if ! clasp pull >"$RUNNER_TEMP/clasp-pull.out" 2>"$RUNNER_TEMP/clasp-pull.err"; then
+            echo "GAS_PULL=FAIL"
+            sed -E 's/(ya29\.[A-Za-z0-9._-]+|1\/\/[A-Za-z0-9._-]+|[A-Za-z0-9_-]{30,})/***REDACTED***/g' "$RUNNER_TEMP/clasp-pull.err" | head -20
+            exit 2
+          fi
+          COUNT="$(find . -type f ! -name '.clasp.json' | wc -l | tr -d ' ')"
+          test "$COUNT" -gt 0
+          echo "GAS_PULL=PASS"
+          echo "GAS_LIVE_FILE_COUNT=$COUNT"
       - name: Compare deployed runtime allowlist with live GAS
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          import json, hashlib
+          import json, os
 
           repo = Path.cwd()
-          live = Path(__import__('os').environ['RUNNER_TEMP']) / 'gas-live'
-          allow = []
+          live = Path(os.environ['RUNNER_TEMP']) / 'gas-live'
+          allow=[]
           for raw in (repo/'deploy/gas-runtime-files.txt').read_text(encoding='utf-8-sig').splitlines():
               s=raw.strip()
               if s and not s.startswith('#'):
@@ -59,46 +69,39 @@ jobs:
 
           def norm_text(p):
               b=p.read_bytes()
-              if b.startswith(b'\xef\xbb\xbf'):
-                  b=b[3:]
-              t=b.decode('utf-8').replace('\r\n','\n').replace('\r','\n')
-              return t
+              if b.startswith(b'\xef\xbb\xbf'): b=b[3:]
+              return b.decode('utf-8').replace('\r\n','\n').replace('\r','\n')
 
           live_files={str(p.relative_to(live)).replace('\\','/'):p for p in live.rglob('*') if p.is_file() and p.name!='.clasp.json'}
-          # clasp clone can represent nested Apps Script names using directories; compare exact relative paths first.
           missing=[]; mismatched=[]; matched=[]
           for rel in allow:
-              rp=repo/rel
-              lp=live_files.get(rel)
+              rp=repo/rel; lp=live_files.get(rel)
               if lp is None:
                   missing.append(rel); continue
               if rel=='appsscript.json':
-                  try:
-                      a=json.loads(norm_text(rp)); b=json.loads(norm_text(lp)); same=(a==b)
-                  except Exception:
-                      same=False
+                  try: same=(json.loads(norm_text(rp))==json.loads(norm_text(lp)))
+                  except Exception: same=False
               else:
                   same=(norm_text(rp)==norm_text(lp))
               (matched if same else mismatched).append(rel)
 
           allowset=set(allow)
           extra=sorted(k for k in live_files if k not in allowset)
+          critical=['gmailProcessInvoiceLINK.js','gmailScanner.js','gmailProcessInvoiceXML.js','invoiceCanonical.js','sheetHoaDon.js','sheetNhapXuat.js','sheetWriter.js','main.js','triggers.js','cloudRunShadowCaller.js','durableInvoiceOrchestrator.js','durableScannerShadowBridge.js']
+          critical_bad=[x for x in critical if x in missing or x in mismatched]
+
           print(f'ALLOWLIST_COUNT={len(allow)}')
           print(f'LIVE_FILE_COUNT={len(live_files)}')
           print(f'PARITY_MATCHED={len(matched)}')
           print(f'PARITY_MISSING={len(missing)}')
           print(f'PARITY_MISMATCHED={len(mismatched)}')
           print(f'LIVE_EXTRA={len(extra)}')
-          if missing: print('MISSING='+'|'.join(missing))
-          if mismatched: print('MISMATCHED='+'|'.join(mismatched))
-          if extra: print('EXTRA='+'|'.join(extra))
-          critical=['gmailProcessInvoiceLINK.js','gmailScanner.js','gmailProcessInvoiceXML.js','invoiceCanonical.js','sheetHoaDon.js','sheetNhapXuat.js','sheetWriter.js','main.js','triggers.js','cloudRunShadowCaller.js','durableInvoiceOrchestrator.js','durableScannerShadowBridge.js']
-          critical_bad=[x for x in critical if x in missing or x in mismatched]
           print('CRITICAL_PARITY=' + ('PASS' if not critical_bad else 'FAIL'))
           if critical_bad: print('CRITICAL_BAD='+'|'.join(critical_bad))
-          # Full parity gate is informative; critical parity is mandatory for this architecture audit.
-          if critical_bad:
-              raise SystemExit(2)
+          if missing: print('MISSING_COUNT_ONLY='+str(len(missing)))
+          if mismatched: print('MISMATCHED='+'|'.join(mismatched))
+          if extra: print('EXTRA='+'|'.join(extra))
+          if critical_bad: raise SystemExit(2)
           PY
       - name: Safety closeout
         if: ${{ always() }}
