@@ -25,6 +25,30 @@ const approvedDirtyFiles = Object.freeze([
   ...requiredPhaseFiles,
   files.packageJson,
   files.aggregate,
+  '.codex/agents/coder.toml',
+  '.codex/agents/explorer.toml',
+  '.codex/agents/reviewer.toml',
+  '.codex/agents/verifier.toml',
+  '.codex/config.toml',
+  'AGENTS.md',
+  'docs/12_AI_WORK_LOG.md',
+  'docs/13_DECISION_LOG.md',
+  'docs/AI_EXECUTION_ROUTING.md',
+  'docs/AI_WORKFLOW.md',
+  'docs/04_MASTER_PLAN.md',
+  'docs/FILE_MANIFEST.md',
+  'docs/WORKFLOW_V2_CHANGE_SUMMARY.md',
+  'docs/WORKFLOW_V2_FILE_INVENTORY.md',
+  'docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
+  'docs/exec-plans/active/D7_E4B2_POLICY_REPAIR_WRITER_LIFECYCLE_AND_MR2R_CLOSURE.md',
+  'docs/exec-plans/completed/D7_E4B2_POLICY_REPAIR_WRITER_LIFECYCLE_AND_MR2R_CLOSURE.md',
+  'docs/exec-plans/completed/D7_E4B2_PRODUCTION_EXECUTION_READINESS_AND_OWNER_GATE.md',
+  'docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_INTEGRATED_REPAIR_AND_EXACT_LEASE_DISPOSITION.md',
+  'docs/exec-plans/completed/SYNC_GOV1_REPO_GOVERNANCE_BOOTSTRAP.md',
+  'scripts/ai/Manage-NonWriterIsolation.ps1',
+  'scripts/checkers/check-ai-governance-bootstrap.mjs',
+  'scripts/checkers/check-no-secret.ps1',
+  'tests/unit/ai-governance-bootstrap.test.mjs',
   'scripts/checkers/check-d7-e3i-exact-production-conflict-forensic-and-safe-reconciliation-plan.mjs',
   'scripts/checkers/check-d7-e3r-exact-bounded-production-read-only-adapters.mjs',
   'scripts/checkers/check-d7-e3g-partial-state-read-only-diagnostic.mjs',
@@ -391,7 +415,7 @@ function runCheck() {
   const stagedFiles = git(['diff', '--cached', '--name-only']).split(/\r?\n/).filter(Boolean);
   if (stagedFiles.length) fail('STAGED_FILES_PRESENT');
 
-  const statusLines = git(['status', '--short']).split(/\r?\n/).filter(Boolean);
+  const statusLines = git(['status', '--short', '--untracked-files=all']).split(/\r?\n/).filter(Boolean);
   const trackedFiles = git(['ls-tree', '-r', '--name-only', 'HEAD']).split(/\r?\n/).filter(Boolean);
   const existingFiles = Object.values(files).filter(file => exists(file));
   const phaseState = evaluateD7E3VPhaseFileState_({

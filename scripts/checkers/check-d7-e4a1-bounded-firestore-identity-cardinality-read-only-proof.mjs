@@ -57,6 +57,29 @@ function assertDirtyScope() {
     'docs/08_DECISION_LOG.md',
     'docs/09_VALIDATION_LOG.md',
     'docs/99_NEXT_AI_HANDOFF.md',
+    'docs/04_MASTER_PLAN.md',
+    'scripts/checkers/check-no-secret.ps1',
+    '.codex/agents/coder.toml',
+    '.codex/agents/explorer.toml',
+    '.codex/agents/reviewer.toml',
+    '.codex/agents/verifier.toml',
+    '.codex/config.toml',
+    'AGENTS.md',
+    'docs/12_AI_WORK_LOG.md',
+    'docs/13_DECISION_LOG.md',
+    'docs/AI_EXECUTION_ROUTING.md',
+    'docs/AI_WORKFLOW.md',
+    'docs/FILE_MANIFEST.md',
+    'docs/WORKFLOW_V2_CHANGE_SUMMARY.md',
+    'docs/WORKFLOW_V2_FILE_INVENTORY.md',
+    'docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
+    'docs/exec-plans/completed/D7_E4B2_POLICY_REPAIR_WRITER_LIFECYCLE_AND_MR2R_CLOSURE.md',
+    'docs/exec-plans/completed/D7_E4B2_PRODUCTION_EXECUTION_READINESS_AND_OWNER_GATE.md',
+    'docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_INTEGRATED_REPAIR_AND_EXACT_LEASE_DISPOSITION.md',
+    'docs/exec-plans/completed/SYNC_GOV1_REPO_GOVERNANCE_BOOTSTRAP.md',
+    'scripts/ai/Manage-NonWriterIsolation.ps1',
+    'scripts/checkers/check-ai-governance-bootstrap.mjs',
+    'tests/unit/ai-governance-bootstrap.test.mjs',
     'scripts/checkers/check-d7-e3i-exact-production-conflict-forensic-and-safe-reconciliation-plan.mjs',
     'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
     'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
@@ -78,7 +101,7 @@ function assertDirtyScope() {
     'scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs',
     'docs/phases/D7_E4B1_EXACT_RECONCILIATION_RUNTIME_IMPLEMENTATION_AND_SOURCE_SYNC.md'
   ]));
-  const unexpected = git(['status', '--short']).split(/\r?\n/).filter(Boolean).map(parseStatus).filter(path => path && !isGuard(path) && !allowed.has(path));
+  const unexpected = git(['status', '--short', '--untracked-files=all']).split(/\r?\n/).filter(Boolean).map(parseStatus).filter(path => path && !isGuard(path) && !allowed.has(path));
   if (unexpected.length) fail('UNEXPECTED_DIRTY_FILE_' + unexpected[0].replace(/[^A-Za-z0-9]+/g, '_').toUpperCase());
 }
 
