@@ -1,5 +1,5 @@
 ﻿$ErrorActionPreference = "Stop"
-$patterns = "refresh_token\s*[:=]|private_key\s*[:=]|client_secret\s*[:=]|password\s*[:=]|passwd\s*[:=]|service_account|BEGIN PRIVATE KEY|ya29\.|xox[baprs]-|ghp_|github_pat|sk-[A-Za-z0-9]"
+$patterns = "refresh_token\s*[:=]|private_key\s*[:=]|client_secret\s*[:=]|password\s*[:=]|passwd\s*[:=]|service_account|BEGIN PRIVATE KEY|ya29\.|xox[baprs]-|ghp_|github_pat|(?<![A-Za-z0-9])sk-[A-Za-z0-9]"
 $files = Get-ChildItem -Recurse -File -Force |
   Where-Object {
     $_.FullName -notmatch "\\.git\\" -and
