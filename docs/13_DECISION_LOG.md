@@ -1,5 +1,27 @@
 # Decision log
 
+## 2026-08-30 - Accept D7-E4B durable receipt closeout before repeat verification
+
+DECISION=Treat_revision_44_release_and_the_fresh_revision_46_exact_binding_as_the_current_governance_acceptance_record.
+RATIONALE=The prior D7-E4B writer completed and released normally. The earlier revision-42 ACTIVE/Test-N failure is historical authoring evidence, not the current acceptance state; the renewed Reviewer passed, its prior scope/lifecycle P1 is withdrawn and resolved, and the latest Verifier requires these durable receipts before independent repeat verification.
+
+```text
+AUTHORITY_ID=OWNER_GO_D7_E4B_ONE_SHOT_PRODUCTION_RECONCILIATION_V1
+ASSIGNMENT_ID=SGDS_D7_E4B_RECEIPT_CLOSEOUT_V1
+WRITER_ID=01a052eb-7f36-79c0-8d20-76b12ed84ae5
+PRIOR_WRITERCOMPLETE=d7-e4b-one-shot-complete-01a0518c_COMPLETED
+PRIOR_CONTROLLERRELEASE=d7-e4b-one-shot-release-01a0518c_RELEASED
+PRE_ASSIGNMENT_STATE=NONE_REVISION_44_sha256:a59e1e22965bc33a7343715b7e61d3b32bb7e4141f1041072015ad77a2b380e6
+CURRENT_WRITER_BINDING=d7-e4b-receipt-closeout-verify-01a052eb_VERIFIED_ACTIVE_REVISION_46
+ACCEPTANCE=WINDOWS_POWERSHELL_723_TOTAL_722_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO;D7_E4B_45_OF_45;A_Q_17_OF_17;BUNDLE_C_AGGREGATE_CHECK_PASS;GIT_DIFF_CHECK_0;STAGING_EMPTY
+BASELINE=HEAD_AND_ORIGIN_MAIN_fdb8ef020590759d45a17dfc17738e8a2957a36f
+RENEWED_REVIEWER=PASS
+PREVIOUS_SCOPE_LIFECYCLE_P1=WITHDRAWN_RESOLVED
+LATEST_VERIFIER_P1=REPEAT_VERIFICATION_REQUIRES_DURABLE_RECEIPT_RECORD
+PARENT_ONE_SHOT_PRODUCTION_AUTHORITY=UNCONSUMED
+PRODUCTION_OR_REMOTE_ACTION=NOT_RUN
+```
+
 ## 2026-08-30 - Repair secret-scanner token boundary
 
 DECISION=Restrict_only_the_final_sk_token_alternative_to_a_non_alphanumeric_left_boundary.
@@ -247,3 +269,34 @@ ISOLATION_CLEANUP=PASS_MAIN_STATUS_INDEX_UNCHANGED_VERIFIER_SCRATCH_REMOVED
 CODER_STATUS=ACTIVE_WHILE_AUTHORING_CONTROLLER_WRITERCOMPLETE_CONTROLLERRELEASE_REQUIRED
 CHECKPOINT_COMMIT=OWNER_APPROVAL_REQUIRED_AFTER_SUCCESSFUL_CONTROLLER_CLOSURE
 STAGE_COMMIT_PUSH_DEPLOY_OR_PRODUCTION_MUTATION=NOT_AUTHORIZED
+
+## 2026-08-30 - Serialize D7-E4B as a single-use production authority
+
+DECISION=Bind the Owner-approved D7-E4B reconciliation to exactly one fresh preflight, exact temporary marker creation, one invocation of `runD7E4BExactFirestoreReconciliation`, guaranteed marker deletion, and read-only verification after normal Controller closure and independent governance/acceptance validation.
+RATIONALE=The reconciliation is a seven-write production operation with data-integrity risk. A one-shot authority prevents replay, while fresh preflight and fail-closed drift checks prevent acting on stale source or state evidence.
+AUTHORITY_ID=OWNER_GO_D7_E4B_ONE_SHOT_PRODUCTION_RECONCILIATION_V1
+TASK_ID=01a0518c-a075-7920-864c-24b9f0371432
+ASSIGNMENT_ID=SGDS_D7_E4B_ONE_SHOT_01A0518C
+CONTROLLER_ASSIGN_OPERATION_ID=d7-e4b-one-shot-assign-01a0518c
+CONTROLLER_VERIFY_OPERATION_ID=d7-e4b-one-shot-verify-01a0518c
+WRITER_SLOT=VERIFIED_ACTIVE_REVISION_42
+AUTHORITY_CONSUMPTION=EXACTLY_ONE_ENTRYPOINT_INVOCATION
+HARD_STOPS=MARKER_PREEXISTENCE;AUTHORITY_DRIFT;SOURCE_PARITY_DRIFT;STATE_DRIFT;PRECONDITION_FAILURE;TIMEOUT;TRANSPORT_LOSS;UNKNOWN_OUTCOME
+PRECONDITION_FAILURE_WRITES=0
+RETRY=FORBIDDEN
+SUCCESS=7_FIRESTORE_WRITES_JOB_3_LEASE_2_REPORT_1_AUDIT_1;JOB_VERSION_7;JOB_AND_LEASE_RECONCILIATION_REQUIRED;REPORTS_2;AUDITS_3;ATTACHMENTS_0;EXTERNAL_MUTATION_0
+EXCLUDED=COMMIT;PUSH;DEPLOY;CLASP_PUSH;SOURCE_SYNC;CREDENTIALS;IAM;TRIGGERS;GMAIL;DRIVE;SHEETS;ATTACHMENTS
+CURRENT_DECISION_ONLY=GOVERNANCE_SERIALIZATION_NO_PRODUCTION_EXECUTION_OR_MARKER_MUTATION
+
+## 2026-08-31 - Treat D7-E4B as consumed with a zero-write blocked result
+
+DECISION=Supersede earlier D7-E4B `UNCONSUMED` and planned-success assertions with the consumed-attempt receipt: exactly one authorized invocation completed with `BLOCKED_D7_E4B_PRECONDITION_CHANGED`, `UNKNOWN_WRITE_OUTCOME=NO`, and zero runtime write counters.
+RATIONALE=The valid marker was deleted and verified absent, while the one post-verifier observed matching snapshots, no concurrent external change, zero production mutations, and `UNEXPECTED_FIRESTORE_STATE`. The D7-E4B conjunction definitely failed because the runtime returned `BLOCKED_D7_E4B_PRECONDITION_CHANGED` with zero writes, but its exact failing conjunct was not serialized and remains not isolated. Legacy D7_E3G independently observed zero Drive matches and one non-exact or conflicting Sheet row; that is high-confidence diagnostic direction, not exact D7-E4B predicate proof, because helper semantics differ. Exact Sheet row/content, Drive XML/PDF, lease/fence/generation, page/latest-report, and attachment/document predicates remain not proven.
+AUTHORITY_ID=OWNER_GO_D7_E4B_CONSUMED_ATTEMPT_RECEIPT_AND_READ_ONLY_PRECONDITION_DELTA_DIAGNOSIS_V1
+WRITER_SLOT_STATUS=VERIFIED_ACTIVE_REVISION_50
+PARENT_ONE_SHOT_AUTHORITY_STATUS=CONSUMED_ZERO_WRITE_BLOCKED_PRECONDITION
+RECONCILIATION=NOT_COMPLETED
+SUCCESS_TARGET_7_WRITES=NOT_MET
+ROOT_CAUSE=NOT_CLAIMED_BEYOND_AVAILABLE_EVIDENCE
+FUTURE_ACTIONS_FORBIDDEN=PRODUCTION_RETRY;MARKER;PRODUCTION_MUTATION;COMMIT;PUSH;DEPLOY;CLASP;SOURCE_SYNC
+FRESH_OWNER_AUTHORITY_REQUIRED_FOR=EXTERNAL_READ;DIAGNOSTIC_SOURCE_CHANGE;REPAIR;NEW_PRODUCTION_ATTEMPT
