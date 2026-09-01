@@ -3,9 +3,9 @@
 TASK_ID=SGDS_WRITER_AUTHORITY_V3_MODEL_B_BOOTSTRAP_CODER_V1
 STATUS=ACTIVE
 OWNER_AUTHORITY=DIRECT_OWNER_PLUS_CHATGPT
-AUTHORITY_ID=OWNER_GO_D7_E4B_CONSUMED_ATTEMPT_RECEIPT_AND_READ_ONLY_PRECONDITION_DELTA_DIAGNOSIS_V1
-SUPERSEDED_AUTHORITY_ID=OWNER_GO_D7_E4B_ONE_SHOT_PRODUCTION_RECONCILIATION_V1
-RISK_CLASS=HIGH_PRODUCTION_EXACT_ONE_SHOT_RECONCILIATION
+AUTHORITY_ID=OWNER_GO_D7_E4C_LOCAL_ONLY_EXACT_PRECONDITION_DIAGNOSTIC_DESIGN_V1
+SUPERSEDED_AUTHORITY_ID=OWNER_GO_D7_E4B_CONSUMED_ATTEMPT_RECEIPT_AND_READ_ONLY_PRECONDITION_DELTA_DIAGNOSIS_V1
+RISK_CLASS=MEDIUM_LOCAL_ONLY_DIAGNOSTIC_DESIGN
 BOOTSTRAP_CODER_THREAD_ID=01a0505d-1028-7e13-9bb3-d660b7b076bb
 BOOTSTRAP_CODER_ROLE=SOLE_SOURCE_WRITER
 SUPERSEDED_BOOTSTRAP_CODER_THREAD_ID=01a02ca0-d47a-79e1-bef8-ae7e10370334
@@ -52,6 +52,32 @@ OWNER_D7_E4B_CONSUMED_ATTEMPT_BINDING_STATUS=VERIFIED_ACTIVE_REVISION_50
 OWNER_D7_E4B_CONSUMED_ATTEMPT_WRITER_AUTHORITY_ID=OWNER_GO_D7_E4B_CONSUMED_ATTEMPT_RECEIPT_AND_READ_ONLY_PRECONDITION_DELTA_DIAGNOSIS_V1
 OWNER_D7_E4B_CONSUMED_ATTEMPT_WRITER_ID=01a05b2d-9d29-7fe1-9fb5-6b1d1693353b
 OWNER_D7_E4B_CONSUMED_ATTEMPT_SLOT_STATE_SHA256=sha256:1390370a5c174a9b031b14b0e9ce0c3b6b3046efaf2fc469476bd2eb8c283d61
+OWNER_D7_E4C_AUTHORITY_ID=OWNER_GO_D7_E4C_LOCAL_ONLY_EXACT_PRECONDITION_DIAGNOSTIC_DESIGN_V1
+OWNER_D7_E4C_PARENT_AUTHORITY_ID=OWNER_GO_D7_E4B_CONSUMED_ATTEMPT_RECEIPT_AND_READ_ONLY_PRECONDITION_DELTA_DIAGNOSIS_V1
+OWNER_D7_E4C_MANUAL_BOOTSTRAP_EXCEPTION=MINIMAL_ACTIVE_CONTRACT_AUTHORITY_AND_EXACT_CODER_BINDING_ONLY
+OWNER_D7_E4C_MANUAL_BOOTSTRAP_RULE=NO_FAKE_WRITER_STATE_NO_MANUAL_LEASE_LOCK_ISOLATION_OR_CONTROL_PLANE_MUTATION
+OWNER_D7_E4C_CODER_THREAD_ID=01a05c7f-e821-71c1-b0e3-c31aec0f0b61
+OWNER_D7_E4C_CODER_ROLE=SOLE_SOURCE_WRITER
+OWNER_D7_E4C_ASSIGNMENT_ID=SGDS_D7_E4C_LOCAL_ONLY_DIAGNOSTIC_DESIGN_ALLOWLIST_CORRECTION_V1
+OWNER_D7_E4C_ASSIGN_OPERATION_ID=d7-e4c-design-assign-01a05c7f
+OWNER_D7_E4C_VERIFY_OPERATION_ID=d7-e4c-design-verify-01a05c7f
+OWNER_D7_E4C_SCOPE=ACTIVE_CONTRACT;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;DELETE_docs/phases/D7_E4C_EXACT_FIRESTORE_RECONCILIATION_PRECONDITION_DIAGNOSTIC.md
+OWNER_D7_E4C_ALLOWLIST_CORRECTION_CONTROLLER_VERIFY=STATUS_VERIFIED_SLOT_STATE_ACTIVE
+OWNER_D7_E4C_RULE=DOCS_ONLY_DESIGN_NO_RUNTIME_TEST_CHECKER_PACKAGE_AGGREGATE_ENTRYPOINT_AGENT_GUARD_WRITER_STATE_PROTECTED_WORKTREE_STAGING_COMMIT_PUSH_CLASP_GAS_EXTERNAL_READ_PRODUCTION_MARKER_OR_DATA_MUTATION
+OWNER_D7_E4C_BINDING_STATUS=COMPLETED_RELEASED_SLOT_NONE_REVISION_64
+OWNER_D7_E4C_WRITER_AUTHORITY_ID=OWNER_GO_D7_E4C_LOCAL_ONLY_EXACT_PRECONDITION_DIAGNOSTIC_DESIGN_V1
+OWNER_D7_E4C_WRITER_ID=01a05c7f-e821-71c1-b0e3-c31aec0f0b61
+OWNER_D7_E4C_SLOT_STATE=NONE
+OWNER_D7_E4C_WRITER_SLOT_STATE_SHA256=sha256:f9ceb703f4af60ddbcf1e7c01bc1718eefa716b756048a1c53fe0adbe1d89968
+OWNER_D7_E4C_CONTROLLER_VERIFY_RECEIPT=d7-e4c-design-correction-verify-01a05c7f
+OWNER_D7_E4C_WRITERCOMPLETE_OPERATION_ID=d7-e4c-design-allowlist-correction-complete-01a05c7f
+OWNER_D7_E4C_CONTROLLERRELEASE_OPERATION_ID=d7-e4c-design-allowlist-correction-release-01a05c7f
+OWNER_D7_E4C_PROCESS_AUTHORITY=NONE
+OWNER_D7_E4C_FINAL_RECEIPT_CORRECTION_ASSIGNMENT_ID=SGDS_D7_E4C_FINAL_RECEIPT_REVIEWER_P1_CORRECTION_V1
+OWNER_D7_E4C_FINAL_RECEIPT_CORRECTION_STATUS=IN_PROGRESS_VERIFIED_ACTIVE_FINAL_SLOT_RECEIPT_PENDING_CONTROLLER
+OWNER_D7_E4C_LIVE_WRITER_STATE_SOURCE=INSPECTWRITER_ONLY
+OWNER_D7_E4C_RECEIPT_CORRECTION_ACTIVE_WORDING=AUTHORING_SNAPSHOT_NOT_DURABLE_FUTURE_CONTROL_PLANE_AUTHORITY
+OWNER_D7_E4C_AFTER_CONTROLLER_CLOSEOUT=NO_LIFECYCLE_REPLAY_FROM_DOCUMENTATION
 OWNER_D7_E4B_PRIOR_CODER_THREAD_ID=01a0518c-a075-7920-864c-24b9f0371432
 OWNER_D7_E4B_PRIOR_CODER_DISPOSITION=COMPLETED_RELEASED_REVISION_44_NO_RECOVERY
 OWNER_D7_E4B_SUPERSEDED_PROSPECTIVE_CODER_THREAD_ID=01a052ea-d733-79d2-9da1-401418ed5be8
@@ -382,3 +408,186 @@ FORBIDDEN_FUTURE_ACTIONS=NO_PRODUCTION_RETRY;NO_MARKER;NO_PRODUCTION_MUTATION;NO
 NEXT_SAFE_PHASE=DOCS_ONLY_CLOSEOUT_COMPLETION_THEN_LOCAL_ACCEPTANCE_REVIEWER_VERIFIER
 FRESH_OWNER_AUTHORITY_REQUIRED_FOR=EXTERNAL_READ;DIAGNOSTIC_SOURCE_CHANGE;REPAIR;NEW_PRODUCTION_ATTEMPT
 ```
+
+## D7-E4C Local-Only Diagnostic Design Override
+
+This terminal override supersedes only future diagnostic direction. It does not
+supersede, reopen, retry, reinterpret as success, or otherwise alter the
+consumed D7-E4B receipt, its zero-write facts, or its no-retry rule.
+
+```text
+D7_E4C_AUTHORITY_ID=OWNER_GO_D7_E4C_LOCAL_ONLY_EXACT_PRECONDITION_DIAGNOSTIC_DESIGN_V1
+D7_E4C_DESIGN_LIFECYCLE_ASSIGNMENT_ID=SGDS_D7_E4C_LOCAL_ONLY_DIAGNOSTIC_DESIGN_ALLOWLIST_CORRECTION_V1
+D7_E4C_CODER_TASK_ID=01a05c7f-e821-71c1-b0e3-c31aec0f0b61
+D7_E4C_WRITER_ID=01a05c7f-e821-71c1-b0e3-c31aec0f0b61
+D7_E4C_DESIGN_LIFECYCLE_STATUS=COMPLETED_RELEASED
+D7_E4C_SLOT_STATE=NONE
+D7_E4C_WRITER_SLOT_REVISION=64
+D7_E4C_WRITER_SLOT_STATE_SHA256=sha256:f9ceb703f4af60ddbcf1e7c01bc1718eefa716b756048a1c53fe0adbe1d89968
+D7_E4C_WRITERCOMPLETE_OPERATION_ID=d7-e4c-design-allowlist-correction-complete-01a05c7f
+D7_E4C_CONTROLLERRELEASE_OPERATION_ID=d7-e4c-design-allowlist-correction-release-01a05c7f
+D7_E4C_PROCESS_AUTHORITY=NONE
+D7_E4C_RECEIPT_CORRECTION_ASSIGNMENT_ID=SGDS_D7_E4C_FINAL_RECEIPT_REVIEWER_P1_CORRECTION_V1
+D7_E4C_RECEIPT_CORRECTION_CONTROLLER_VERIFY=STATUS_VERIFIED_SLOT_STATE_ACTIVE
+D7_E4C_RECEIPT_CORRECTION_STATUS=BOUNDED_IN_PROGRESS_FINAL_SLOT_RECEIPT_PENDING_CONTROLLER
+D7_E4C_LIVE_WRITER_STATE_SOURCE=INSPECTWRITER_ONLY
+D7_E4C_PRIOR_PENDING_RELEASE_AND_ACCEPTANCE_RECORDS=HISTORICAL_SUPERSEDED
+D7_E4C_RECEIPT_CORRECTION_ACTIVE_WORDING=AUTHORING_SNAPSHOT_NOT_DURABLE_FUTURE_CONTROL_PLANE_AUTHORITY
+D7_E4C_RECEIPT_CORRECTION_AFTER_CONTROLLER_CLOSEOUT=NOT_AN_INSTRUCTION_TO_REPLAY_ASSIGN_VERIFY_COMPLETE_OR_RELEASE
+D7_E4C_SCOPE=ACTIVE_CONTRACT;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;DELETE_docs/phases/D7_E4C_EXACT_FIRESTORE_RECONCILIATION_PRECONDITION_DIAGNOSTIC.md
+D7_E4C_PHASE=DOCS_ONLY_DESIGN
+D7_E4C_CURRENT_PRODUCTION_PREDICATE_OBSERVATION=NONE
+D7_E4C_ROOT_CAUSE=DIAGNOSTIC_COLLAPSE_ONLY_NOT_EVERY_PREDICATE_FAILURE
+D7_E4C_RUNTIME_OR_TEST_OR_CHECKER_CHANGE=NO
+D7_E4C_PRODUCTION_OR_EXTERNAL_OPERATION=NONE
+D7_E4C_FUTURE_LOCAL_SCOPE=D7_E4B_RUNTIME_REFACTOR;D7_E4C_LOCAL_DIAGNOSTIC_SOURCE;UNIT_TEST_CHECKER;PACKAGE_AGGREGATE_REGISTRATION;PHASE_EVIDENCE_MANDATORY_LOGS
+D7_E4C_OPERATOR_ENTRYPOINTS_JS=UNCHANGED_FOR_LOCAL_ONLY_IMPLEMENTATION
+D7_E4C_FUTURE_GATES=NEW_SOURCE_AUTHORITY_REQUIRED;CLASP_GAS_SYNC_SEPARATE_OWNER_GATE;EXTERNAL_READ_SEPARATE_OWNER_GATE;MARKER_RETRY_RECONCILIATION_OR_PRODUCTION_MUTATION_NEW_ONE_SHOT_AUTHORITY_AFTER_FRESH_EVIDENCE
+D7_E4C_HISTORICAL_FIRST_ACCEPTANCE_RESULT=723_TOTAL_721_PASS_1_FAIL_1_EXPECTED_SKIP_RESOLVED
+D7_E4C_HISTORICAL_FIRST_ACCEPTANCE_GOVERNANCE_Q=FAIL_RESOLVED
+D7_E4C_HISTORICAL_FIRST_ACCEPTANCE_FAILURE_CAUSE=TERMINAL_GENERIC_TASK_ID_SHADOWED_CANONICAL_ROOT_TASK_ID_IN_CHECKER_LAST_VALUE_MAP_RESOLVED
+D7_E4C_HISTORICAL_AGGREGATE_ACCEPTANCE_STATUS=FAIL_RESOLVED
+D7_E4C_HISTORICAL_AGGREGATE_FAILED_CHECK=D7_E3V_EXACT_POST_HOC_ATTRIBUTION_READ_ONLY_CHECK
+D7_E4C_HISTORICAL_AGGREGATE_FAILED_GATE=UNAPPROVED_DIRTY_FILE_DOCS_PHASES_D7_E4C_EXACT_FIRESTORE_RECONCILIATION_PRECONDITION_DIAGNOSTIC_MD_RESOLVED
+D7_E4C_ALLOWLIST_CORRECTION_CAUSE=LEGACY_CHECKER_ALLOWLIST_LIMITATION_NOT_RUNTIME_DEFECT
+D7_E4C_CHECKER_CHANGED=NO
+D7_E4C_CANONICAL_DESIGN_LOCATION=ACTIVE_CONTRACT_TERMINAL_D7_E4C_SECTION
+D7_E4C_PHASE_DOC_DISPOSITION=DELETE_AFTER_FULL_CONTENT_PRESERVATION
+D7_E4C_POST_RELEASE_FULL_CHECK=PASS_EXIT_0
+D7_E4C_POST_RELEASE_TESTS=723_TOTAL_722_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO
+D7_E4C_POST_RELEASE_GOVERNANCE_A_Q=17_PASS_0_FAIL_0_SKIP_0_TODO
+D7_E4C_POST_RELEASE_D7_E4B_RUNTIME=45_PASS_0_FAIL_0_SKIP_0_TODO
+D7_E4C_POST_RELEASE_AGGREGATE_GATES=D7_E3V_PASS;D7_E4A1_PASS;D7_E4A1A_PASS;D7_E4A1B_PASS;D7_E4A1C_PASS;D7_E4A2_PASS;D7_E4B_PASS;AI_GOVERNANCE_BOOTSTRAP_PASS;BUNDLE_C_AGGREGATE_PASS
+D7_E4C_PRE_RECEIPT_GIT_DIFF_CHECK=PASS_LINE_ENDING_WARNINGS_ONLY
+D7_E4C_REVIEWER_P1=STALE_RECEIPT_STATE_REQUIRES_THIS_CORRECTION
+D7_E4C_REVIEWER_ISOLATION=a2d4_PREFIX_AS_ATTESTED
+D7_E4C_REVIEWER_ISOLATION_CLEANUP=ALL_INVARIANCE_FIELDS_TRUE
+D7_E4C_REVIEWER_PASS=NOT_CLAIMED
+D7_E4C_RENEWED_REVIEWER_STATUS=PENDING_AFTER_RECEIPT_CORRECTION
+D7_E4C_INDEPENDENT_VERIFIER_STATUS=PENDING_AFTER_RENEWED_REVIEWER
+D7_E4C_EXTERNAL_PRODUCTION_CLASP_GAS_OPERATION=NONE
+D7_E4C_CODER_CANDIDATE_STATUS=FROZEN_RECEIPT_CORRECTION_PENDING_CONTROLLER_CLOSEOUT
+D7_E4C_NEXT_ACTION=RENEWED_ISOLATED_REVIEWER_THEN_INDEPENDENT_VERIFIER_THEN_CHECKPOINT_COMMIT_GATE
+D7_E4C_REVISION_64_LIFECYCLE_REPLAY=FORBIDDEN
+```
+
+### Canonical D7-E4C Design
+
+This terminal section is the canonical design location. The former untracked
+phase document is deleted only after its substantive content is preserved
+below. This is a local documentation design only. No source, test, checker,
+package, aggregate, entrypoint, control-plane, external-read, or production
+change is made. No current production predicate has been newly observed.
+
+The consumed D7-E4B attempt remains terminal: its one invocation returned
+`BLOCKED_D7_E4B_PRECONDITION_CHANGED`, recorded zero runtime writes, and
+authorizes no retry. D7-E4C makes no root-cause claim beyond diagnostic
+collapse: the runtime reduced a conjunction to one aggregate boolean and one
+generic blocker; that is not proof that every predicate failed.
+
+### Current Predicate Inventory
+
+`assertD7E4BInitialPreconditions_` in
+`D7_E4B_ExactFirestoreReconciliationRuntime.js` evaluates these stable ordered
+IDs. Today it serializes neither individual results nor reasons: all 34 feed
+one `valid` boolean and the same generic blocker.
+
+| ID | Source semantic | Current serialization gap |
+| --- | --- | --- |
+| P01 | Five canonical values are valid. | Aggregate only. |
+| P02 | Candidate and invoice identity hashes align. | Aggregate only. |
+| P03 | The earlier D7-E4A1 marker is absent. | Aggregate only. |
+| P04 | Exact Firestore job cardinality is one. | Aggregate only. |
+| P05 | Non-exact candidate cardinality is zero. | Aggregate only. |
+| P06 | The snapshot read outcome is known (`false`). | Currently hardcoded `readOutcomeUnknown=false`. |
+| P07 | Persisted job ID equals the derived expected job ID. | Aggregate only. |
+| P08 | Persisted invoice identity equals the expected identity. | Aggregate only. |
+| P09 | Persisted source-thread hash has the required eight-hex form. | Aggregate only. |
+| P10 | Persisted job status is `VALIDATED`. | Aggregate only. |
+| P11 | Persisted job version is 4. | Aggregate only. |
+| P12 | Persisted job reconciliation status is `RECONCILIATION_REQUIRED`. | Aggregate only. |
+| P13 | Commit plan job ID equals the expected job ID. | Aggregate only. |
+| P14 | Commit plan expected line count is one. | Aggregate only. |
+| P15 | Commit plan XML content hash equals the expected XML hash. | Aggregate only. |
+| P16 | Commit plan PDF content hash equals the expected PDF hash. | Aggregate only. |
+| P17 | Lease status is `RECONCILIATION_REQUIRED`. | Aggregate only. |
+| P18 | Lease job ID equals the expected job ID. | Aggregate only. |
+| P19 | Lease fencing token equals the expected deterministic fence. | Aggregate only. |
+| P20 | Lease generation parses as an integer. | Aggregate only. |
+| P21 | Lease generation is positive. | Aggregate only. |
+| P22 | Audit-event listing is complete. | Aggregate only. |
+| P23 | Audit-event listing is an array. | Aggregate only. |
+| P24 | Audit-event count is exactly two. | Aggregate only. |
+| P25 | Reconciliation-report listing is complete. | Aggregate only. |
+| P26 | Reconciliation-report listing is an array. | Aggregate only. |
+| P27 | Reconciliation-report count is exactly one. | Aggregate only. |
+| P28 | The linked latest report is valid for the expected job and status. | Aggregate only. |
+| P29 | The exact XML attachment document is absent. | Aggregate only. |
+| P30 | The exact PDF attachment document is absent. | Aggregate only. |
+| P31 | The Sheet identity lookup returns exactly one committed row. | Aggregate only. |
+| P32 | That Sheet row matches commit-plan immutable fields. | Aggregate only. |
+| P33 | The bounded Drive scan proves exactly one XML hash/MIME match. | Aggregate only. |
+| P34 | The bounded Drive scan proves exactly one PDF hash/MIME match. | Aggregate only. |
+
+### Prospective Contract
+
+A future shared pure evaluator will accept already-captured authorization,
+snapshot, and expected identity and return the ordered 34-item result. The
+existing fail-closed runtime assertion will consume that evaluator and continue
+to block before writes unless the overall result is `PASS`.
+
+Each predicate has exactly one status: `PASS` only on exact true evidence;
+`FAIL` only on present contradictory evidence; `NOT_PROVEN` on missing,
+unknown, incomplete, malformed, or upstream-undeliverable evidence. Overall
+status is `PASS` only for 34 `PASS`; any `FAIL` is `FAIL`; otherwise it is
+`NOT_PROVEN`. The runtime assertion must treat `FAIL` and `NOT_PROVEN` as
+fail-closed, zero-write precondition failure.
+
+The future D7-E4C local diagnostic runner is separately injected and local-only.
+It receives fixture adapters supplied by tests; it has no public Apps Script
+entrypoint, no production default adapters, and makes no lock, store,
+reconciliation, or service call. `Operator_Entrypoints.js` remains unchanged
+for that local-only implementation.
+
+### Sanitized Deterministic Result
+
+The future output is deterministic and stable-ID ordered, containing only
+predicate `id`, `status`, `reason`, `evidenceClass`, and summary counts. It
+forbids hashes, IDs, values, row content, filenames, emails, tokens,
+authorization headers, and other raw sensitive content. Reasons and evidence
+classes are closed stable vocabulary labels, not source data.
+
+### Coupled Assumptions And Risks
+
+- Firestore query and list completeness are bounded and must be proven, not
+  inferred from a short result.
+- Drive inspection has cap 20 and requires exact hash plus MIME uniqueness.
+- Sheet identity and immutable-field comparison derive only from the persisted
+  commit plan.
+- Lease identity, fence, and generation jointly fence lease transitions.
+- Job and lease updates rely on optimistic versions.
+- Cross-service reads are non-atomic; a diagnostic is one bounded observation,
+  not a global transaction.
+- The current snapshot unconditionally sets `readOutcomeUnknown=false`; this
+  hardcoded unknown-outcome risk must become visible through P06.
+
+### Future Implementation Envelope And Gates
+
+Only fresh source authority may authorize the prospective local work: D7-E4B
+runtime refactor consuming the shared pure evaluator; new D7-E4C local
+diagnostic source; new unit test and checker; package and aggregate
+registration; and phase, evidence, and mandatory logs.
+
+Acceptance requires a 34/34 pass fixture; each isolated predicate fail; missing
+evidence to `NOT_PROVEN`; multi-failure enumeration; independent Sheet, Drive,
+attachment, lease, and completeness cases; deterministic sanitized output; no
+lock/store/reconciliation/service calls; zero mutation; existing D7-E4B 45/45;
+governance 17/17; and the full aggregate. Post-release acceptance passed with
+the exact terminal evidence recorded above. The earlier failures remain
+historical resolved evidence. Renewed independent review and verification are
+still pending; no Reviewer PASS or Verifier PASS is claimed.
+
+Any `clasp` or GAS sync needs a separate Owner gate. Any external read needs a
+separate Owner gate. Marker creation, retry, reconciliation, or production
+mutation remains forbidden and needs a new one-shot authority after fresh
+evidence.
