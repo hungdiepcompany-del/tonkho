@@ -11,25 +11,29 @@ const matrix = 'ABCDEFGHIJKLMNOPQ'.split('');
 const read = file => fs.readFileSync(file, 'utf8');
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const candidateScope = [
-  'docs/12_AI_WORK_LOG.md', 'docs/13_DECISION_LOG.md', 'docs/99_NEXT_AI_HANDOFF.md', 'docs/AI_WORKFLOW.md',
+  'D7_E4B_ExactFirestoreReconciliationRuntime.js',
+  'tests/unit/d7-e4b-exact-firestore-reconciliation-runtime.test.mjs',
+  'scripts/test/powershell-module-env.mjs',
+  'scripts/test/run-all-checks.mjs',
+  'tests/unit/ai-governance-bootstrap.test.mjs',
+  'scripts/checkers/check-ai-governance-bootstrap.mjs',
   'docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
-  'docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_INTEGRATED_REPAIR_AND_EXACT_LEASE_DISPOSITION.md',
-  'package.json', 'scripts/ai/Manage-NonWriterIsolation.ps1', 'scripts/checkers/check-ai-governance-bootstrap.mjs',
-  'scripts/test/run-all-checks.mjs', 'tests/fixtures/writer-authority/**', 'tests/unit/ai-governance-bootstrap.test.mjs',
-  'scripts/checkers/check-no-secret.ps1',
+  'docs/12_AI_WORK_LOG.md', 'docs/13_DECISION_LOG.md', 'docs/99_NEXT_AI_HANDOFF.md'
+];
+const allowed = new Set(candidateScope);
+const inherited = new Set([
+  'GUARD.bat', '_guard/PROJECT_GUARD.config.bat', '_guard/PROJECT_GUARD_ENGINE.bat', '_guard/README.md', 'docs/00_INDEX.md', 'docs/04_MASTER_PLAN.md', 'docs/07_WORK_LOG.md', 'docs/08_DECISION_LOG.md', 'docs/09_VALIDATION_LOG.md',
+  'D7_E4C_ExactPreconditionDiagnostic.js', 'tests/unit/d7-e4c-exact-precondition-diagnostic.test.mjs',
+  'package.json',
   'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
   'scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs',
   'scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs',
   'scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs',
   'scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs',
-  'scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs'
-];
-const allowed = new Set(candidateScope.filter(item => !item.endsWith('/**')));
-const inherited = new Set([
-  'GUARD.bat', '_guard/PROJECT_GUARD.config.bat', '_guard/PROJECT_GUARD_ENGINE.bat', '_guard/README.md', 'docs/00_INDEX.md', 'docs/04_MASTER_PLAN.md', 'docs/07_WORK_LOG.md', 'docs/08_DECISION_LOG.md', 'docs/09_VALIDATION_LOG.md',
-  'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs', 'scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs',
+  'scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs',
+  'scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs', 'scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs',
   '.codex/agents/coder.toml', '.codex/agents/explorer.toml', '.codex/agents/reviewer.toml', '.codex/agents/verifier.toml', '.codex/config.toml', 'AGENTS.md', '_guard/deploy/DEPLOY_GOOGLE_APPS_FIREBASE.bat',
-  'docs/AI_EXECUTION_ROUTING.md', 'docs/FILE_MANIFEST.md', 'docs/WORKFLOW_V2_CHANGE_SUMMARY.md', 'docs/WORKFLOW_V2_FILE_INVENTORY.md', 'docs/exec-plans/completed/D7_E4B2_POLICY_REPAIR_WRITER_LIFECYCLE_AND_MR2R_CLOSURE.md', 'docs/exec-plans/completed/D7_E4B2_PRODUCTION_EXECUTION_READINESS_AND_OWNER_GATE.md', 'docs/exec-plans/completed/SYNC_GOV1_REPO_GOVERNANCE_BOOTSTRAP.md'
+  'docs/AI_EXECUTION_ROUTING.md', 'docs/AI_WORKFLOW.md', 'docs/FILE_MANIFEST.md', 'docs/WORKFLOW_V2_CHANGE_SUMMARY.md', 'docs/WORKFLOW_V2_FILE_INVENTORY.md', 'docs/exec-plans/completed/D7_E4B2_POLICY_REPAIR_WRITER_LIFECYCLE_AND_MR2R_CLOSURE.md', 'docs/exec-plans/completed/D7_E4B2_PRODUCTION_EXECUTION_READINESS_AND_OWNER_GATE.md', 'docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_INTEGRATED_REPAIR_AND_EXACT_LEASE_DISPOSITION.md', 'docs/exec-plans/completed/SYNC_GOV1_REPO_GOVERNANCE_BOOTSTRAP.md'
 ]);
 function values(text) { return new Map([...text.replace(/^\uFEFF/, '').matchAll(/^([A-Z][A-Z0-9_]*)=(.*)$/gm)].map(([, k, v]) => [k, v])); }
 function parseTap(output) { const get = key => Number(output.match(new RegExp(`# ${key} (\\d+)`))?.[1] ?? NaN); return { tests: get('tests'), pass: get('pass'), fail: get('fail'), skip: get('skipped'), todo: get('todo'), cancelled: get('cancelled') }; }
@@ -62,14 +66,26 @@ function focusedSource(base = root) {
   const text = read(path.join(base, 'tests/unit/ai-governance-bootstrap.test.mjs'));
   assert.equal((text.match(/\btest\('/g) ?? []).length, 17, 'A_Q_TEST_COUNT_EXACT'); assert.doesNotMatch(text, /\b(?:test\.(?:skip|todo)|\.skip\(|\.todo\()/, 'A_Q_SKIP_OR_TODO_FORBIDDEN');
   for (const letter of matrix) assert.match(text, new RegExp(`test\\('${letter} `), `missing matrix ${letter}`);
-  for (const token of ['spawnInvoke', 'waitForFile', 'SGDS_GOVERNANCE_TEST_LOCK_PRE_RELEASE_HOLD_MS', "OperationId: 'g-v'", 'legacy', 'malformed', 'bidirectional', 'checkStaticGovernance']) assert.match(text, new RegExp(token, 'i'));
+  for (const token of ['spawnInvoke', 'waitForFile', 'SGDS_GOVERNANCE_TEST_LOCK_PRE_RELEASE_HOLD_MS', "OperationId: 'g-v'", 'legacy', 'malformed', 'bidirectional', 'checkStaticGovernance', 'createWindowsPowerShellEnvironment', 'relative-root']) assert.match(text, new RegExp(token, 'i'));
 }
-export function checkStaticGovernance(base = root) { activeContract(base); helperStatic(base); focusedSource(base); return true; }
+function aggregateStatic(base = root) {
+  const runner = read(path.join(base, 'scripts/test/run-all-checks.mjs'));
+  const helper = read(path.join(base, 'scripts/test/powershell-module-env.mjs'));
+  assert.match(runner, /import \{ createWindowsPowerShellEnvironment \} from '\.\/powershell-module-env\.mjs';/, 'POWERSHELL_MODULE_ENV_HELPER_IMPORT_REQUIRED');
+  assert.match(runner, /createWindowsPowerShellEnvironment\(process\.env\)/, 'POWERSHELL_MODULE_ENV_HELPER_USE_REQUIRED');
+  assert.doesNotMatch(runner, /requiredPowerShellModulePath|inheritedPowerShellModulePaths|seenPowerShellModulePaths/, 'EMBEDDED_POWERSHELL_MODULE_ENV_LOGIC_FORBIDDEN');
+  for (const token of ['path.win32.isAbsolute', 'path.win32.delimiter', 'SystemRoot', 'WindowsPowerShell', 'PSModulePath', 'toLowerCase']) {
+    assert.match(helper, new RegExp(token.replaceAll('.', '\\.')), `POWERSHELL_MODULE_ENV_HELPER_MISSING_${token}`);
+  }
+  assert.match(helper, /\[requiredModulePath, \.\.\.inheritedModulePaths\]/, 'POWERSHELL_SYSTEM_MODULE_PATH_PRECEDENCE_REQUIRED');
+  assert.match(helper, /if \(!windowsRoot\) throw new Error\('ABSOLUTE_SYSTEMROOT_REQUIRED_FOR_POWERSHELL_MODULES'\)/, 'POWERSHELL_INVALID_SYSTEMROOT_FAIL_CLOSED_REQUIRED');
+}
+export function checkStaticGovernance(base = root) { activeContract(base); helperStatic(base); focusedSource(base); aggregateStatic(base); return true; }
 function scope() {
   const status = execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=all'], { cwd: root, encoding: 'utf8' }).split(/\r?\n/).filter(Boolean);
-  for (const line of status) { const file = line.slice(3).replaceAll('\\', '/'); assert.ok(allowed.has(file) || inherited.has(file) || file.startsWith('tests/fixtures/writer-authority/'), `UNAUTHORIZED_PATH_CHANGE=${file}`); }
+  for (const line of status) { const file = line.slice(3).replaceAll('\\', '/'); assert.ok(allowed.has(file) || inherited.has(file), `UNAUTHORIZED_PATH_CHANGE=${file}`); }
   assert.equal(execFileSync('git', ['diff', '--cached', '--name-only'], { cwd: root, encoding: 'utf8' }).trim(), '', 'STAGING_NONEMPTY');
-  for (const file of ['D7_E4B_ExactFirestoreReconciliationRuntime.js', 'Operator_Entrypoints.js']) assert.equal(sha(read(path.join(root, file))), sha(execFileSync('git', ['show', `HEAD:${file}`], { cwd: root, encoding: 'utf8' })), `${file} changed`);
+  const file = 'Operator_Entrypoints.js'; assert.equal(sha(read(path.join(root, file))), sha(execFileSync('git', ['show', `HEAD:${file}`], { cwd: root, encoding: 'utf8' })), `${file} changed`);
 }
 function focused() { const run = spawnSync(process.execPath, ['--test', 'tests/unit/ai-governance-bootstrap.test.mjs'], { cwd: root, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }); const out = (run.stdout || '') + (run.stderr || ''); const tap = parseTap(out); assert.equal(run.status, 0, out); assert.deepEqual(tap, { tests: 17, pass: 17, fail: 0, skip: 0, todo: 0, cancelled: 0 }, out); for (const letter of matrix) assert.match(out, new RegExp(`Subtest: ${letter} `), `missing matrix ${letter}`); return tap; }
 export function checkGovernance() { checkStaticGovernance(root); const parsed = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'scripts/ai/Manage-NonWriterIsolation.ps1'), '-Action', 'InspectWriter'], { cwd: root, encoding: 'utf8' }); assert.equal(parsed.status, 0, parsed.stdout + parsed.stderr); scope(); const tap = focused(); return { tap, status: 'PASS' }; }

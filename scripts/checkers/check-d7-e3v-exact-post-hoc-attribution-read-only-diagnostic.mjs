@@ -23,8 +23,12 @@ const requiredPhaseFiles = Object.freeze([
 
 const approvedDirtyFiles = Object.freeze([
   ...requiredPhaseFiles,
+  'D7_E4C_ExactPreconditionDiagnostic.js',
+  'tests/unit/d7-e4c-exact-precondition-diagnostic.test.mjs',
+  'scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs',
   files.packageJson,
   files.aggregate,
+  'scripts/test/powershell-module-env.mjs',
   '.codex/agents/coder.toml',
   '.codex/agents/explorer.toml',
   '.codex/agents/reviewer.toml',

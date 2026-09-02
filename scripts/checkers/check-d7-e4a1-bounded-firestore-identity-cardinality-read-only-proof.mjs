@@ -52,6 +52,10 @@ function parseStatus(line) {
 
 function assertDirtyScope() {
   const allowed = new Set(requiredFiles.concat([
+    'D7_E4C_ExactPreconditionDiagnostic.js',
+    'tests/unit/d7-e4c-exact-precondition-diagnostic.test.mjs',
+    'scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs',
+    'scripts/test/powershell-module-env.mjs',
     'docs/00_INDEX.md',
     'docs/07_WORK_LOG.md',
     'docs/08_DECISION_LOG.md',

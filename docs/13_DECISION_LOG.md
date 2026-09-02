@@ -354,4 +354,70 @@ D7_E4C_REVIEWER_ISOLATION_CLEANUP=ALL_INVARIANCE_FIELDS_TRUE
 D7_E4C_RENEWED_REVIEWER=PENDING
 D7_E4C_INDEPENDENT_VERIFIER=PENDING
 D7_E4C_PRODUCTION_EXTERNAL_CLASP_GAS_OPERATION=NONE
+
+## 2026-09-01 - Implement exact local precondition diagnostics
+
+D7_E4C_DECISION=Implement the approved local-only pure P01-P34 evaluator and have the existing runtime assertion consume its overall status before any write.
+D7_E4C_AUTHORITY_ID=OWNER_GO_D7_E4C_LOCAL_ONLY_EXACT_PRECONDITION_DIAGNOSTIC_IMPLEMENTATION_V1
+D7_E4C_ASSIGNMENT_ID=SGDS_D7_E4C_LOCAL_ONLY_EXACT_PRECONDITION_DIAGNOSTIC_IMPLEMENTATION_V1
+D7_E4C_WRITER_ID=01a05dba-4cd2-7e60-9519-212f0a17dafd
+D7_E4C_CONTROLLER_VERIFY=HISTORICAL_AUTHORING_SNAPSHOT_VERIFIED_ACTIVE_REVISION_70_SUPERSEDED_BY_REVIEW_CORRECTION_REVISION_74
+D7_E4C_TRI_STATE=PASS_EXACT_TRUE;FAIL_CONTRADICTORY_EVIDENCE;NOT_PROVEN_MISSING_UNKNOWN_INCOMPLETE_MALFORMED_OR_UPSTREAM_UNDELIVERABLE
+D7_E4C_EVIDENCE_CLASSES=EXACT;CONTRADICTORY;MISSING;UNKNOWN;INCOMPLETE;MALFORMED;UPSTREAM
+D7_E4C_OUTPUT_CONTRACT=ORDERED_ID_STATUS_REASON_EVIDENCE_CLASS_AND_SUMMARY_COUNTS_ONLY
+D7_E4C_P06_DECISION=EXPOSE_CAPTURE_FAILURE_AS_READ_OUTCOME_UNKNOWN_AND_UPSTREAM_UNDELIVERABLE_INSTEAD_OF_ASSUMING_FALSE
+D7_E4C_RUNNER_DECISION=INJECTED_CAPTURE_ONLY_NO_DEFAULT_ADAPTER_ENTRYPOINT_LOCK_STORE_RECONCILIATION_OR_SERVICE_CALL
+D7_E4C_OPERATOR_ENTRYPOINTS_JS=UNCHANGED
+D7_E4C_PRODUCTION_OR_EXTERNAL_OPERATION=NONE
+D7_E4C_CODER_STATUS=FROZEN_PENDING_FULL_ACCEPTANCE_AND_CONTROLLER_WRITERCOMPLETE
+
+D7_E4C_AGGREGATE_DECISION=Do not weaken, bypass, or modify legacy dirty-scope or governance checkers outside this phase allowlist merely to obtain a passing aggregate.
+D7_E4C_AGGREGATE_RATIONALE=The existing checkers reject files that this authority expressly allows, and the aggregate-launched PowerShell cannot resolve Get-FileHash although the direct no-profile workbook guard passes.
+D7_E4C_AGGREGATE_STATUS=NOT_PASS_PENDING_CONTROLLER_ADJUDICATION
+D7_E4C_REQUIRED_AUTHORITY_FOR_REPAIR=EXACT_CHECKER_SCOPE_OR_AGGREGATE_ENVIRONMENT_REPAIR_AUTHORITY
+D7_E4C_CODER_DISPOSITION=FROZEN_NO_WRITERCOMPLETE_RECOMMENDATION_UNTIL_ACCEPTANCE_EXCEPTION_IS_DECIDED
 D7_E4C_NEXT_ACTION=RENEWED_ISOLATED_REVIEWER_THEN_INDEPENDENT_VERIFIER_THEN_CHECKPOINT_COMMIT_GATE
+
+## 2026-09-01 - Resolve D7-E4C aggregate compatibility within exact scope
+
+D7_E4C_DECISION=Extend six historical D7 closed dirty allowlists only by the three new D7-E4C paths, align governance candidate scope with the active contract while separately preserving inherited state, and provide spawned PowerShell a SystemRoot-derived standard module path.
+D7_E4C_RATIONALE=The additions preserve fail-closed status checking and all substantive assertions while allowing the explicitly authorized local candidate to reach aggregate validation.
+D7_E4C_SCOPE_EXPANSION=OWNER_DELEGATED_SAME_ACTIVE_WRITER_BINDING_NO_ASSIGN_OR_VERIFY_REPLAY
+D7_E4C_ACCEPTANCE=UNIT_762_TOTAL_761_PASS_0_FAIL_1_EXPECTED_SKIP;A_Q_17_PASS;D7_E4B_45_PASS;D7_E4C_39_PASS;BUNDLE_C_AGGREGATE_PASS;GIT_DIFF_CHECK_PASS;STAGING_EMPTY
+D7_E4C_OPERATOR_ENTRYPOINTS_JS=UNCHANGED
+D7_E4C_PRODUCTION_EXTERNAL_CLASP_GAS_OPERATION=NONE
+D7_E4C_CODER_STATUS=HISTORICAL_AUTHORING_SNAPSHOT_NOT_CURRENT_CONTROL_PLANE_AUTHORITY
+
+## 2026-09-01 - D7-E4C review correction preserves evidence provenance and exact scope
+
+D7_E4C_REVIEW_CORRECTION_DECISION=Accept only primitive finite numbers and primitive integers; carry listing, linkage, configuration, and scan provenance into dependent predicates; classify unavailable, incomplete, and malformed evidence as NOT_PROVEN while retaining FAIL for exact contradictions.
+D7_E4C_REVIEW_CORRECTION_RUNTIME_DECISION=Require the same positive provenance for confirmed replay and prove P06 unknown capture blocks before store construction and all writes.
+D7_E4C_REVIEW_CORRECTION_SCOPE_DECISION=Replace every authorized checker directory-prefix allowance with exact current file membership; do not grant a writer-authority fixture directory because no such current path exists.
+D7_E4C_REVIEW_CORRECTION_POWERSHELL_DECISION=Augment compatible inherited PSModulePath entries with the SystemRoot-derived Windows PowerShell module path and assert this in the governance checker.
+D7_E4C_REVIEW_CORRECTION_LIFECYCLE=REVISION_70_IS_HISTORICAL_AUTHORING_EVIDENCE;REVISION_74_ACTIVE_AND_ITS_WRITERCOMPLETE_INSTRUCTION_ARE_HISTORICAL_CONSUMED;V1_IS_CLOSED_RELEASED_SLOT_NONE_REVISION_76
+
+## 2026-09-02 - D7-E4C review correction final local acceptance
+
+D7_E4C_FINAL_ACCEPTANCE_DECISION=Freeze the correction candidate after the finalized plain npm check passed 762 total, 761 pass, 0 fail, 1 expected skip, 0 todo, all focused D7 and governance gates, and BUNDLE_C_AGGREGATE_CHECK.
+D7_E4C_EXACT_FIXTURE_DECISION=Retain only _guard/deploy/output.txt and _guard/deploy/safe-output.txt as named legacy unit-test fixture allowances in addition to the current deploy batch path; no deploy directory prefix is restored.
+D7_E4C_PSMODULE_PRECEDENCE_DECISION=Place the SystemRoot-derived Windows PowerShell module directory first, deduplicate case-insensitively, and preserve every inherited absolute module entry after it so Get-FileHash cannot be shadowed by an incompatible same-name module.
+D7_E4C_LIFECYCLE_DECISION=The revision-74 ACTIVE receipt and WriterComplete instruction are historical and consumed; V1 is closed and released at slot NONE revision 76 with terminal state sha256:c368ab4d1dd6bbdf9ce0b8d29f747d71e6433701cf7f55cfce152486ae435857.
+
+## 2026-09-02 - D7-E4C review correction V2 closes runtime and aggregate proof gaps
+
+D7_E4C_REVIEW_CORRECTION_V2_RUNTIME_DECISION=Inject only the exact snapshot capture function beneath the existing fail-closed wrapper so tests can exercise capture failure without adding an adapter or external capability; require proof of unknown and undeliverable evidence, zero store construction, and zero writes.
+D7_E4C_REVIEW_CORRECTION_V2_POWERSHELL_DECISION=Centralize Windows PowerShell module environment construction in a pure helper that prepends the SystemRoot module directory, retains valid inherited absolute entries in order, removes case-insensitive duplicates, ignores empty and relative inherited entries, rejects an invalid root, and never mutates its source environment.
+D7_E4C_REVIEW_CORRECTION_V2_GOVERNANCE_DECISION=Bind the governance candidate allowlist and active contract to the same exact ten V2 paths and require both static helper delegation checks and behavioral A-Q coverage.
+D7_E4C_REVIEW_CORRECTION_V2_SCOPE_DECISION=The Controller-expanded V2 scope permits the six exact legacy D7 checkers to add only scripts/test/powershell-module-env.mjs to each closed dirty allowlist; no prefix, wildcard, bypass, or other checker behavior change is permitted.
+D7_E4C_REVIEW_CORRECTION_V2_SCOPE_RESULT=All six affected checkers pass focused validation after the exact mechanical addition.
+D7_E4C_REVIEW_CORRECTION_V2_ACCEPTANCE=762_TOTAL_761_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO;D7_E4B_45_PASS;D7_E4C_39_PASS;GOVERNANCE_A_Q_17_PASS;PLAIN_NPM_CHECK_PASS;BUNDLE_C_AGGREGATE_CHECK_PASS;GIT_DIFF_CHECK_PASS;STAGING_EMPTY;OPERATOR_ENTRYPOINTS_JS_BYTE_IDENTICAL
+D7_E4C_REVIEW_CORRECTION_V2_LIFECYCLE=REVISION_78_IS_HISTORICAL_VERIFIED_ACTIVE;WRITERCOMPLETE_COMPLETED_REVISION_79;CONTROLLERRELEASE_RELEASED_SLOT_NONE_REVISION_80;TERMINAL_SHA256_c0c0f5940ab9708f7bc72cb31a5fcbc1ff52bf66e4d8ad50603cd422e25ca6c2;NO_LIFECYCLE_REPLAY
+D7_E4C_REVIEW_CORRECTION_V2_POST_RELEASE_RECORD_DECISION=Use the Owner-delegated Controller exception only to serialize exact observed lifecycle receipts into the four governance records; do not mutate source, tests, checkers, writer state, lock, isolation, staging, external systems, or production.
+
+## 2026-09-03 - Accept durable independent verification evidence and advance to checkpoint
+
+D7_E4C_INDEPENDENT_REVIEW_DECISION=Accept the renewed helper-isolated Reviewer PASS with no P0, P1, P2, or P3 findings and byte-identical Operator_Entrypoints.js evidence.
+D7_E4C_INDEPENDENT_VERIFICATION_DECISION=Accept the exact durable scratch artifacts produced by the independent Verifier because the aggregate process exited before the subagent usage-limit failure, npm.exit-code.txt records 0, stderr is empty, stdout has a stable SHA-256, and the complete expected acceptance summary is present.
+D7_E4C_VERIFIER_ACCEPTANCE=762_TOTAL_761_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO;D7_E4B_45_PASS;D7_E4C_39_PASS;GOVERNANCE_A_Q_17_PASS_0_FAIL_0_SKIP_0_TODO;BUNDLE_C_AGGREGATE_CHECK_PASS
+D7_E4C_VERIFIER_IDENTITY_DECISION=Require core.autocrlf=false for candidate patch identity and clone materialization; retained, candidate, and clone patches all equal sha256:f26ee9844be7c81f64cd6703ad9476914e7c17284115cd8de9c401ac50620565.
+D7_E4C_CHECKPOINT_DECISION=Proceed with an exact phase-owned checkpoint commit while preserving every inherited dirty hunk; do not push, clasp, invoke GAS, deploy, or mutate production.

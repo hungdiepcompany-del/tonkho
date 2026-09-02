@@ -31,6 +31,10 @@ function assertIncludes(text, expected, code) {
 
 function assertDirtyScope() {
   const allowed = new Set([
+    'D7_E4C_ExactPreconditionDiagnostic.js',
+    'tests/unit/d7-e4c-exact-precondition-diagnostic.test.mjs',
+    'scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs',
+    'scripts/test/powershell-module-env.mjs',
     ...Object.values(files),
     'scripts/checkers/check-d7-e3i-exact-production-conflict-forensic-and-safe-reconciliation-plan.mjs',
     'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',

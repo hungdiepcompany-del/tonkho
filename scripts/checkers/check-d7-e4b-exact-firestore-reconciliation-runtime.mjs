@@ -93,7 +93,9 @@ function main() {
     'UNKNOWN_WRITE_OUTCOME_REQUIRES_OWNER_REVIEW',
     'PASS_D7_E4B_ALREADY_RECONCILED_NOOP',
     'POST_WRITE_READ_ONLY_VERIFICATION',
-    'RAW_SENSITIVE_VALUE_LOGGED_COUNT: 0'
+    'RAW_SENSITIVE_VALUE_LOGGED_COUNT: 0',
+    'evaluateD7E4BInitialPreconditions_',
+    'readOutcomeUndeliverable: true'
   ]) mustInclude(runtime, marker);
 
   assert.match(entrypoints, /function runD7E4BExactFirestoreReconciliation\(\) \{[\s\S]*?createD7E4BExactFirestoreReconciliationRunner_\(\)[\s\S]*?runner\.run\(\)/);

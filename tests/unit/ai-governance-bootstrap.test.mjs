@@ -8,8 +8,9 @@ import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
 import { checkStaticGovernance } from '../../scripts/checkers/check-ai-governance-bootstrap.mjs';
+import { createWindowsPowerShellEnvironment } from '../../scripts/test/powershell-module-env.mjs';
 
-const TEST_METADATA = defineTestMetadata({ testClass: 'REGRESSION_INVARIANT', sourceFiles: ['scripts/ai/Manage-NonWriterIsolation.ps1'], ownerPolicyRequired: true, runtimeMutation: 'NONE' });
+const TEST_METADATA = defineTestMetadata({ testClass: 'REGRESSION_INVARIANT', sourceFiles: ['scripts/ai/Manage-NonWriterIsolation.ps1', 'scripts/test/powershell-module-env.mjs'], ownerPolicyRequired: true, runtimeMutation: 'NONE' });
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const helper = path.join(root, 'scripts', 'ai', 'Manage-NonWriterIsolation.ps1');
 const authority = 'SGDS_WRITER_AUTHORITY_V3_TEST';
@@ -122,4 +123,38 @@ test('N bidirectional writer/isolation interlocks preserve raw bytes, status, an
 }));
 test('O complete lifecycle is equivalent in Windows PowerShell 5.1', () => withRepo(repo => { const r = lifecycle(repo, 'powershell.exe', 'o'); r.release(); assert.equal(field(ok(invoke(repo, 'InspectWriter')).output, 'SLOT_STATE'), 'NONE'); }));
 test('P complete lifecycle is equivalent in PowerShell 7', () => withRepo(repo => { const r = lifecycle(repo, 'pwsh', 'p'); r.release(); assert.equal(field(ok(invoke(repo, 'InspectWriter', {}, 'pwsh')).output, 'SLOT_STATE'), 'NONE'); }));
-test('Q checker static contract and reachable-v3 authority proof align with this matrix', () => { assert.equal(validateActiveContracts(root), true); assert.equal(checkStaticGovernance(root), true); });
+test('Q checker static contract and reachable-v3 authority proof align with this matrix', () => {
+  const sourceEnvironment = {
+    SystemRoot: 'C:\\Windows\\',
+    PSModulePath: [
+      'C:\\Alpha\\Modules\\',
+      'c:\\alpha\\modules',
+      '',
+      'relative\\modules',
+      'C:\\Beta\\Modules\\\\',
+      'c:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\Modules\\',
+      'C:\\Gamma\\Modules'
+    ].join(';'),
+    KEEP_ME: 'unchanged'
+  };
+  const before = { ...sourceEnvironment };
+  const environment = createWindowsPowerShellEnvironment(sourceEnvironment);
+  assert.equal(environment.PSModulePath, [
+    'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\Modules',
+    'C:\\Alpha\\Modules',
+    'C:\\Beta\\Modules',
+    'C:\\Gamma\\Modules'
+  ].join(';'));
+  assert.equal(environment.KEEP_ME, 'unchanged');
+  assert.deepEqual(sourceEnvironment, before);
+  assert.throws(
+    () => createWindowsPowerShellEnvironment({ SystemRoot: 'relative-root', PSModulePath: '' }),
+    /ABSOLUTE_SYSTEMROOT_REQUIRED_FOR_POWERSHELL_MODULES/
+  );
+
+  const processModulePath = process.env.PSModulePath;
+  createWindowsPowerShellEnvironment(process.env);
+  assert.equal(process.env.PSModulePath, processModulePath);
+  assert.equal(validateActiveContracts(root), true);
+  assert.equal(checkStaticGovernance(root), true);
+});

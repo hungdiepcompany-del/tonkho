@@ -37,7 +37,9 @@ function createD7E4BExactFirestoreReconciliationRunner_(dependencies) {
   const d = dependencies || {};
   const services = {
     readProperties: d.readProperties || readD7E4BScriptPropertiesReadOnly_,
-    captureSnapshot: d.captureSnapshot || captureD7E4BProductionSnapshot_,
+    captureSnapshot: d.captureSnapshot || function captureD7E4BSnapshot_(context) {
+      return captureD7E4BProductionSnapshot_(context, d.captureSnapshotExact);
+    },
     createJobStore: d.createJobStore || function createD7E4BJobStore_() { return createD7EDefaultDurableJobStore_(); },
     createLeaseStore: d.createLeaseStore || function createD7E4BLeaseStore_() {
       return createD7E4BExactLeaseStore_(createD6jCFirestoreDurableTransport_(), { clock: services.clock });
@@ -336,24 +338,8 @@ function buildD7E4BReconciliationPlan_(expected, snapshot, now) {
 }
 
 function assertD7E4BInitialPreconditions_(authorization, snapshot, expected) {
-  const s = snapshot || {};
-  const job = s.job || {};
-  const lease = s.lease || {};
-  const commitPlan = job.commitPlan || {};
-  const targets = commitPlan.driveEvidenceTargets || {};
-  const valid = authorization.canonicalCount === 5 && authorization.identityAligned && authorization.priorMarkerAbsent &&
-    Number(s.exactJobCount) === 1 && Number(s.nonExactCandidateCount) === 0 && s.readOutcomeUnknown === false &&
-    job.jobId === expected.jobId && job.invoiceIdentityHash === expected.invoiceIdentityHash && /^[a-f0-9]{8}$/i.test(String(job.sourceThreadHash || '')) &&
-    job.status === D7_E4B_EXPECTED_INITIAL_JOB_STATUS_ && Number(job.version) === D7_E4B_EXPECTED_INITIAL_JOB_VERSION_ &&
-    job.reconciliationStatus === D7_E4B_EXPECTED_RECONCILIATION_STATUS_ && commitPlan.jobId === expected.jobId &&
-    Number(commitPlan.expectedLineCount) === 1 && targets.xmlContentHash === expected.xmlSha256 && targets.pdfContentHash === expected.pdfSha256 &&
-    lease.status === D7_E4B_EXPECTED_RECONCILIATION_STATUS_ && lease.jobId === expected.jobId && lease.fencingToken === expected.leaseFence &&
-    Number.isInteger(Number(lease.leaseGeneration)) && Number(lease.leaseGeneration) > 0 &&
-    s.eventsComplete === true && Array.isArray(s.events) && s.events.length === D7_E4B_EXPECTED_INITIAL_AUDIT_COUNT_ &&
-    s.reportsComplete === true && Array.isArray(s.reports) && s.reports.length === D7_E4B_EXPECTED_INITIAL_REPORT_COUNT_ && s.latestReportValid === true &&
-    s.xmlAttachmentPresent === false && s.pdfAttachmentPresent === false && s.sheetExactRowPresent === true && s.sheetContentMatches === true &&
-    s.driveXmlMatches === true && s.drivePdfMatches === true;
-  if (!valid) throw d7e4bError_('BLOCKED_D7_E4B_PRECONDITION_CHANGED');
+  const evaluation = evaluateD7E4BInitialPreconditions_(authorization, snapshot, expected);
+  if (evaluation.overallStatus !== 'PASS') throw d7e4bError_('BLOCKED_D7_E4B_PRECONDITION_CHANGED');
 }
 
 function isD7E4BConfirmedSuccessfulReplay_(snapshot, plan) {
@@ -362,12 +348,14 @@ function isD7E4BConfirmedSuccessfulReplay_(snapshot, plan) {
   const lease = s.lease || {};
   const reports = Array.isArray(s.reports) ? s.reports : [];
   const events = Array.isArray(s.events) ? s.events : [];
-  return Number(s.exactJobCount) === 1 && Number(s.nonExactCandidateCount) === 0 && s.readOutcomeUnknown === false &&
-    job.status === 'RECONCILIATION_REQUIRED' && Number(job.version) === D7_E4B_EXPECTED_FINAL_JOB_VERSION_ && job.reconciliationStatus === 'RECONCILIATION_REQUIRED' &&
+  return s.exactJobCount === 1 && s.nonExactCandidateCount === 0 && s.readOutcomeUnknown === false &&
+    job.status === 'RECONCILIATION_REQUIRED' && job.version === D7_E4B_EXPECTED_FINAL_JOB_VERSION_ && job.reconciliationStatus === 'RECONCILIATION_REQUIRED' &&
     lease.status === 'RECONCILIATION_REQUIRED' && s.reportsComplete === true && reports.length === D7_E4B_EXPECTED_FINAL_REPORT_COUNT_ &&
     reports.some(function reportMatchD7E4B_(item) { return item && item.reportId === plan.reportId; }) &&
     s.eventsComplete === true && events.length === D7_E4B_EXPECTED_FINAL_AUDIT_COUNT_ &&
     events.some(function eventMatchD7E4B_(item) { return item && item.eventId === plan.auditEventId && item.eventType === D7_E4B_AUDIT_EVENT_TYPE_; }) &&
+    s.latestReportEvidenceAvailable === true && s.sheetEvidenceAvailable === true && s.sheetEvidenceComplete === true &&
+    s.driveEvidenceAvailable === true && s.driveEvidenceComplete === true &&
     s.xmlAttachmentPresent === false && s.pdfAttachmentPresent === false && s.sheetExactRowPresent === true && s.sheetContentMatches === true &&
     s.driveXmlMatches === true && s.drivePdfMatches === true;
 }
@@ -491,7 +479,18 @@ function createD7E4BExactLeaseStore_(transport, options) {
   return Object.freeze({ reacquireReconciliationLease: reacquireReconciliationLease, finalizeReconciliationLease: finalizeReconciliationLease });
 }
 
-async function captureD7E4BProductionSnapshot_(context) {
+async function captureD7E4BProductionSnapshot_(context, injectedCaptureExact) {
+  const captureExact = typeof injectedCaptureExact === 'function'
+    ? injectedCaptureExact
+    : captureD7E4BProductionSnapshotExact_;
+  try {
+    return await captureExact(context);
+  } catch (error) {
+    return { readOutcomeUnknown: true, readOutcomeUndeliverable: true };
+  }
+}
+
+async function captureD7E4BProductionSnapshotExact_(context) {
   const expected = context.expected;
   const authorization = context.authorization;
   const reader = createD7E4BProductionFirestoreReader_();
@@ -524,9 +523,9 @@ async function captureD7E4BProductionSnapshot_(context) {
   const pdfAttachment = reader.getDocument('attachments/' + expected.pdfAttachmentId);
   const sheet = await inspectD7E4BSheetReadOnly_(authorization.rawProperties, directJob);
   const drive = inspectD7E4BDriveReadOnly_(authorization.rawProperties, directJob);
-  const reports = reportsPage.documents || [];
+  const reports = reportsPage.documents;
   const latestId = directJob && directJob.latestReconciliationReportId || '';
-  const latestReport = reports.filter(function latestD7E4B_(report) { return report && report.reportId === latestId; })[0] || null;
+  const latestReport = Array.isArray(reports) ? reports.filter(function latestD7E4B_(report) { return report && report.reportId === latestId; })[0] || null : null;
   return {
     exactJobCount: exactCandidates.length,
     nonExactCandidateCount: nonExactCandidateCount,
@@ -537,11 +536,16 @@ async function captureD7E4BProductionSnapshot_(context) {
     eventsComplete: eventsPage.complete,
     reports: reports,
     reportsComplete: reportsPage.complete,
+    latestReportEvidenceAvailable: Boolean(latestId),
     latestReportValid: Boolean(latestReport && latestReport.jobId === expected.jobId && latestReport.status === 'RECONCILIATION_REQUIRED'),
     xmlAttachmentPresent: Boolean(xmlAttachment),
     pdfAttachmentPresent: Boolean(pdfAttachment),
+    sheetEvidenceAvailable: sheet.evidenceAvailable,
+    sheetEvidenceComplete: sheet.evidenceComplete,
     sheetExactRowPresent: sheet.exactRowPresent,
     sheetContentMatches: sheet.contentMatches,
+    driveEvidenceAvailable: drive.evidenceAvailable,
+    driveEvidenceComplete: drive.evidenceComplete,
     driveXmlMatches: drive.xmlMatches,
     drivePdfMatches: drive.pdfMatches
   };
@@ -615,11 +619,16 @@ async function inspectD7E4BSheetReadOnly_(properties, job) {
     unitPrice: Number(immutable.unitPrice),
     amount: Number(immutable.quantity) * Number(immutable.unitPrice)
   };
-  if (!expectedRow.invoiceKeyV2 || !expectedRow.legacyHashIndex || !expectedRow.itemCode) return { exactRowPresent: false, contentMatches: false };
+  if (!expectedRow.invoiceKeyV2 || !expectedRow.legacyHashIndex || !expectedRow.itemCode) {
+    return { evidenceAvailable: false, evidenceComplete: false, exactRowPresent: false, contentMatches: false };
+  }
   const config = {
     spreadsheetId: properties.D7_B_SPREADSHEET_ID || properties.D7_SPREADSHEET_ID || properties.D6J_SPREADSHEET_ID,
     sheetName: properties.D7_B_TARGET_SHEET_NAME || properties.D7_TARGET_SHEET_NAME || properties.D6J_SHEET_NAME || 'Nhap-Xuat'
   };
+  if (!normalizeD7E4BString_(config.spreadsheetId) || !normalizeD7E4BString_(config.sheetName)) {
+    return { evidenceAvailable: false, evidenceComplete: false, exactRowPresent: false, contentMatches: false };
+  }
   const adapters = createD7EDefaultSheetsAdapters_({ properties: properties, precheck: { config: config }, plan: { ledgerRows: [expectedRow] } });
   const found = await adapters.read.findTransactionByIdentity({
     transactionIdentity: expectedRow.transactionIdentity,
@@ -627,10 +636,13 @@ async function inspectD7E4BSheetReadOnly_(properties, job) {
     invoiceKeyV2: expectedRow.invoiceKeyV2,
     legacyInvoiceKey: expectedRow.legacyInvoiceKey
   });
-  const rows = found && found.rows || [];
+  const rows = found && found.rows;
+  const evidenceComplete = Boolean(found && typeof found.status === 'string' && Array.isArray(rows));
   return {
-    exactRowPresent: found && found.status === 'ALREADY_PRESENT' && rows.length === 1,
-    contentMatches: rows.length === 1 && doesD7E4BSheetRowMatchCommitPlan_(rows[0], expectedRow)
+    evidenceAvailable: true,
+    evidenceComplete: evidenceComplete,
+    exactRowPresent: evidenceComplete && found.status === 'ALREADY_PRESENT' && rows.length === 1,
+    contentMatches: evidenceComplete && rows.length === 1 && doesD7E4BSheetRowMatchCommitPlan_(rows[0], expectedRow)
   };
 }
 
@@ -647,7 +659,9 @@ function inspectD7E4BDriveReadOnly_(properties, job) {
   const commitPlan = job && job.commitPlan || {};
   const targets = commitPlan.driveEvidenceTargets || {};
   const folderId = properties.D7_B_DRIVE_ROOT_FOLDER_ID || properties.D7_DRIVE_ROOT_FOLDER_ID || properties.D6J_DRIVE_ROOT_FOLDER_ID;
-  if (!folderId || !targets.xmlContentHash || !targets.pdfContentHash) return { xmlMatches: false, pdfMatches: false };
+  if (!normalizeD7E4BString_(folderId) || !normalizeD7E4BString_(targets.xmlContentHash) || !normalizeD7E4BString_(targets.pdfContentHash)) {
+    return { evidenceAvailable: false, evidenceComplete: false, xmlMatches: false, pdfMatches: false };
+  }
   const folder = DriveApp.getFolderById(folderId);
   const files = folder.getFiles();
   let scanned = 0;
@@ -665,7 +679,12 @@ function inspectD7E4BDriveReadOnly_(properties, job) {
     if (hash === targets.xmlContentHash && (mime === 'application/xml' || mime === 'text/xml')) xmlMatches += 1;
     if (hash === targets.pdfContentHash && mime === 'application/pdf') pdfMatches += 1;
   }
-  return { xmlMatches: complete && xmlMatches === 1, pdfMatches: complete && pdfMatches === 1 };
+  return {
+    evidenceAvailable: true,
+    evidenceComplete: complete,
+    xmlMatches: complete && xmlMatches === 1,
+    pdfMatches: complete && pdfMatches === 1
+  };
 }
 
 function isD7E4BExactJobIdentity_(job, expected, sourceThreadHash) {

@@ -10,6 +10,7 @@ const TEST_METADATA = defineTestMetadata({
     'durableJobState.js',
     'firestoreDurableJobStore.js',
     'D7_E_OwnerApprovedOneCandidateProductionPilot.js',
+    'D7_E4C_ExactPreconditionDiagnostic.js',
     'D7_E4B_ExactFirestoreReconciliationRuntime.js',
     'Operator_Entrypoints.js'
   ],
@@ -22,6 +23,7 @@ const gas = loadGasSource({
     'durableJobState.js',
     'firestoreDurableJobStore.js',
     'D7_E_OwnerApprovedOneCandidateProductionPilot.js',
+    'D7_E4C_ExactPreconditionDiagnostic.js',
     'D7_E4B_ExactFirestoreReconciliationRuntime.js'
   ],
   exportNames: [
@@ -33,6 +35,8 @@ const gas = loadGasSource({
     'D7_E4B_WRITE_BUDGET_',
     'D7_E4B_AUDIT_EVENT_TYPE_',
     'createD7E4BExactFirestoreReconciliationRunner_',
+    'captureD7E4BProductionSnapshot_',
+    'evaluateD7E4BInitialPreconditions_',
     'createD7E4BExactLeaseStore_',
     'buildD7E4BExpectedIdentity_',
     'buildD7E4BReconciliationPlan_',
@@ -120,11 +124,16 @@ function initialSnapshot() {
     eventsComplete: true,
     reports: [existingReport],
     reportsComplete: true,
+    latestReportEvidenceAvailable: true,
     latestReportValid: true,
     xmlAttachmentPresent: false,
     pdfAttachmentPresent: false,
+    sheetEvidenceAvailable: true,
+    sheetEvidenceComplete: true,
     sheetExactRowPresent: true,
     sheetContentMatches: true,
+    driveEvidenceAvailable: true,
+    driveEvidenceComplete: true,
     driveXmlMatches: true,
     drivePdfMatches: true
   };
@@ -144,6 +153,8 @@ async function runScenario(options = {}) {
   const operationLog = [];
   const logs = [];
   let captureCount = 0;
+  let jobStoreCreateCount = 0;
+  let leaseStoreCreateCount = 0;
 
   function fail(stage) {
     const spec = options.failures && options.failures[stage];
@@ -196,22 +207,31 @@ async function runScenario(options = {}) {
     }
   };
 
-  const runner = gas.call('createD7E4BExactFirestoreReconciliationRunner_', {
+  const dependencies = {
     readProperties: () => options.properties || validProperties(),
-    captureSnapshot: async () => {
+    createJobStore: () => { jobStoreCreateCount += 1; return jobStore; },
+    createLeaseStore: () => { leaseStoreCreateCount += 1; return leaseStore; },
+    createLock: () => ({ tryLock: () => true, releaseLock() {} }),
+    clock: { now: () => '2026-08-11T00:00:00.000Z' },
+    logger: { log: value => logs.push(String(value)) }
+  };
+  if (options.captureExactFailure) {
+    dependencies.captureSnapshotExact = async () => {
+      captureCount += 1;
+      throw new Error('SYNTHETIC_CAPTURE_FAILURE');
+    };
+  } else {
+    dependencies.captureSnapshot = async () => {
       captureCount += 1;
       const captured = clone(state);
       if (captureCount > 1 && options.postWriteMismatch) options.postWriteMismatch(captured);
       return captured;
-    },
-    createJobStore: () => jobStore,
-    createLeaseStore: () => leaseStore,
-    createLock: () => ({ tryLock: () => true, releaseLock() {} }),
-    clock: { now: () => '2026-08-11T00:00:00.000Z' },
-    logger: { log: value => logs.push(String(value)) }
-  });
+    };
+  }
+
+  const runner = gas.call('createD7E4BExactFirestoreReconciliationRunner_', dependencies);
   const result = fromVm(await runner.run());
-  return { result, state, operationLog, logs, captureCount };
+  return { result, state, operationLog, logs, captureCount, jobStoreCreateCount, leaseStoreCreateCount };
 }
 
 function assertZeroWrites(result) {
@@ -287,8 +307,22 @@ test('D7-E4A1 owner marker must remain absent', async () => {
 test('incomplete audit or report listing fails closed', async () => {
   const first = await runScenario({ mutateSnapshot: s => { s.eventsComplete = false; } });
   const second = await runScenario({ mutateSnapshot: s => { s.reportsComplete = false; } });
+  const capturedFailure = fromVm(await gas.call('captureD7E4BProductionSnapshot_', {}, async () => {
+    throw new Error('SYNTHETIC_CAPTURE_FAILURE');
+  }));
+  assert.deepEqual(capturedFailure, { readOutcomeUnknown: true, readOutcomeUndeliverable: true });
+
+  const captureFailure = await runScenario({ captureExactFailure: true });
   assertZeroWrites(first.result);
   assertZeroWrites(second.result);
+  assert.equal(captureFailure.result.FINAL_STATUS, 'BLOCKED_D7_E4B_PRECONDITION_CHANGED');
+  assert.equal(captureFailure.result.PRECONDITION_STATUS, 'NOT_RUN');
+  assert.equal(captureFailure.result.EXACT_CARDINALITY_STATUS, 'NOT_PROVEN');
+  assert.equal(captureFailure.captureCount, 1);
+  assert.equal(captureFailure.jobStoreCreateCount, 0);
+  assert.equal(captureFailure.leaseStoreCreateCount, 0);
+  assert.equal(captureFailure.operationLog.length, 0);
+  assertZeroWrites(captureFailure.result);
 });
 
 test('19 exact happy path performs exactly seven Firestore writes', async () => {

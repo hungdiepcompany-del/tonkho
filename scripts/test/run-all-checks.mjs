@@ -1,4 +1,7 @@
 import { spawnSync } from 'node:child_process';
+import { createWindowsPowerShellEnvironment } from './powershell-module-env.mjs';
+
+const powerShellEnv = Object.freeze(createWindowsPowerShellEnvironment(process.env));
 
 const commands = [
   ['node', ['--test', 'tests/**/*.test.mjs']],
@@ -18,10 +21,11 @@ const commands = [
   ['node', ['scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs']],
   ['node', ['scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs']],
   ['node', ['scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs']],
+  ['node', ['scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs']],
 ];
 
 for (const [cmd, args] of commands) {
-  const res = spawnSync(cmd, args, { stdio: 'inherit', shell: false });
+  const res = spawnSync(cmd, args, { stdio: 'inherit', shell: false, env: cmd === 'powershell.exe' ? powerShellEnv : process.env });
   if (res.status !== 0) process.exit(res.status ?? 1);
 }
 console.log('BUNDLE_C_AGGREGATE_CHECK=PASS');
