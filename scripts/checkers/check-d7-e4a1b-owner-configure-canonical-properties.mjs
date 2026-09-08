@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
 import fs from 'node:fs';
 
 const files = Object.freeze({
@@ -9,7 +10,7 @@ const files = Object.freeze({
   aggregate: 'scripts/test/run-all-checks.mjs'
 });
 
-const knownGuardDirty = Object.freeze(['GUARD.bat', '_guard/']);
+const knownGuardDirty = new Set(['GUARD.bat', '_guard/PROJECT_GUARD.config.bat', '_guard/PROJECT_GUARD_ENGINE.bat', '_guard/README.md', '_guard/deploy/DEPLOY_GOOGLE_APPS_FIREBASE.bat']);
 
 function fail(code) {
   console.error(`D7_E4A1B_CANONICAL_CONFIGURATION_CHECK=FAIL:${code}`);
@@ -82,11 +83,12 @@ function assertDirtyScope() {
     'docs/phases/D7_E4B1_EXACT_RECONCILIATION_RUNTIME_IMPLEMENTATION_AND_SOURCE_SYNC.md'
   ]);
   const status = execFileSync('git', ['status', '--short', '--untracked-files=all'], { encoding: 'utf8' });
-  const unexpected = status.split(/\r?\n/).filter(Boolean).map(line => normalized(line.slice(3))).filter(path => path && !knownGuardDirty.some(item => path === item || path.startsWith(item)) && !allowed.has(path));
+  const unexpected = status.split(/\r?\n/).filter(Boolean).map(line => normalized(line.slice(3))).filter(path => path && !knownGuardDirty.has(path) && !allowed.has(path));
   if (unexpected.length) fail(`UNEXPECTED_DIRTY_FILE_${unexpected[0].replace(/[^A-Za-z0-9]+/g, '_').toUpperCase()}`);
 }
 
 function main() {
+  assertV6ScopeGate(process.cwd());
   assertDirtyScope();
   const docs = read(files.docs);
   const test = read(files.test);

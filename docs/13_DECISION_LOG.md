@@ -421,3 +421,174 @@ D7_E4C_INDEPENDENT_VERIFICATION_DECISION=Accept the exact durable scratch artifa
 D7_E4C_VERIFIER_ACCEPTANCE=762_TOTAL_761_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO;D7_E4B_45_PASS;D7_E4C_39_PASS;GOVERNANCE_A_Q_17_PASS_0_FAIL_0_SKIP_0_TODO;BUNDLE_C_AGGREGATE_CHECK_PASS
 D7_E4C_VERIFIER_IDENTITY_DECISION=Require core.autocrlf=false for candidate patch identity and clone materialization; retained, candidate, and clone patches all equal sha256:f26ee9844be7c81f64cd6703ad9476914e7c17284115cd8de9c401ac50620565.
 D7_E4C_CHECKPOINT_DECISION=Proceed with an exact phase-owned checkpoint commit while preserving every inherited dirty hunk; do not push, clasp, invoke GAS, deploy, or mutate production.
+
+## 2026-09-03 - Local-only governance and guard remainder V2
+
+OWNER_GOVERNANCE_GUARD_REMAINDER_V1_DECISION=Treat revision 84 as closed and released with zero repository mutation; do not revive that authority.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V2_DECISION=Use one exact 39-path allowlist for the local governance and guard remainder, replacing the checker distinction between candidate and inherited paths.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V2_CONTROLLERVERIFY=VERIFIED_ACTIVE_REVISION_86
+OWNER_GOVERNANCE_GUARD_REMAINDER_V2_BINDING=OWNER_GO_LOCAL_ONLY_GOVERNANCE_GUARD_REMAINDER_V2;SGDS_LOCAL_ONLY_GOVERNANCE_GUARD_REMAINDER_V2;01a065b5-cd4e-71f0-bd41-3ae7f6ab842a
+OWNER_GOVERNANCE_GUARD_REMAINDER_V2_BOUNDARY=NO_GUARD_OR_DEPLOY_EXECUTION;NO_STAGE_COMMIT_PUSH_FETCH_SYNC_DEPLOY_EXTERNAL_OR_PRODUCTION_OPERATION
+
+## 2026-09-03 - Local-only governance and guard remainder V3 Reviewer P1 repair
+
+OWNER_GOVERNANCE_GUARD_REMAINDER_V3_DECISION=Replace the .clasp.json substring search with a local fail-closed parse of the exact top-level string scriptId and a case-sensitive equality check against GAS_SCRIPT_ID.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V3_ORDER_DECISION=The parse and equality gates must fail before clasp authorized-user, status, push, or deploy commands; adapter execution remains forbidden during this local-only phase.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V3_REGRESSION_DECISION=Keep the existing A-Q suite count unchanged and cover decoy, malformed, missing, wrong, and exact scriptId fixtures through the governance checker tests.
+
+## 2026-09-04 - Fail closed on canonical root identity and test the deployed parser source
+
+OWNER_GOVERNANCE_GUARD_REMAINDER_V4_ROOT_DECISION=Treat the configured root as valid only when the entered directory and git rev-parse --show-toplevel canonicalize to a case-insensitive exact match; a mismatch must pop the entered directory and emit BLOCKED_PROJECT_ROOT_MISMATCH before push or deploy can proceed.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V4_PARSER_DECISION=Regression fixtures must extract and execute the embedded batch PowerShell ConvertFrom-Json command itself; a JavaScript reimplementation is not parser evidence.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V4_FIXTURE_DECISION=Cover decoy occurrence, malformed JSON, missing property, non-string values, empty and whitespace-only strings, wrong property case, generic mismatch, and exact case-sensitive match using local temporary fixtures that never invoke the guard, adapter, RequireTool, clasp, or an external system.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V4_LINE_ENDING_DECISION=Keep DEPLOY_GOOGLE_APPS_FIREBASE.bat entirely CRLF while leaving all other files' line endings untouched.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V4_SCOPE_DECISION=Retain the exact active-contract 39-path allowlist and exact static command assertions; no wildcard, prefix, new path, production, remote, staging, commit, push, sync, or deploy authority is introduced.
+
+## 2026-09-04 - Direct adapter invocation must carry its own deploy trust boundary
+
+OWNER_GOVERNANCE_GUARD_REMAINDER_V5_DECISION=The deploy adapter may not trust PROJECT_GUARD_ENGINE.bat as its only source of repository identity. Each direct deploy target must run adapter-owned canonical CWD/configured-root/git-top-level, branch, remote, git identity, tracked-clean, empty-staging, fresh-fetch, and zero/zero ahead-behind gates before service checks; each actual clasp or Firebase mutation repeats that preflight after confirmation.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V5_REGRESSION_DECISION=Keep proof local and nonexecuting: static branch/mutation order inspection plus named mismatch fixtures must demonstrate that root, branch, remote, identity, worktree, staging, and ref divergence block before adapter service tools or mutations.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V5_BOUNDARY_DECISION=No environment flag or caller argument is trusted as the sole deploy authorization; no guard/adapter, network, external, or production command is executed during this correction.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V5_ACCEPTANCE_DECISION=Freeze the passing local candidate after npm test, npm run check, governance A-Q, D7-E4B, D7-E4C, and focused checker evidence; only the exact ACTIVE V5 WriterComplete transition may follow, with ControllerRelease reserved for Primary after COMPLETED.
+
+## 2026-09-04 - Integrated V6 guard correction supersedes V5 acceptance claims
+
+OWNER_GOVERNANCE_GUARD_REMAINDER_V6_DECISION=V5 did not prove canonical config provenance, scope-first package execution, structured service identity, clasp upload inventory, per-mutation TOCTOU rechecks, push SHA fencing, unknown outcome preservation, functional pull behavior, or exact legacy residue rejection. Treat all V5 completion claims as historical and non-authoritative.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V6_SCOPE_DECISION=Use one literal 39-path contract scope and reject staging, rename/copy ambiguity, unauthorized paths, and the two named deploy residue files before test discovery, helper imports, test execution, or checker execution.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V6_OUTCOME_DECISION=Once a mutation command is invoked, nonzero exit, timeout, transport loss, or unproven response is PENDING_LATE_COMPLETION_QUARANTINE and never evidence of zero mutation. Earlier confirmed work remains visible.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V6_ACCEPTANCE_DECISION=Accept the local-only V6 evidence: npm test 762 total with 761 pass and one expected skip, npm run check PASS, A-Q 17/17, D7-E4B 45/45, D7-E4C 39/39, exact scope, empty staging, diff check, and CRLF audit. The candidate freezes for the exact ACTIVE-only WriterComplete transition; ControllerRelease remains reserved for Primary after completion.
+
+## 2026-09-04 - V7 behavioral correction decision
+
+OWNER_GOVERNANCE_GUARD_REMAINDER_V7_DECISION=Supersede V6 acceptance only for the Reviewer findings: inherited override rejection must precede local argument assignment in both canonical batch entrypoints, deploy preflight must reject every untracked input through NUL-delimited porcelain parsing before service checks, and outcome reporting must preserve confirmed and quarantined per-target facts.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V7_BALANCE_DECISION=Every RecheckPushBinding branch must pop exactly the directory frame it enters; the correction is proved by a source-derived model, not guard or adapter execution.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V7_REGRESSION_DECISION=Extend Q without changing A-Q cardinality: parse real labels, assignments, and branches to exercise normal and inherited startup, tracked/staged/untracked preflight, confirmed/partial/quarantine outcomes, and success/cancellation/failure directory balance.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V7_ACCEPTANCE_DECISION=The local candidate passed A-Q 17/17, D7-E4B 45/45, D7-E4C 39/39, npm test 762/761/0/1, and npm run check. Freeze it for the exact ACTIVE-only WriterComplete operation; ControllerRelease remains reserved for Primary after COMPLETED.
+
+## 2026-09-04 - Governance guard V8 outcome evidence
+
+OWNER_GOVERNANCE_GUARD_REMAINDER_V8_DECISION=Failure output is evidence-bearing. Recognized inherited override presence is captured before local assignment, but every interpolated output field is reset to trusted fail-closed defaults before generic rejection; the untrusted value and variable identity are not emitted.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V8_DEPLOY_DECISION=For deploy all, confirmed GAS completion establishes PARTIAL_GAS_CONFIRMED_FIREBASE_NOT_CONFIRMED and FIREBASE_DEPLOY_OUTCOME=NOT_ATTEMPTED before any Firebase repository or service preflight. Later Firebase preflight, recheck, and mutation-unknown outcomes retain that overall partial state; only confirmed Firebase success promotes the overall result.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V8_REGRESSION_DECISION=Keep the source-derived A-Q suite at exactly 17 tests and encode malicious inherited output variables plus repository preflight, service preflight, pre-mutation recheck, mutation unknown, and confirmed-success post-GAS fixtures in Q.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V8_FULL_ACCEPTANCE=GOVERNANCE_A_Q_17_PASS_0_FAIL_0_SKIP_0_TODO;D7_E4B_45_PASS;D7_E4C_39_PASS;NPM_TEST_762_TOTAL_761_PASS_0_FAIL_1_EXPECTED_SKIP;NPM_RUN_CHECK_PASS;BUNDLE_C_AGGREGATE_CHECK_PASS
+
+## Local-only governance and guard V9 review correction - 2026-09-04
+
+CURRENT_PHASE=SGDS_LOCAL_ONLY_GOVERNANCE_GUARD_REVIEW_CORRECTION_V9
+AUTHORITY_ID=OWNER_GO_LOCAL_ONLY_GOVERNANCE_GUARD_REVIEW_CORRECTION_V9
+ASSIGNMENT_ID=SGDS_LOCAL_ONLY_GOVERNANCE_GUARD_REVIEW_CORRECTION_V9
+TASK_ID=01a06b37-cdc4-71d1-aa5d-7d42b82fc259
+CONTROLLERVERIFY=VERIFIED_SLOT_STATE_ACTIVE
+DECISION=Extend both inherited Git override capture lists with GIT_INDEX_FILE and GIT_CONFIG_PARAMETERS, and replace hand-authored V8 outcome fixtures with a local executable V9 evidence interpreter derived from capture labels, sanitization assignments, and deployment branch assignments.
+RATIONALE=The correction preserves capture-only failure sanitization and makes the checker fail when the batch capture, sanitization, post-GAS partial, Firebase quarantine, or Firebase success source branches drift.
+BOUNDARY=NO_GUARD_OR_DEPLOY_ADAPTER_EXECUTION;NO_PROVIDER_NETWORK_EXTERNAL_OR_PRODUCTION_OPERATION;NO_STAGE_COMMIT_PUSH_FETCH_SYNC_OR_DEPLOY
+LOCAL_ACCEPTANCE=GOVERNANCE_A_Q_17_PASS_0_FAIL_0_SKIP_0_TODO;D7_E4B_45_PASS;D7_E4C_39_PASS;NPM_TEST_762_TOTAL_761_PASS_0_FAIL_1_EXPECTED_SKIP;NPM_RUN_CHECK_PASS;BUNDLE_C_AGGREGATE_CHECK_PASS;SCOPE_ONLY_PASS
+CODER_STATUS=FROZEN_PENDING_CONTROLLER_OWNED_WRITERCOMPLETE_AND_FRESH_REVIEWER_VERIFIER
+
+## 2026-09-04 - Governance guard V10 CFG evidence decision
+
+OWNER_GOVERNANCE_GUARD_REMAINDER_V10_DECISION=Firebase deployment requires a second adapter-owned repository preflight after successful Firebase service preflight and immediately before FIREBASE_DEPLOY_OUTCOME becomes ATTEMPTED.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V10_EVIDENCE_DECISION=Post-GAS Firebase behavior is accepted only when a pure bounded interpreter executes the reachable CMD graph from the actual adapter source; unbounded assignment searches and hand-declared branch outcomes are not sufficient evidence.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V10_FAIL_CLOSED_DECISION=The interpreter supports only the reachable static subset, rejects duplicate labels and unsupported or dynamic reachable syntax, fails on missing targets and bounded loops, models block-time percent expansion, and exposes variables, errorlevel, call stack, pc, trace, and step count.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V10_REGRESSION_DECISION=Keep A-Q exactly 17 and prove five post-GAS executions plus five exact-once source sensitivity mutations; assignments after return in Fail and Cancel are decoys and must not affect execution.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V10_STARTUP_DECISION=Preserve V9 override fencing while deriving engine and adapter independently with case-insensitive Windows environment keys, including GIT_INDEX_FILE and GIT_CONFIG_PARAMETERS.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V10_BOUNDARY_DECISION=All evidence remains local and nonexecuting for guard, adapter, provider, network, external, and production paths; writer lifecycle completion and release remain controller-owned gates.
+OWNER_GOVERNANCE_GUARD_REMAINDER_V10_ACCEPTANCE_DECISION=Freeze the eight-path V10 candidate after governance 17/17, D7-E4B 45/45, D7-E4C 39/39, npm test 762/761/0/1, full aggregate PASS, exact 39-path scope, empty staging, diff check, manifest hashes, and adapter CRLF/no-BOM checks; require fresh independent review and verification before lifecycle closeout.
+
+## 2026-09-05 - V11 controller receipt isolation decision
+
+V11_RECEIPT_DECISION=The full governance checker consumes only an explicit fresh controller-generated external receipt. It must not invoke InspectWriter itself.
+V11_PRIMARY_BOUNDARY_DECISION=Only the controller receipt-creation mode may invoke InspectWriter from the canonical primary root and write an atomic receipt outside the repository.
+V11_ISOLATION_DECISION=Reviewer and Verifier execution remains MAIN_WORKTREE_ACCESS_ALLOWED=false: normal validation reads only the isolated candidate, declared helper manifest, and supplied receipt. It must not traverse primary files or execute Git with the primary worktree as cwd.
+V11_ACCEPTANCE_DECISION=Keep A-Q at exactly 17 and exercise receipt schema, freshness, local candidate, manifest, and inspection-state failure paths in Q. Do not claim a terminal NONE receipt, aggregate PASS, or independent review/verification while the Coder remains ACTIVE.
+V11_AGGREGATE_DISCOVERY_DECISION=Use only SGDS_CONTROLLER_INSPECTION_RECEIPT as the aggregate-compatible receipt-path environment variable. A single explicit --controller-receipt remains permitted for direct invocation, but any dual source, missing, empty, or duplicate source fails closed before receipt validation and never falls back to InspectWriter.
+
+## 2026-09-05 - V12 complete tracked raw-byte materialization decision
+
+V12_MATERIALIZATION_DECISION=The helper must enumerate the complete index-tracked path set, retain the narrower tracked_patch_paths set solely for patch evidence, and materialize every present source file or source deletion into the helper worktree after checkout and patch application.
+V12_IDENTITY_DECISION=Use a strict v3 manifest with deterministic tracked_materialization_paths and path-aligned tracked_materialization_raw_identities. Validate and Cleanup must recompute the exact path set and compare both primary and isolation raw identities; any clean tracked isolation drift fails closed.
+V12_COMPATIBILITY_DECISION=The manifest semantic change is mandatory and therefore rejects v2 manifests rather than accepting an incomplete shape under a misleading version. The governance checker accepts only the corresponding v3 manifest fields and shape.
+V12_REGRESSION_DECISION=Keep A-Q exactly 17 by extending N with local temporary fixtures for core.autocrlf=true, clean LF bytes, dirty and deleted tracked paths, an untracked overlay, deliberate clean-file drift, restoration, and both PowerShell engines.
+V12_BOUNDARY_DECISION=No Git configuration override workaround, no main-worktree isolation lifecycle under the active writer, and no stage, commit, remote, network, clasp, GAS, deployment, external, or production action.
+
+## 2026-09-05 - V13 redirected-stream capture decision
+
+V13_CAPTURE_DECISION=Get-GitResult must start StandardOutput.ReadToEndAsync and StandardError.ReadToEndAsync immediately after successful Start, before WaitForExit, then obtain both task results. This is the minimal cross-runtime repair for redirected-pipe backpressure and retains exact string payloads, including NUL-delimited Git output.
+V13_FAILURE_DECISION=Keep start failure and caller-owned nonzero-exit handling fail-closed. Do not add a helper timeout: termination after an uncertain transport outcome remains an abnormal marker-owned disposition rather than a normal fallback.
+V13_REGRESSION_DECISION=Extend N without changing the A-Q count. A temporary post-checkout hook emits 2048 CRLF stderr warnings, exceeding ordinary pipe capacity; the Node test harness uses a 15-second subprocess bound so a recurrence fails instead of hanging, and validates Create, ValidateIsolation, Cleanup, raw bytes, two overlays, and both PowerShell engines.
+V13_BOUNDARY_DECISION=Only the eight V13 paths are phase-owned. No lifecycle operation, main-worktree isolation operation, Git override, stage, commit, remote, network, clasp, GAS, deploy, external, or production action is authorized.
+## V14 linked-index refresh decision - 2026-09-06
+
+DECISION=Do not refresh every linked-index path after raw materialization. Derive only source-clean tracked paths from NUL porcelain and pass them through `git update-index --refresh -q -z --stdin`.
+REASON=Refreshing a dirty path can stage it, while the clean LF path is the only EOL false-positive target. Exit code 1 is admissible only when exact status, semantic index, staged-entry, and raw-byte postconditions prove no candidate drift.
+BOUNDARY=No config override, skip-worktree, assume-unchanged, raw canonical substitution, or scope relaxation.
+
+## V14 controller receipt preamble decision - 2026-09-06
+
+DECISION=Controller receipt binding may read only the active contract's title-to-first-section preamble, not the full historical document.
+REASON=Global last-write-wins parsing selected a historical fenced `AUTHORITY_ID` and could bind a receipt to stale authority.
+FAIL_CLOSED=Exactly one nonempty authority, V14 assignment, and V14 writer key is required in the preamble; missing, duplicate, or empty values reject the contract.
+
+## V14 cross-runtime materialization ordering decision - 2026-09-08
+
+DECISION=Canonical materialization ordering is ordinal UTF-16 code-unit order: .NET StringComparer.Ordinal in the PowerShell helper and an explicit equivalent comparator in JavaScript.
+REASON=PowerShell Sort-Object is culture-aware and did not match JavaScript default string ordering for mixed-case repository paths, causing a valid helper-v3 isolation manifest to fail controller receipt creation.
+CONSISTENCY=The helper applies the canonical order to tracked_materialization_paths, clean-path refresh input, and tracked_materialization_raw_identities; the checker requires the same exact order and path-aligned identities.
+FAIL_CLOSED=Duplicate paths, malformed paths, noncanonical order, path-set drift, identity misalignment, and all existing V14 raw-byte, status, semantic-index, and staged-entry drift remain rejected.
+REGRESSION=Keep A-Q exactly 17 and extend N with `D7_B_BoundedReadOnlyCandidateDiscovery.js` and `_debugMain.js` under both PowerShell runtimes.
+BOUNDARY=No scope weakening, lifecycle completion/release, staging, commit, remote, network, clasp, GAS, deploy, external, or production action.
+
+## V14 receipt materialization containment decision - 2026-09-08
+
+DECISION=Treat every manifest tracked_materialization_paths entry as an exact canonical forward-slash repository-relative path, then independently require the ordinal UTF-16 manifest list to equal `git ls-files -z` from the manifest-declared local isolated worktree.
+REASON=Order, uniqueness, and raw-identity alignment alone do not prevent traversal/noncanonical materialization paths or omission/substitution of tracked files in a forged or corrupted receipt manifest.
+ISOLATION=Normal Reviewer and Verifier receipt validation uses only its local isolated worktree and shared Git metadata; the declared primary worktree path remains lexical and is not accessed.
+FAIL_CLOSED=Reject absolute paths, backslashes, empty/dot/dot-dot/.git segments, POSIX normalization drift, invalid UTF-8 or malformed NUL Git output, duplicates, order drift, unavailable local tracked enumeration, tracked-set mismatch, and raw identity path misalignment.
+NON_GOALS=Do not broaden to tracked_patch ordering or schema v2; manifest schema v3 remains intentional.
+REGRESSION=Extend Q while preserving exactly 17 A-Q tests.
+BOUNDARY=Existing V14 eight-path local-only ceiling; no lifecycle, isolation, stage, commit, remote, network, clasp, GAS, deploy, external, or production operation.
+
+## V14 receipt raw-byte integrity decision - 2026-09-08
+
+DECISION=Controller receipt validation must recompute every tracked materialization identity from the manifest-declared local isolated worktree before accepting its aligned v3 `raw_sha256` declaration.
+REASON=Schema validation, canonical path validation, order, and tracked-set equality do not prove that the declared raw hashes describe the isolated bytes actually reviewed.
+FAIL_CLOSED=Resolve each canonical path beneath the local worktree; reject containment escape, reparse/symlink, missing intermediate, non-directory intermediate, and non-leaf states. A missing leaf is valid only when the manifest value is exactly `missing`; otherwise the manifest value must equal the exact raw SHA-256 of the local file bytes.
+REGRESSION=Q remains exactly 17 and covers forged valid-path raw hash plus actual EOL-only byte drift. The pre-existing tracked-set, ordering, containment, and primary-worktree non-access rules remain unchanged.
+BOUNDARY=Existing V14 eight-path local-only ceiling; no lifecycle, isolation, stage, commit, remote, network, clasp, GAS, deploy, external, or production operation.
+## 2026-09-08 - V14 receipt Windows reparse-point decision
+
+DECISION=Validate the Windows FILE_ATTRIBUTE_REPARSE_POINT bit for the local isolated worktree root and every existing component of every tracked materialization path before accepting raw-byte identities.
+REASON=Node lstat symbolic-link classification alone does not cover every Windows reparse-point form.
+IMPLEMENTATION=Use one bounded PowerShell process with a fixed command and stdin JSON paths, `Get-Item -LiteralPath`, and the .NET FileAttributes ReparsePoint bit; any malformed input, process failure, missing unexpected component, or detected reparse point fails closed.
+COMPATIBILITY=No shell interpolation and no localized command-output parsing. The Q fixture exercises the fixed probe in Windows PowerShell and PowerShell 7 when each is available.
+REGRESSION=Keep the A-Q matrix at exactly 17. Preserve the existing containment, symbolic-link, non-directory, non-leaf, missing-leaf, and raw SHA-256 gates.
+BOUNDARY=Existing V14 eight-path local-only ceiling; no lifecycle, isolation, staging, commit, remote, network, clasp, GAS, deploy, external, or production action.
+
+## 2026-09-08 - V14 reparse correction validation freeze
+
+DECISION=Freeze the reparse-point candidate without WriterComplete or ControllerRelease.
+STATIC_EXTRACTOR_DECISION=Require an exact line-anchored function identifier, optional export marker, and optional same-line parameter list. This recognizes the exported native reparse probe without relaxing identifier matching or removing PowerShell parameterless function support.
+EVIDENCE=PowerShell 5.1 AST, PowerShell 7 AST, Node syntax, standalone static governance, scope-only, exact A-Q 17/0/0/0, git diff check, and empty staging pass.
+NEXT=Primary may independently confirm frozen evidence and perform only the exact ACTIVE-only WriterComplete transition. Coder remains prohibited from completion or release.
+
+## V15 decision: agent role manifests require semantic v3
+
+DECISION=ALIGN_EXPLORER_REVIEWER_AND_VERIFIER_PRECONDITIONS_TO_SEMANTIC_V3_MANIFEST
+AUTHORITY_ID=OWNER_GO_V15_AGENT_MANIFEST_V3_ALIGNMENT_EXACT_8_PATHS
+ASSIGNMENT_ID=SGDS_LOCAL_ONLY_AGENT_MANIFEST_V3_ALIGNMENT_V15_01a08051
+RATIONALE=THE_DURABLE_WRITER_AND_NONWRITER_ISOLATION_CONTRACT_IS_V3;THE_THREE_ROLE_MANIFESTS_RETAINED_ONLY_THE_STALE_V2_PHRASE
+SCOPE=EXACT_EIGHT_PATH_V15_ALLOWLIST
+BOUNDARY=LOCAL_RECORD_AND_ROLE_CONTRACT_ALIGNMENT_ONLY;NO_HELPER_CHECKER_TEST_APPLICATION_OR_PRIVILEGED_OPERATION
+VALIDATION_STATUS=TOML_TEXT_PASS;V15_SCOPE_PASS;V15_MANIFEST_HASHES_PASS;GIT_DIFF_CHECK_PASS;STAGING_EMPTY_PASS
+
+## V15B decision: current preamble is the only controller-receipt authority
+
+DECISION=BIND_CONTROLLER_RECEIPT_AND_STATIC_GOVERNANCE_TO_CURRENT_V15B_PREAMBLE_KEYS_ONLY
+AUTHORITY_ID=OWNER_GO_V15B_CURRENT_AUTHORITY_BINDING_EXACT_7_PATHS
+ASSIGNMENT_ID=SGDS_LOCAL_ONLY_CURRENT_AUTHORITY_BINDING_V15B_01a0805f
+WRITER_ID=01a0805f-1435-7aa0-b65e-ae60449aac34
+RATIONALE=THE_ACTIVE_CONTRACT_PREAMBLE_ALREADY_CONTAINS_THE_CURRENT_V15B_AUTHORITY_ASSIGNMENT_AND_WRITER_BUT_THE_CHECKER_STILL_SELECTED_SUPERSEDED_V14_KEYS
+IMPLEMENTATION=REQUIRE_EXACTLY_ONE_NONEMPTY_AUTHORITY_ID_OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID_AND_OWNER_CURRENT_AUTHORITY_V15B_CODER_THREAD_ID_IN_THE_TITLE_TO_FIRST_SECTION_PREAMBLE
+FAIL_CLOSED=HISTORICAL_V14_AND_V15_RECORDS_ARE_NONAUTHORITATIVE;MISSING_DUPLICATE_OR_EMPTY_CURRENT_BINDINGS_REJECT
+REGRESSION=Q_REMAINS_EXACTLY_A_TO_Q_17_WITH_CURRENT_AND_HISTORICAL_AUTHORITY_FIXTURES
+BOUNDARY=EXACT_SEVEN_PATH_LOCAL_ONLY_SCOPE;NO_SCHEMA_V3_OR_ISOLATION_HELPER_CHANGE;NO_LIFECYCLE_STAGE_COMMIT_PUSH_NETWORK_CLASP_GAS_DEPLOY_EXTERNAL_OR_PRODUCTION_OPERATION

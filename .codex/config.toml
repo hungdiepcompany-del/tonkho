@@ -1,0 +1,6 @@
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3
+
+# Profiles are intentionally model-neutral. Runtime model selection belongs to
+# the invoking environment and is not repository execution authority.

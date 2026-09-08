@@ -1,51 +1,64 @@
-# Repository-Local Project Guard
+# Repository-Local Project Guard V3
 
-These guard files belong only to this repository.
+These guard files belong only to this repository. The central
+`D:\CODE\PROJECT_GUARD.bat` router delegates into this local `GUARD.bat`; it
+does not own repository-specific identity, remote, or deploy policy.
+
+Layout:
 
 ```text
-GUARD_IS_REPOSITORY_LOCAL=YES
-CROSS_PROJECT_GUARD_EDIT=FORBIDDEN
-SHARED_PROJECT_GUARD_EDIT=FORBIDDEN
+GUARD.bat
+_guard\PROJECT_GUARD.config.bat
+_guard\PROJECT_GUARD_ENGINE.bat
+_guard\deploy\DEPLOY_GOOGLE_APPS_FIREBASE.bat
 ```
 
-Codex must not edit `D:\CODE\PROJECT_GUARD.bat`.
-
-Codex must not edit guard files in sibling repositories. Changes to another repository's guard require working in that repository and committing there.
-
-Run status:
+Commands:
 
 ```powershell
 .\GUARD.bat status
-```
-
-Run doctor:
-
-```powershell
 .\GUARD.bat doctor
+.\GUARD.bat pull
+.\GUARD.bat push
+.\GUARD.bat deploy gas
+.\GUARD.bat deploy firebase
+.\GUARD.bat deploy all
 ```
 
-Project config lives in:
+Deploy targets:
 
 ```text
-_guard\PROJECT_GUARD.config.bat
+Google Apps Script: deploy gas
+Firebase: deploy firebase
+Combined: deploy all
+Routine confirmation: review the displayed target information, then enter Y to continue or N to cancel.
 ```
 
-Project-specific checks live in:
+Routine guarded operations such as `push`, `deploy gas`, `deploy firebase`, and
+`deploy all` use a single `Y` confirmation only after all automated safety gates
+have passed. Empty input, `N`, legacy long phrases such as `DEPLOY sync gas`,
+and any other text cancel with exit code 2 and leave `PUSH_RUN=false` or
+`DEPLOY_RUN=false`.
+
+The Google adapter requires an explicit deploy target. It fails closed when
+GitHub, clasp, Firebase, gcloud, project, script, hosting, or Firestore identity
+checks do not match the config. A `clasp push` result containing `Skipping push.`
+is treated as blocked, not as upload success.
+
+No guard file stores secrets or changes CLI authentication/configuration.
+
+Cloudflare profile isolation:
 
 ```text
-_guard\PROJECT_STATUS_HOOK.bat
+CLOUDFLARE_REQUIRED=false
 ```
 
-The generic engine lives in:
+SyncGmailDriveSheet uses Google Apps Script and Firebase providers. Cloudflare
+auth commands fail closed with `BLOCKED_CLOUDFLARE_NOT_USED_BY_PROJECT`.
+## V6 local guard boundary
 
-```text
-_guard\PROJECT_GUARD_ENGINE.bat
-```
-
-Encoding requirement for `.bat` files:
-
-```text
-UTF-8 without BOM
-CRLF
-first bytes: 40-65-63-68-6F-20-6F-66
-```
+`GUARD.bat`, the engine, and the deploy adapter bind only the script-relative
+`_guard/PROJECT_GUARD.config.bat`. Caller-supplied config paths and recognized
+repository, Git, and authentication override environment variables fail closed.
+The local test suite inspects this behavior statically; it does not execute the
+guard, adapter, provider CLIs, or a deployment.

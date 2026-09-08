@@ -739,3 +739,15 @@ SHEET_ROW_CREATOR=UNKNOWN
 RECONCILIATION_EXECUTED=NO
 PRODUCTION_DATA_MUTATION=NONE
 NEXT_PHASE=D7_E4B_OWNER_APPROVED_EXACT_FIRESTORE_RECONCILIATION
+
+
+## 2026-08-22 - Adopt Master Delegated Envelope Orchestration
+
+DECISION=Adopt Owner+ChatGPT -> GPT Work Phase Controller -> Codex Primary -> independent Reviewer/Verifier as the default AI orchestration chain.
+RATIONALE=The previous interaction pattern returned too many ordinary same-scope technical failures to Owner. A master delegated envelope lets GPT Work adjudicate bounded pre-mutation corrections and multi-phase progress while preserving active-contract authority and substantive hard gates.
+WORKFLOW_VERSION=MASTER_DELEGATED_ENVELOPE_V2
+ACTIVE_CONTRACT_REMAINS_SOLE_EXECUTION_SCOPE=YES
+PRIMARY_AUTHORITY_EXPANSION=NO
+GPT_WORK_AUTHORITY_EXPANSION_BEYOND_ACTIVE_CONTRACT=NO
+PRODUCTION_AUTHORITY_EXPANSION=NO
+FRESH_ATTEMPT_REQUIRES_FRESH_OWNER_AUTHORITY_WHEN_CONTRACT_REQUIRES=YES

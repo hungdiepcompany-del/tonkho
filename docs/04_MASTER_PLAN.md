@@ -625,3 +625,76 @@ READ_ONLY_AUDIT_EXECUTED=NO
 PILOT_ROW_REPAIR_EXECUTED=NO
 PRODUCTION_MUTATION=NONE
 NEXT_ALLOWED_PHASE=OWNER_RUN_READ_ONLY_MALFORMED_ROW_AUDIT
+
+
+## 2026-08-22 - Current AI Orchestration Plan V2
+
+WORKFLOW_VERSION=MASTER_DELEGATED_ENVELOPE_V2
+DEFAULT_CHAIN=OWNER_PLUS_CHATGPT>GPT_WORK_PHASE_CONTROLLER>CODEX_PRIMARY>REVIEWER>VERIFIER>OWNER_HARD_GATE
+PHASE_PACKAGING=MASTER_ENVELOPE_MULTI_PHASE_BY_DEFAULT
+OWNER_RELAY_POLICY=ONLY_SUBSTANTIVE_HARD_GATES
+SAME_SCOPE_CORRECTION_POLICY=BOUNDED_CONTROLLER_CONTINUATION_WHEN_ACTIVE_CONTRACT_AUTHORIZES
+FRESH_ATTEMPT_POLICY=NEW_OWNER_AUTHORITY_WHEN_PREVIOUS_ATTEMPT_IS_CLOSED_OR_CONSUMED
+EVIDENCE_REUSE_POLICY=REUSE_PROVEN_PASS_WHILE_DEPENDENCIES_UNCHANGED
+MCP_TIMEOUT_POLICY=PENDING_LATE_COMPLETION_QUARANTINE
+ONE_WRITER_POLICY=UNCHANGED
+PRODUCTION_GATE_POLICY=UNCHANGED
+
+### Workflow objective
+
+Use orchestration only to advance the current technical milestone or enforce a mandatory safety invariant. Avoid creating extra micro-phases for quoting, wrapper, evidence, isolation, or other same-scope mechanics when GPT Work can safely resolve them within the approved envelope.
+
+### Standard master-envelope lifecycle
+
+1. Owner + ChatGPT define goal, risk, hard gates, mutation/production ceilings, model ceiling, and acceptance criteria.
+2. GPT Work reads governance, finds exactly one active contract, validates Git/control plane, and dispatches a fresh Primary when required.
+3. Codex Primary executes HOW and returns bounded evidence; GPT Work adjudicates directly.
+4. GPT Work continues authorized same-scope corrections without manual Owner relay.
+5. Independent Reviewer and Verifier use fresh threads when required.
+6. Return to Owner only for substantive hard gates, commit/push/deploy/production boundaries, fresh-attempt authority, or the next major milestone.
+
+
+## 2026-08-22 - Current AI Orchestration Plan V3 (Sync repo source)
+
+PROJECT=SyncGmailDriveSheet
+WORKFLOW_VERSION=SGDS_SXLT_ALIGNED_V3
+REPOSITORY_SOURCE_OF_TRUTH=SyncGmailDriveSheet_LOCAL_REPOSITORY
+WORKFLOW_REFERENCE_PROJECT=SẢN_XUẤT_LT
+WORKFLOW_REFERENCE_USAGE=ORCHESTRATION_PATTERN_ONLY_NOT_SOURCE_AUTHORITY
+CROSS_PROJECT_SOURCE_IMPORT=FORBIDDEN
+
+DEFAULT_CHAIN=OWNER_PLUS_CHATGPT>GPT_WORK_LOCAL_REPOSITORY_PHASE_CONTROLLER>CODEX_PRIMARY_DELEGATED_TECHNICAL_EXECUTOR>INDEPENDENT_REVIEWER>INDEPENDENT_VERIFIER>OWNER_HARD_GATE
+DIAGNOSE_CLUSTER_BEFORE_PATCH=true
+ONE_DEFECT_REPORT_DOES_NOT_EQUAL_ONE_OWNER_PROMPT=true
+OWNER_VISIBLE_PROGRESS_POLICY=MINIMAL
+GPT_WORK_RETURN_TO_OWNER_REQUIRES_NEXT_DIRECTION=true
+CLOSEOUT_MUST_INCLUDE_NEXT_EXECUTION_PROPOSAL=true
+GPT_WORK_CONTINUE_WITHIN_DELEGATED_ENVELOPE=true
+OWNER_PLANNING_PROMPT_AFTER_NORMAL_CLOSEOUT=false
+ONE_WRITER_POLICY=EXACTLY_ONE_SOURCE_WRITER
+RECOVERWRITER=UNAVAILABLE
+PRIVILEGED_SYNC_GATES=OWNER_GATED
+
+### V3 operating objective
+
+Use SẢN XUẤT LT only as an orchestration reference. The actual authority,
+history, writer semantics, checker/test contracts, active execution contract,
+dirty worktree, and production gates remain SyncGmailDriveSheet-specific.
+
+1. Owner + ChatGPT define WHAT, business/architecture intent, hard boundaries,
+   model ceiling, GO/NO-GO, and privileged-operation gates.
+2. GPT Work reads the actual Sync local repository and the sole active contract,
+   then performs local-first whole-path diagnosis before mutation when root
+   cause or defect coupling is not proven.
+3. GPT Work may use read-only Codex Primary/agents within the approved
+   diagnostic ceiling and returns one consolidated defect map and recommended
+   plan instead of one Owner prompt per symptom.
+4. After Owner GO, GPT Work is phase controller. Codex Primary owns technical
+   HOW and normal internal writer/isolation/Reviewer/Verifier mechanics.
+5. GPT Work continues autonomously while the next action remains inside the
+   delegated envelope and no genuine Owner hard gate exists.
+6. When GPT Work returns, the same closeout must contain current result, next
+   direction, recommended option, proposed next execution envelope,
+   allowed/forbidden scope, hard stops, success criteria, routing, and exact
+   Owner decision required.
+7. Sync-specific privileged gates remain unchanged.

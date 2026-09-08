@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
 
 const files = Object.freeze({
   docs: 'docs/phases/D7_E4A2_EXACT_FIRESTORE_RECONCILIATION_PLAN_FINALIZATION.md',
@@ -9,7 +10,7 @@ const files = Object.freeze({
   aggregate: 'scripts/test/run-all-checks.mjs'
 });
 
-const knownGuardDirty = Object.freeze(['GUARD.bat', '_guard/']);
+const knownGuardDirty = new Set(['GUARD.bat', '_guard/PROJECT_GUARD.config.bat', '_guard/PROJECT_GUARD_ENGINE.bat', '_guard/README.md', '_guard/deploy/DEPLOY_GOOGLE_APPS_FIREBASE.bat']);
 
 function fail(code) {
   console.error(`D7_E4A2_RECONCILIATION_PLAN_CHECK=FAIL:${code}`);
@@ -27,7 +28,7 @@ function normalized(path) {
 
 function isGuard(path) {
   const value = normalized(path);
-  return knownGuardDirty.some(item => value === item || value.startsWith(item));
+  return knownGuardDirty.has(value);
 }
 
 function statusPath(line) {
@@ -93,6 +94,7 @@ function assertIncludes(text, marker) {
 }
 
 function main() {
+  assertV6ScopeGate(process.cwd());
   assertDirtyScope();
   const docs = read(files.docs);
   const test = read(files.test);

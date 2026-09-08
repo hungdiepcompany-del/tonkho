@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
 
 const files = Object.freeze({
   runtime: 'D7_E4B_ExactFirestoreReconciliationRuntime.js',
@@ -12,16 +13,6 @@ const files = Object.freeze({
   aggregate: 'scripts/test/run-all-checks.mjs'
 });
 
-const knownGuardDirty = Object.freeze(['GUARD.bat', '_guard/']);
-const allowedDirty = new Set([
-  ...Object.values(files),
-  'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
-  'scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs',
-  'scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs',
-  'scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs',
-  'scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs',
-  'scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs'
-]);
 
 function fail(code) {
   console.error(`D7_E4B_EXACT_RECONCILIATION_RUNTIME_CHECK=FAIL:${code}`);
@@ -33,33 +24,15 @@ function read(path) {
   return fs.readFileSync(path, 'utf8');
 }
 
-function normalized(path) {
-  return String(path || '').replace(/\\/g, '/');
-}
-
-function statusPath(line) {
-  return normalized(String(line || '').slice(3));
-}
-
-function isGuard(path) {
-  return knownGuardDirty.some(item => path === item || path.startsWith(item));
-}
-
-function assertDirtyScope() {
-  const unexpected = execFileSync('git', ['status', '--short'], { encoding: 'utf8' })
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map(statusPath)
-    .filter(path => path && !isGuard(path) && !allowedDirty.has(path));
-  if (unexpected.length) fail(`UNEXPECTED_DIRTY_FILE_${unexpected[0].replace(/[^A-Za-z0-9]+/g, '_').toUpperCase()}`);
-}
-
 function mustInclude(text, marker) {
   if (!text.includes(marker)) fail(`MISSING_${marker.replace(/[^A-Za-z0-9]+/g, '_').toUpperCase()}`);
 }
 
 function main() {
-  assertDirtyScope();
+  assertV6ScopeGate(process.cwd());
+  // This completed-phase checker is intentionally independent of unrelated
+  // future authorized worktree dirt. Its assertions validate only D7-E4B
+  // runtime, entrypoint, documentation, tests, and checker registration.
   const runtime = read(files.runtime);
   const entrypoints = read(files.entrypoints);
   const tests = read(files.test);

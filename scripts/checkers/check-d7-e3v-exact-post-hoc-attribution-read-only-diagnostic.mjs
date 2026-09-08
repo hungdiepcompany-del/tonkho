@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
 
 const root = process.cwd();
 
@@ -93,9 +94,11 @@ const knownGuardDirtyFiles = new Set([
   'GUARD.bat',
   '_guard/PROJECT_GUARD.config.bat',
   '_guard/PROJECT_GUARD_ENGINE.bat',
-  '_guard/README.md'
+  '_guard/README.md',
+  '_guard/deploy/DEPLOY_GOOGLE_APPS_FIREBASE.bat',
+  '_guard/deploy/output.txt',
+  '_guard/deploy/safe-output.txt'
 ]);
-const knownGuardDirtyPrefixes = ['_guard/deploy/'];
 
 function read(file) {
   return fs.readFileSync(path.join(root, file), 'utf8');
@@ -133,7 +136,7 @@ function parseStatusLine_(line) {
 }
 
 function isKnownGuardDirtyPath_(file) {
-  return knownGuardDirtyFiles.has(file) || knownGuardDirtyPrefixes.some(prefix => file.startsWith(prefix));
+  return knownGuardDirtyFiles.has(file);
 }
 
 export function evaluateD7E3VPhaseFileState_({
@@ -403,6 +406,7 @@ function fail(code) {
 }
 
 function runCheck() {
+  assertV6ScopeGate(root);
   for (const file of Object.values(files)) {
     if (!exists(file)) fail(`MISSING_FILE_${safeCodeFile_(file)}`);
   }

@@ -35,7 +35,8 @@ $script:UntrackedPathPayloadProvided = $PSBoundParameters.ContainsKey('Untracked
 $script:ManifestName = 'non-writer-isolation.manifest.json'
 $script:CreationMarkerName = '.creation-owner-v1.json'
 $script:CreationMarkerMagic = 'syncgmaildrivesheet.non-writer-creation-marker/v1'
-$script:ManifestMagic = 'syncgmaildrivesheet.non-writer-isolation/v2'
+$script:ManifestMagic = 'syncgmaildrivesheet.non-writer-isolation/v3'
+$script:ManifestSchemaVersion = 3
 $script:WriterLeaseName = 'non-writer-isolation.writer-authority-v3.json'
 $script:LegacyWriterLeaseName = 'non-writer-isolation.writer-lease.json'
 $script:WriterLeaseMagic = 'syncgmaildrivesheet.writer-authority/v3'
@@ -152,7 +153,8 @@ function Assert-NoReparsePointsUnderRoot {
 function Get-GitResult {
     param(
         [Parameter(Mandatory = $true)][string[]]$Arguments,
-        [Parameter(Mandatory = $true)][string]$WorkingDirectory
+        [Parameter(Mandatory = $true)][string]$WorkingDirectory,
+        [AllowNull()][string]$StandardInput
     )
     $processInfo = New-Object System.Diagnostics.ProcessStartInfo
     $processInfo.FileName = 'git.exe'
@@ -166,15 +168,24 @@ function Get-GitResult {
     $processInfo.UseShellExecute = $false
     $processInfo.RedirectStandardOutput = $true
     $processInfo.RedirectStandardError = $true
+    $processInfo.RedirectStandardInput = $PSBoundParameters.ContainsKey('StandardInput')
     $processInfo.CreateNoWindow = $true
     $processInfo.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false)
     $processInfo.StandardErrorEncoding = [System.Text.UTF8Encoding]::new($false)
     $process = New-Object System.Diagnostics.Process
     $process.StartInfo = $processInfo
     if (-not $process.Start()) { Throw-Failure 'GIT_START_FAILED' }
-    $standardOutput = $process.StandardOutput.ReadToEnd()
-    $standardError = $process.StandardError.ReadToEnd()
+    $standardOutputTask = $process.StandardOutput.ReadToEndAsync()
+    $standardErrorTask = $process.StandardError.ReadToEndAsync()
+    if ($processInfo.RedirectStandardInput) {
+        $inputBytes = [System.Text.UTF8Encoding]::new($false).GetBytes($StandardInput)
+        $process.StandardInput.BaseStream.Write($inputBytes, 0, $inputBytes.Length)
+        $process.StandardInput.BaseStream.Flush()
+        $process.StandardInput.Close()
+    }
     $process.WaitForExit()
+    $standardOutput = $standardOutputTask.GetAwaiter().GetResult()
+    $standardError = $standardErrorTask.GetAwaiter().GetResult()
     return [pscustomobject]@{ ExitCode = $process.ExitCode; StandardOutput = $standardOutput; StandardError = $standardError }
 }
 
@@ -218,6 +229,99 @@ function Get-GitStatusSha256 {
     param([Parameter(Mandatory = $true)][string]$WorkingDirectory)
     $status = Get-RequiredGitOutput -Arguments @('-C', $WorkingDirectory, '-c', 'core.quotePath=true', 'status', '--porcelain=v1', '--untracked-files=all') -WorkingDirectory $WorkingDirectory -FailureCode 'GIT_STATUS_FAILED'
     return Get-TextSha256 $status
+}
+
+function Get-GitStatusPorcelainV1Z {
+    param([Parameter(Mandatory = $true)][string]$WorkingDirectory)
+    $result = Get-GitResult -Arguments @('-C', $WorkingDirectory, 'status', '--porcelain=v1', '-z', '--untracked-files=all') -WorkingDirectory $WorkingDirectory
+    if ($result.ExitCode -ne 0) { Throw-Failure 'GIT_STATUS_FAILED' }
+    return $result.StandardOutput
+}
+
+function Get-StagedEntryIdentity {
+    param([Parameter(Mandatory = $true)][string]$WorkingDirectory)
+    $entries = Get-GitResult -Arguments @('-C', $WorkingDirectory, 'ls-files', '--stage', '-z') -WorkingDirectory $WorkingDirectory
+    if ($entries.ExitCode -ne 0) { Throw-Failure 'STAGED_ENTRY_IDENTITY_UNAVAILABLE' }
+    return Get-TextSha256 $entries.StandardOutput
+}
+
+function Get-SourceChangedTrackedPaths {
+    param([Parameter(Mandatory = $true)][string]$PorcelainV1Z)
+    $changed = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::Ordinal)
+    $records = @($PorcelainV1Z -split "`0")
+    for ($index = 0; $index -lt ($records.Count - 1); $index += 1) {
+        $record = [string]$records[$index]
+        if ($record.Length -lt 3 -or $record[2] -ne ' ') { Throw-Failure 'SOURCE_STATUS_PORCELAIN_INVALID' }
+        $x = $record[0]; $y = $record[1]; $relativePath = $record.Substring(3) -replace '\\', '/'
+        if ([string]::IsNullOrWhiteSpace($relativePath)) { Throw-Failure 'SOURCE_STATUS_PORCELAIN_INVALID' }
+        if ($x -ne '?' -and $x -ne '!') {
+            [void]$changed.Add($relativePath)
+            if ($x -in @('R', 'C') -or $y -in @('R', 'C')) {
+                $index += 1
+                if ($index -ge ($records.Count - 1) -or [string]::IsNullOrWhiteSpace([string]$records[$index])) { Throw-Failure 'SOURCE_STATUS_PORCELAIN_INVALID' }
+                [void]$changed.Add(([string]$records[$index] -replace '\\', '/'))
+            }
+        }
+    }
+    return $changed
+}
+
+function ConvertTo-CanonicalOrdinalUtf16Array {
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]]$Value,
+        [Parameter(Mandatory = $true)][string]$DuplicateFailureCode
+    )
+    # StringComparer.Ordinal compares UTF-16 code units, matching JavaScript's
+    # default string sort without culture or case folding.
+    $sorted = [string[]]@($Value | ForEach-Object { [string]$_ })
+    [Array]::Sort($sorted, [System.StringComparer]::Ordinal)
+    for ($index = 1; $index -lt $sorted.Count; $index++) {
+        if ([string]::Equals($sorted[$index - 1], $sorted[$index], [System.StringComparison]::Ordinal)) {
+            Throw-Failure $DuplicateFailureCode
+        }
+    }
+    return $sorted
+}
+
+function Invoke-LinkedIndexStatRefresh {
+    param(
+        [Parameter(Mandatory = $true)][string]$SourceRoot,
+        [Parameter(Mandatory = $true)][string]$WorktreeRoot,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]]$TrackedMaterializationPaths
+    )
+    $sourceStatus = Get-GitStatusPorcelainV1Z $SourceRoot
+    $changed = Get-SourceChangedTrackedPaths $sourceStatus
+    $refreshPaths = @(ConvertTo-CanonicalOrdinalUtf16Array -Value @($TrackedMaterializationPaths | Where-Object { -not $changed.Contains(($_ -replace '\\', '/')) }) -DuplicateFailureCode 'LINKED_INDEX_STAT_REFRESH_PATH_DUPLICATE')
+    $linkedBeforeStatus = Get-GitStatusPorcelainV1Z $WorktreeRoot
+    $linkedSemanticBefore = Get-SemanticIndexIdentity $WorktreeRoot
+    $linkedStagedBefore = Get-StagedEntryIdentity $WorktreeRoot
+    $exitCode = 0
+    if ($refreshPaths.Count -gt 0) {
+        # Refresh only source-clean tracked entries.  Git documents -q as
+        # continuing when an entry needs update; exit 1 is accepted only after
+        # the complete no-staging and exact-status postconditions below hold.
+        $payload = ($refreshPaths -join "`0") + "`0"
+        $refresh = Get-GitResult -Arguments @('-C', $WorktreeRoot, 'update-index', '--refresh', '-q', '-z', '--stdin') -WorkingDirectory $WorktreeRoot -StandardInput $payload
+        $exitCode = $refresh.ExitCode
+        if ($exitCode -notin @(0, 1)) { Throw-Failure 'LINKED_INDEX_STAT_REFRESH_FAILED' }
+    }
+    $linkedAfterStatus = Get-GitStatusPorcelainV1Z $WorktreeRoot
+    $linkedSemanticAfter = Get-SemanticIndexIdentity $WorktreeRoot
+    $linkedStagedAfter = Get-StagedEntryIdentity $WorktreeRoot
+    if ($linkedSemanticBefore -cne $linkedSemanticAfter) { Throw-Failure 'LINKED_INDEX_SEMANTIC_IDENTITY_DRIFT_AFTER_STAT_REFRESH' }
+    if ($linkedStagedBefore -cne $linkedStagedAfter) { Throw-Failure 'LINKED_INDEX_STAGED_ENTRIES_DRIFT_AFTER_STAT_REFRESH' }
+    if ($sourceStatus -cne $linkedAfterStatus) { Throw-Failure 'LINKED_STATUS_MISMATCH_AFTER_STAT_REFRESH' }
+    return [pscustomobject]@{
+        SourceStatusSha256 = Get-TextSha256 $sourceStatus
+        LinkedStatusBeforeSha256 = Get-TextSha256 $linkedBeforeStatus
+        LinkedStatusAfterSha256 = Get-TextSha256 $linkedAfterStatus
+        LinkedSemanticBefore = $linkedSemanticBefore
+        LinkedSemanticAfter = $linkedSemanticAfter
+        LinkedStagedEntriesBefore = $linkedStagedBefore
+        LinkedStagedEntriesAfter = $linkedStagedAfter
+        RefreshPathCount = $refreshPaths.Count
+        RefreshExitCode = $exitCode
+    }
 }
 
 function Get-RepositoryStateSha256 {
@@ -935,6 +1039,16 @@ function Assert-CanonicalIdentityArray {
     return @($Value)
 }
 
+function Assert-TrackedRawIdentityArray {
+    param([Parameter(Mandatory = $true)]$Value)
+    if ($Value -isnot [System.Array]) { Throw-Failure 'TRACKED_RAW_IDENTITY_TYPE_INVALID' }
+    foreach ($item in $Value) {
+        if ($item -isnot [System.Collections.IDictionary] -and $item.PSObject.Properties.Name -notcontains 'path') { Throw-Failure 'TRACKED_RAW_IDENTITY_TYPE_INVALID' }
+        if ($item.path -isnot [string] -or $item.raw_sha256 -isnot [string] -or ([string]$item.raw_sha256 -cne 'missing' -and [string]$item.raw_sha256 -notmatch '^sha256:[0-9a-f]{64}$')) { Throw-Failure 'TRACKED_RAW_IDENTITY_TYPE_INVALID' }
+    }
+    return @($Value)
+}
+
 function Write-CreationMarker {
     param(
         [Parameter(Mandatory = $true)][string]$Root,
@@ -1029,6 +1143,14 @@ function Get-TrackedPatchPaths {
     return @($result.StandardOutput -split "`0" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_ -replace '\\', '/' } | Sort-Object -Unique)
 }
 
+function Get-TrackedMaterializationPaths {
+    param([Parameter(Mandatory = $true)][string]$WorkingDirectory)
+    $result = Get-GitResult -Arguments @('-C', $WorkingDirectory, 'ls-files', '-z') -WorkingDirectory $WorkingDirectory
+    if ($result.ExitCode -ne 0) { Throw-Failure 'TRACKED_MATERIALIZATION_PATH_ENUMERATION_FAILED' }
+    $paths = @($result.StandardOutput -split "`0" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_ -replace '\\', '/' })
+    return @(ConvertTo-CanonicalOrdinalUtf16Array -Value $paths -DuplicateFailureCode 'TRACKED_MATERIALIZATION_PATH_DUPLICATE')
+}
+
 function Sync-TrackedPatchRawBytes {
     param(
         [Parameter(Mandatory = $true)][string]$SourceRoot,
@@ -1094,6 +1216,24 @@ function Get-CanonicalTrackedIdentity {
     return $items.ToArray()
 }
 
+function Get-TrackedRawIdentity {
+    param([Parameter(Mandatory = $true)][string]$WorkingDirectory, [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]]$Paths)
+    $items = New-Object System.Collections.Generic.List[object]
+    $orderedPaths = @(ConvertTo-CanonicalOrdinalUtf16Array -Value $Paths -DuplicateFailureCode 'TRACKED_RAW_IDENTITY_PATH_DUPLICATE')
+    foreach ($relativePath in $orderedPaths) {
+        if ([string]::IsNullOrWhiteSpace($relativePath) -or [IO.Path]::IsPathRooted($relativePath)) { Throw-Failure 'TRACKED_RAW_IDENTITY_PATH_INVALID' }
+        $normalizedRelativePath = $relativePath -replace '\\', '/'
+        if ($normalizedRelativePath -eq '.git' -or $normalizedRelativePath.StartsWith('.git/', [StringComparison]::OrdinalIgnoreCase)) { Throw-Failure 'TRACKED_RAW_IDENTITY_GIT_METADATA_REJECTED' }
+        $fullPath = Get-FullPath (Join-Path $WorkingDirectory $relativePath)
+        if (-not (Test-PathWithinRoot -Path $fullPath -Root $WorkingDirectory)) { Throw-Failure 'TRACKED_RAW_IDENTITY_PATH_OUTSIDE_WORKTREE' }
+        Assert-NoReparsePoint $fullPath
+        $item = Get-Item -LiteralPath $fullPath -Force -ErrorAction SilentlyContinue
+        if ($null -ne $item -and ($item.PSIsContainer -or -not (Test-Path -LiteralPath $fullPath -PathType Leaf))) { Throw-Failure 'TRACKED_RAW_IDENTITY_NOT_LEAF' }
+        $items.Add([ordered]@{ path = $normalizedRelativePath; raw_sha256 = $(if ($null -eq $item) { 'missing' } else { Get-FileSha256 $fullPath }) })
+    }
+    return $items.ToArray()
+}
+
 function Get-ContentAwareWorktreeIdentity {
     param([Parameter(Mandatory = $true)][string]$WorkingDirectory)
     $status = Get-RequiredGitOutput -Arguments @('-C', $WorkingDirectory, '-c', 'core.quotePath=true', 'status', '--porcelain=v1', '--untracked-files=all') -WorkingDirectory $WorkingDirectory -FailureCode 'CONTENT_AWARE_STATUS_UNAVAILABLE'
@@ -1135,11 +1275,11 @@ function Read-OwnershipManifest {
     Assert-NoReparsePoint $manifestPath
     try { $manifest = [System.IO.File]::ReadAllText($manifestPath, [System.Text.UTF8Encoding]::new($false)) | ConvertFrom-Json }
     catch { Throw-Failure 'OWNERSHIP_MANIFEST_INVALID' }
-    foreach ($requiredField in @('physical_layout', 'path_budget_status', 'path_budget_limit', 'path_budget_observed_maximum', 'path_budget_remaining', 'worktree_path_length', 'scratch_path_length', 'tracked_patch_paths', 'phase_owned_tracked_paths', 'inherited_protected_tracked_paths', 'tracked_canonical_content_identities', 'canonical_tracked_diff_sha256', 'retained_patch_path', 'retained_patch_sha256', 'retained_patch_bom_state', 'approved_untracked_paths', 'untracked_overlay_identities', 'content_aware_primary_worktree_state_sha256', 'content_aware_isolated_worktree_state_sha256', 'semantic_primary_index_identity', 'semantic_linked_index_identity', 'object_database_identity', 'sibling_baseline_sha256', 'created_utc', 'head', 'workspace_identity', 'git_common_directory')) {
+    foreach ($requiredField in @('physical_layout', 'path_budget_status', 'path_budget_limit', 'path_budget_observed_maximum', 'path_budget_remaining', 'worktree_path_length', 'scratch_path_length', 'tracked_patch_paths', 'tracked_materialization_paths', 'phase_owned_tracked_paths', 'inherited_protected_tracked_paths', 'tracked_canonical_content_identities', 'tracked_materialization_raw_identities', 'canonical_tracked_diff_sha256', 'retained_patch_path', 'retained_patch_sha256', 'retained_patch_bom_state', 'approved_untracked_paths', 'untracked_overlay_identities', 'content_aware_primary_worktree_state_sha256', 'content_aware_isolated_worktree_state_sha256', 'semantic_primary_index_identity', 'semantic_linked_index_identity', 'object_database_identity', 'source_status_after_linked_stat_refresh_sha256', 'linked_status_before_stat_refresh_sha256', 'linked_status_after_stat_refresh_sha256', 'linked_semantic_index_before_stat_refresh', 'linked_semantic_index_after_stat_refresh', 'linked_staged_entries_before_stat_refresh', 'linked_staged_entries_after_stat_refresh', 'linked_stat_refresh_path_count', 'linked_stat_refresh_exit_code', 'sibling_baseline_sha256', 'created_utc', 'head', 'workspace_identity', 'git_common_directory')) {
         if ($manifest.PSObject.Properties.Name -notcontains $requiredField) { Throw-Failure 'OWNERSHIP_MANIFEST_MISMATCH' }
     }
     if ((Get-FileBomState $manifestPath) -ne 'NONE') { Throw-Failure 'MANIFEST_BOM_REJECTED' }
-    if ($manifest.magic -cne $script:ManifestMagic -or [int]$manifest.schema_version -ne 2 -or
+    if ($manifest.magic -cne $script:ManifestMagic -or [int]$manifest.schema_version -ne $script:ManifestSchemaVersion -or
         [string]$manifest.physical_layout -cne $script:IsolationLayout -or [string]$manifest.path_budget_status -cne 'PASS' -or
         [int]$manifest.path_budget_limit -ne $script:PathBudgetLimit -or [int]$manifest.path_budget_observed_maximum -gt $script:PathBudgetLimit -or
         ([int]$manifest.path_budget_limit - [int]$manifest.path_budget_observed_maximum) -ne [int]$manifest.path_budget_remaining -or
@@ -1151,11 +1291,17 @@ function Read-OwnershipManifest {
         [string]::IsNullOrWhiteSpace([string]$manifest.git_common_directory)) { Throw-Failure 'OWNERSHIP_MANIFEST_MISMATCH' }
     [void](Assert-StringArray -Value $manifest.approved_untracked_paths -Code 'APPROVED_UNTRACKED_PATHS_TYPE_INVALID')
     [void](Assert-StringArray -Value $manifest.tracked_patch_paths -Code 'TRACKED_PATCH_PATHS_TYPE_INVALID')
+    [void](Assert-StringArray -Value $manifest.tracked_materialization_paths -Code 'TRACKED_MATERIALIZATION_PATHS_TYPE_INVALID')
     [void](Assert-StringArray -Value $manifest.phase_owned_tracked_paths -Code 'PHASE_TRACKED_PATHS_TYPE_INVALID')
     [void](Assert-StringArray -Value $manifest.inherited_protected_tracked_paths -Code 'INHERITED_TRACKED_PATHS_TYPE_INVALID')
     [void](Assert-CanonicalIdentityArray -Value $manifest.tracked_canonical_content_identities)
+    [void](Assert-TrackedRawIdentityArray -Value $manifest.tracked_materialization_raw_identities)
     if ($manifest.untracked_overlay_identities -isnot [System.Array]) { Throw-Failure 'UNTRACKED_OVERLAY_IDENTITIES_TYPE_INVALID' }
     foreach ($overlay in $manifest.untracked_overlay_identities) { if ($overlay.path -isnot [string] -or $overlay.raw_sha256 -isnot [string]) { Throw-Failure 'UNTRACKED_OVERLAY_IDENTITIES_TYPE_INVALID' } }
+    foreach ($refreshIdentity in @($manifest.source_status_after_linked_stat_refresh_sha256, $manifest.linked_status_before_stat_refresh_sha256, $manifest.linked_status_after_stat_refresh_sha256, $manifest.linked_semantic_index_before_stat_refresh, $manifest.linked_semantic_index_after_stat_refresh, $manifest.linked_staged_entries_before_stat_refresh, $manifest.linked_staged_entries_after_stat_refresh)) {
+        if ($refreshIdentity -isnot [string] -or $refreshIdentity -notmatch '^sha256:[0-9a-f]{64}$') { Throw-Failure 'LINKED_INDEX_STAT_REFRESH_EVIDENCE_INVALID' }
+    }
+    if ([string]$manifest.source_status_after_linked_stat_refresh_sha256 -cne [string]$manifest.linked_status_after_stat_refresh_sha256 -or [string]$manifest.linked_semantic_index_before_stat_refresh -cne [string]$manifest.linked_semantic_index_after_stat_refresh -or [string]$manifest.linked_staged_entries_before_stat_refresh -cne [string]$manifest.linked_staged_entries_after_stat_refresh -or [int]$manifest.linked_stat_refresh_path_count -lt 0 -or [int]$manifest.linked_stat_refresh_exit_code -notin @(0, 1)) { Throw-Failure 'LINKED_INDEX_STAT_REFRESH_EVIDENCE_INVALID' }
     $worktreePath = Get-FullPath ([string]$manifest.worktree_path)
     if ([string]$worktreePath -cne (Get-FullPath (Join-Path $Root 'w')) -or [int]$manifest.worktree_path_length -ne $worktreePath.Length) { Throw-Failure 'OWNERSHIP_MANIFEST_WORKTREE_OUTSIDE_ROOT' }
     if ([bool]$manifest.scratch_allowed) {
@@ -1188,12 +1334,19 @@ function Assert-ValidIsolationManifest {
     if ([bool]$manifest.scratch_allowed -and (Test-Path -LiteralPath ([string]$manifest.scratch_path))) { Assert-NoReparsePointsUnderRoot ([string]$manifest.scratch_path) }
 
     $sourcePaths = @(Get-TrackedPatchPaths $SourceRoot)
+    $materializationPaths = @(Get-TrackedMaterializationPaths $SourceRoot)
     $phase = @($manifest.phase_owned_tracked_paths | ForEach-Object { [string]$_ } | Sort-Object)
     $inherited = @($manifest.inherited_protected_tracked_paths | ForEach-Object { [string]$_ } | Sort-Object)
     $all = @($manifest.tracked_patch_paths | ForEach-Object { [string]$_ } | Sort-Object)
     if (-not (Test-SequenceExact $all @($sourcePaths | Sort-Object)) -or @($phase + $inherited | Sort-Object -Unique).Count -ne $all.Count -or @($phase | Where-Object { $inherited -contains $_ }).Count -ne 0) { Throw-Failure 'TRACKED_OWNERSHIP_PARTITION_INVALID' }
+    $manifestMaterializationPaths = @($manifest.tracked_materialization_paths | ForEach-Object { [string]$_ })
+    $canonicalManifestMaterializationPaths = @(ConvertTo-CanonicalOrdinalUtf16Array -Value $manifestMaterializationPaths -DuplicateFailureCode 'TRACKED_MATERIALIZATION_PATH_DUPLICATE')
+    if (-not (Test-SequenceExact $manifestMaterializationPaths $canonicalManifestMaterializationPaths)) { Throw-Failure 'TRACKED_MATERIALIZATION_PATH_ORDER_INVALID' }
+    if (-not (Test-SequenceExact $manifestMaterializationPaths $materializationPaths)) { Throw-Failure 'TRACKED_MATERIALIZATION_PATH_SET_DRIFT' }
     if (-not (Test-SequenceExact @($manifest.tracked_canonical_content_identities) @(Get-CanonicalTrackedIdentity $SourceRoot $sourcePaths))) { Throw-Failure 'PRIMARY_TRACKED_CANONICAL_IDENTITY_DRIFT' }
     if (-not (Test-SequenceExact @($manifest.tracked_canonical_content_identities) @(Get-CanonicalTrackedIdentity $worktreePath $sourcePaths))) { Throw-Failure 'ISOLATED_TRACKED_CANONICAL_IDENTITY_DRIFT' }
+    if (-not (Test-SequenceExact @($manifest.tracked_materialization_raw_identities) @(Get-TrackedRawIdentity $SourceRoot $materializationPaths))) { Throw-Failure 'PRIMARY_TRACKED_RAW_IDENTITY_DRIFT' }
+    if (-not (Test-SequenceExact @($manifest.tracked_materialization_raw_identities) @(Get-TrackedRawIdentity $worktreePath $materializationPaths))) { Throw-Failure 'ISOLATED_TRACKED_RAW_IDENTITY_DRIFT' }
     $patchPath = Get-FullPath ([string]$manifest.retained_patch_path)
     if ([string]$patchPath -cne (Get-FullPath (Join-Path $fullRoot 'tracked.patch')) -or -not (Test-Path -LiteralPath $patchPath -PathType Leaf)) { Throw-Failure 'RETAINED_PATCH_IDENTITY_INVALID' }
     Assert-NoReparsePoint $patchPath
@@ -1204,10 +1357,13 @@ function Assert-ValidIsolationManifest {
     $primaryIndexUnchanged = ([string]::Equals((Get-FullPath $primaryIndexPath), (Get-FullPath ([string]$manifest.primary_index_path)), [System.StringComparison]::OrdinalIgnoreCase) -and (Get-OptionalFileSha256 $primaryIndexPath) -ceq [string]$manifest.primary_index_sha256 -and (Get-SemanticIndexIdentity $SourceRoot) -ceq [string]$manifest.semantic_primary_index_identity)
     $linkedIndex = Get-GitIndexPath $worktreePath
     $linkedIndexDistinct = -not [string]::Equals((Get-FullPath $linkedIndex), (Get-FullPath $primaryIndexPath), [System.StringComparison]::OrdinalIgnoreCase)
+    $sourceStatusAfterRefresh = Get-GitStatusPorcelainV1Z $SourceRoot
+    $linkedStatusAfterRefresh = Get-GitStatusPorcelainV1Z $worktreePath
     $worktreeStatusUnchanged = ((Get-ContentAwareWorktreeIdentity $worktreePath) -ceq [string]$manifest.content_aware_isolated_worktree_state_sha256)
     if (-not $primaryStatusUnchanged) { Throw-Failure 'PRIMARY_CONTENT_AWARE_STATE_DRIFT' }
     if (-not $primaryIndexUnchanged) { Throw-Failure 'PRIMARY_SEMANTIC_INDEX_DRIFT' }
     if (-not $linkedIndexDistinct -or [string]$linkedIndex -cne [string]$manifest.linked_index_path -or (Get-SemanticIndexIdentity $worktreePath) -cne [string]$manifest.semantic_linked_index_identity) { Throw-Failure 'LINKED_INDEX_IDENTITY_INVALID' }
+    if ([string]$manifest.source_status_after_linked_stat_refresh_sha256 -cne (Get-TextSha256 $sourceStatusAfterRefresh) -or [string]$manifest.linked_status_after_stat_refresh_sha256 -cne (Get-TextSha256 $linkedStatusAfterRefresh) -or $sourceStatusAfterRefresh -cne $linkedStatusAfterRefresh -or [string]$manifest.linked_semantic_index_before_stat_refresh -cne [string]$manifest.linked_semantic_index_after_stat_refresh -or [string]$manifest.linked_semantic_index_after_stat_refresh -cne (Get-SemanticIndexIdentity $worktreePath) -or [string]$manifest.linked_staged_entries_before_stat_refresh -cne [string]$manifest.linked_staged_entries_after_stat_refresh -or [string]$manifest.linked_staged_entries_after_stat_refresh -cne (Get-StagedEntryIdentity $worktreePath) -or [int]$manifest.linked_stat_refresh_path_count -lt 0 -or [int]$manifest.linked_stat_refresh_exit_code -notin @(0, 1)) { Throw-Failure 'LINKED_INDEX_STAT_REFRESH_EVIDENCE_INVALID' }
     if (-not $worktreeStatusUnchanged) { Throw-Failure 'ISOLATED_WORKTREE_CONTENT_AWARE_DRIFT' }
     foreach ($overlay in @($manifest.untracked_overlay_identities)) {
         $relativePath = [string]$overlay.path; $sourcePath = Get-FullPath (Join-Path $SourceRoot $relativePath); $isolatedPath = Get-FullPath (Join-Path $worktreePath $relativePath)
@@ -1269,10 +1425,12 @@ function Invoke-Create {
         $semanticPrimaryIndex = Get-SemanticIndexIdentity $sourceRoot
         $objectDatabaseIdentity = Get-GitObjectDatabaseIdentity $sourceRoot
         $trackedPatchPaths = @(Get-TrackedPatchPaths $sourceRoot)
+        $trackedMaterializationPaths = @(Get-TrackedMaterializationPaths $sourceRoot)
         $inheritedProtectedPaths = @('GUARD.bat', '_guard/PROJECT_GUARD.config.bat', '_guard/PROJECT_GUARD_ENGINE.bat', '_guard/README.md')
         $inheritedPartition = @($trackedPatchPaths | Where-Object { $inheritedProtectedPaths -contains $_ } | Sort-Object)
         $phaseOwnedPartition = @($trackedPatchPaths | Where-Object { $inheritedProtectedPaths -notcontains $_ } | Sort-Object)
         $trackedCanonicalIdentities = @(Get-CanonicalTrackedIdentity $sourceRoot $trackedPatchPaths)
+        $trackedMaterializationRawIdentities = @(Get-TrackedRawIdentity $sourceRoot $trackedMaterializationPaths)
 
         $isolationRoot = Join-Path $script:TempBase ([Guid]::NewGuid().ToString('N'))
         $worktreePath = Join-Path $isolationRoot 'w'
@@ -1310,7 +1468,7 @@ function Invoke-Create {
             if ($applyResult.ExitCode -ne 0) { Throw-Failure 'TRACKED_PATCH_APPLY_FAILED' }
             $patchApplied = $true
         }
-        Sync-TrackedPatchRawBytes -SourceRoot $sourceRoot -WorktreeRoot $worktreePath -Paths $trackedPatchPaths
+        Sync-TrackedPatchRawBytes -SourceRoot $sourceRoot -WorktreeRoot $worktreePath -Paths $trackedMaterializationPaths
         $approvedOverlays = New-Object System.Collections.Generic.List[string]
         $overlayIdentities = New-Object System.Collections.Generic.List[object]
         $requestedPaths = ConvertFrom-StrictUntrackedPathPayload
@@ -1333,6 +1491,7 @@ function Invoke-Create {
             $overlayIdentities.Add([ordered]@{ path = $normalizedOverlay; raw_sha256 = Get-FileSha256 $sourcePath })
         }
         Invoke-CreationFailureInjection -Point 'OVERLAY' -SourceRoot $sourceRoot
+        $linkedStatRefresh = Invoke-LinkedIndexStatRefresh -SourceRoot $sourceRoot -WorktreeRoot $worktreePath -TrackedMaterializationPaths $trackedMaterializationPaths
         if ($EnableVerifierScratch) {
             New-Item -ItemType Directory -Path $scratchPath | Out-Null
             Assert-NoReparsePoint $scratchPath
@@ -1340,9 +1499,10 @@ function Invoke-Create {
         $linkedIndexPath = Get-GitIndexPath $worktreePath
         if ([string]::Equals((Get-FullPath $linkedIndexPath), (Get-FullPath $primaryIndexPath), [System.StringComparison]::OrdinalIgnoreCase)) { Throw-Failure 'LINKED_WORKTREE_INDEX_NOT_DISTINCT' }
         if (-not (Test-SequenceExact $trackedCanonicalIdentities @(Get-CanonicalTrackedIdentity $worktreePath $trackedPatchPaths))) { Throw-Failure 'TRACKED_CANONICAL_IDENTITY_MISMATCH_AFTER_CREATE' }
+        if (-not (Test-SequenceExact $trackedMaterializationRawIdentities @(Get-TrackedRawIdentity $worktreePath $trackedMaterializationPaths))) { Throw-Failure 'TRACKED_RAW_IDENTITY_MISMATCH_AFTER_CREATE' }
         $manifest = [ordered]@{
             magic = $script:ManifestMagic
-            schema_version = 2
+            schema_version = $script:ManifestSchemaVersion
             purpose = $IsolationPurpose
             physical_layout = $script:IsolationLayout
             source_root = $sourceRoot
@@ -1360,9 +1520,11 @@ function Invoke-Create {
             linked_index_path = $linkedIndexPath
             initial_worktree_status_sha256 = Get-GitStatusSha256 $worktreePath
             tracked_patch_paths = ConvertTo-DeterministicArray $trackedPatchPaths
+            tracked_materialization_paths = ConvertTo-DeterministicArray $trackedMaterializationPaths
             phase_owned_tracked_paths = ConvertTo-DeterministicArray $phaseOwnedPartition
             inherited_protected_tracked_paths = ConvertTo-DeterministicArray $inheritedPartition
             tracked_canonical_content_identities = ConvertTo-DeterministicArray $trackedCanonicalIdentities
+            tracked_materialization_raw_identities = ConvertTo-DeterministicArray $trackedMaterializationRawIdentities
             canonical_tracked_diff_sha256 = $canonicalTrackedDiff
             retained_patch_path = $patchPath
             retained_patch_sha256 = $retainedPatchSha
@@ -1373,6 +1535,15 @@ function Invoke-Create {
             semantic_primary_index_identity = $semanticPrimaryIndex
             semantic_linked_index_identity = Get-SemanticIndexIdentity $worktreePath
             object_database_identity = $objectDatabaseIdentity
+            source_status_after_linked_stat_refresh_sha256 = $linkedStatRefresh.SourceStatusSha256
+            linked_status_before_stat_refresh_sha256 = $linkedStatRefresh.LinkedStatusBeforeSha256
+            linked_status_after_stat_refresh_sha256 = $linkedStatRefresh.LinkedStatusAfterSha256
+            linked_semantic_index_before_stat_refresh = $linkedStatRefresh.LinkedSemanticBefore
+            linked_semantic_index_after_stat_refresh = $linkedStatRefresh.LinkedSemanticAfter
+            linked_staged_entries_before_stat_refresh = $linkedStatRefresh.LinkedStagedEntriesBefore
+            linked_staged_entries_after_stat_refresh = $linkedStatRefresh.LinkedStagedEntriesAfter
+            linked_stat_refresh_path_count = $linkedStatRefresh.RefreshPathCount
+            linked_stat_refresh_exit_code = $linkedStatRefresh.RefreshExitCode
             sibling_baseline_sha256 = Get-DirectSiblingIdentity $isolationRoot
             path_budget_status = 'PASS'
             path_budget_limit = $pathBudget.Limit
@@ -1396,7 +1567,7 @@ function Invoke-Create {
         Invoke-CreationFailureInjection -Point 'AFTER_VALIDATION' -SourceRoot $sourceRoot
         Write-ActiveIsolationRegistry -Context $context -Root $isolationRoot
         Write-Result ([ordered]@{
-                ACTION = 'CREATE'; STATUS = 'CREATED'; MANIFEST_VERSION = 2; PURPOSE = $IsolationPurpose
+                ACTION = 'CREATE'; STATUS = 'CREATED'; MANIFEST_VERSION = $script:ManifestSchemaVersion; PURPOSE = $IsolationPurpose
                 ISOLATION_BASE = $script:TempBase; ISOLATION_ROOT = $isolationRoot; WORKTREE_PATH = $worktreePath
                 SCRATCH_ALLOWED = ([bool]$EnableVerifierScratch).ToString().ToLowerInvariant(); SCRATCH_PATH = $scratchPath
                 SOURCE_ROOT = $sourceRoot; HEAD = $head; TRACKED_PATCH_APPLIED = $patchApplied.ToString().ToLowerInvariant()

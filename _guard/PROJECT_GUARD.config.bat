@@ -1,20 +1,30 @@
 @echo off
 
-set "GUARD_CONFIG_VERSION=2"
-set "PROJECT_KEY=tonkho"
+set "CONFIG_SCHEMA_VERSION=3"
+set "GUARD_CONFIG_VERSION=3"
+set "PROJECT_KEY=syncgmaildrivesheet"
 set "PROJECT_NAME=SYNC GMAIL DRIVE SHEET / TON KHO"
-set "PROJECT_ROOT=D:\CODE\SyncGmailDriveSheet"
+set "PROJECT_ROOT=%~dp0.."
 set "EXPECTED_BRANCH=main"
 
 set "GITHUB_SSH_ALIAS=github-giapha"
+set "SSH_ALIAS=github-giapha"
+set "SSH_KEY_PATH=D:\CODE\.ssh\id_ed25519_gia_pha"
 set "GITHUB_ACCOUNT=hungdiepcompany-del"
+set "GITHUB_USERNAME=hungdiepcompany-del"
 set "GITHUB_REPO=hungdiepcompany-del/tonkho"
+set "EXPECTED_REMOTE=git@github-giapha:hungdiepcompany-del/tonkho.git"
 set "GIT_USER_NAME=hungdiepcompany-del"
 set "GIT_USER_EMAIL=hungdiepcompany@gmail.com"
+
+set "DEPLOY_PROVIDER=google_apps_firebase"
+set "DEPLOY_ADAPTER=%~dp0deploy\DEPLOY_GOOGLE_APPS_FIREBASE.bat"
+set "CLOUDFLARE_REQUIRED=false"
 
 set "GAS_ACCOUNT=hungdiepcompany@gmail.com"
 set "GAS_SCRIPT_ID=19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM"
 set "CLASP_PROFILE=hungdiepcompany-gas"
+set "CLASP_ROOT_DIR=."
 
 set "FIREBASE_ACCOUNT=hungdiepcompany@gmail.com"
 set "FIREBASE_PROJECT_ID=tonkhohd"
@@ -28,6 +38,3 @@ set "FIRESTORE_LOCATION=asia-southeast1"
 set "FIRESTORE_TYPE=FIRESTORE_NATIVE"
 set "FIRESTORE_EDITION=STANDARD"
 set "FIRESTORE_DELETE_PROTECTION=DELETE_PROTECTION_ENABLED"
-
-set "DEPLOY_MODE=gas"
-set "PROJECT_STATUS_HOOK=%~dp0PROJECT_STATUS_HOOK.bat"

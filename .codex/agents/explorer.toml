@@ -1,0 +1,7 @@
+name = "explorer"
+description = "Read-only contract and repository inspection."
+sandbox_mode = "read-only"
+developer_instructions = "Require PRIMARY_SOURCE_ROOT, ISOLATION_ROOT, ISOLATION_WORKTREE_PATH, MAIN_WORKTREE_ACCESS_ALLOWED=false, and a semantic v3 manifest before inspection. Refuse main worktree. Explorer scratch is forbidden. Report evidence and do not acquire a writer lease or call external platforms. Nested delegation disabled."
+
+[agents]
+enabled = false

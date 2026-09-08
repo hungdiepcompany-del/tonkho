@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
 
 const files = Object.freeze({
   runtime: 'D7_E4A1_BoundedFirestoreIdentityCardinalityReadOnlyProof.js',
@@ -11,7 +12,7 @@ const files = Object.freeze({
 });
 
 const requiredFiles = Object.freeze(Object.values(files));
-const knownGuardDirty = Object.freeze(['GUARD.bat', '_guard/']);
+const knownGuardDirty = new Set(['GUARD.bat', '_guard/PROJECT_GUARD.config.bat', '_guard/PROJECT_GUARD_ENGINE.bat', '_guard/README.md', '_guard/deploy/DEPLOY_GOOGLE_APPS_FIREBASE.bat']);
 
 function fail(code) {
   console.error(`D7_E4A1_CARDINALITY_CHECK=FAIL:${code}`);
@@ -33,7 +34,7 @@ function normalized(path) {
 
 function isGuard(path) {
   const value = normalized(path);
-  return knownGuardDirty.some(item => value === item || value.startsWith(item));
+  return knownGuardDirty.has(value);
 }
 
 function assertIncludes(text, expected, code) {
@@ -110,6 +111,7 @@ function assertDirtyScope() {
 }
 
 function main() {
+  assertV6ScopeGate(process.cwd());
   assertDirtyScope();
   const runtime = source(files.runtime);
   const test = source(files.test);

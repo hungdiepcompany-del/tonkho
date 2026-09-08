@@ -5,7 +5,7 @@
   "description": "Local-only regression and safety tests for SyncGmailDriveSheet",
   "type": "module",
   "scripts": {
-    "test": "node --test \"tests/**/*.test.mjs\"",
+    "test": "node scripts/checkers/check-ai-governance-bootstrap.mjs --scope-only && node --test \"tests/**/*.test.mjs\"",
     "test:unit": "node --test \"tests/unit/*.test.mjs\"",
     "test:bugs": "node --test \"tests/bugs/*.test.mjs\"",
     "test:static": "node --test \"tests/static/*.test.mjs\"",
@@ -72,6 +72,7 @@
     "check:d7-e4a1c-cardinality-closeout": "node scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs",
     "check:d7-e4a2-exact-firestore-reconciliation-plan": "node scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs",
     "check:d7-e4b-exact-firestore-reconciliation-runtime": "node scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs",
-    "check:d7-e4c-exact-precondition-diagnostic": "node scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs"
+    "check:d7-e4c-exact-precondition-diagnostic": "node scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs",
+    "check:ai-governance-bootstrap": "node scripts/checkers/check-ai-governance-bootstrap.mjs"
   }
 }
