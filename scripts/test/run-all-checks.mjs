@@ -4,7 +4,13 @@ function runScopeGate() {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
+function runReceiptBoundGovernanceGate() {
+  const result = spawnSync(process.execPath, ['scripts/checkers/check-ai-governance-bootstrap.mjs'], { stdio: 'inherit', shell: false, env: process.env });
+  if (result.status !== 0) process.exit(result.status ?? 1);
+}
+
 runScopeGate();
+runReceiptBoundGovernanceGate();
 const { createWindowsPowerShellEnvironment } = await import('./powershell-module-env.mjs');
 const powerShellEnv = Object.freeze(createWindowsPowerShellEnvironment(process.env));
 
@@ -27,7 +33,6 @@ const commands = [
   ['node', ['scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs']],
   ['node', ['scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs']],
   ['node', ['scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs']],
-  ['node', ['scripts/checkers/check-ai-governance-bootstrap.mjs']],
 ];
 
 for (const [cmd, args] of commands) {

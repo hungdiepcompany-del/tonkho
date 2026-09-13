@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
+import { fileURLToPath } from 'node:url';
+import { assertV6ScopeGate, composePhase0CandidateScope } from './check-ai-governance-bootstrap.mjs';
 
 const files = Object.freeze({
   runtime: 'D7_E4A1_BoundedFirestoreIdentityCardinalityReadOnlyProof.js',
@@ -51,8 +52,7 @@ function parseStatus(line) {
   return normalized(value.slice(3));
 }
 
-function assertDirtyScope() {
-  const allowed = new Set(requiredFiles.concat([
+const historicalDirtyScope = Object.freeze(requiredFiles.concat([
     'D7_E4C_ExactPreconditionDiagnostic.js',
     'tests/unit/d7-e4c-exact-precondition-diagnostic.test.mjs',
     'scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs',
@@ -106,6 +106,10 @@ function assertDirtyScope() {
     'scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs',
     'docs/phases/D7_E4B1_EXACT_RECONCILIATION_RUNTIME_IMPLEMENTATION_AND_SOURCE_SYNC.md'
   ]));
+export const d7E4A1AllowedDirtyScope = composePhase0CandidateScope(historicalDirtyScope);
+
+function assertDirtyScope() {
+  const allowed = new Set(d7E4A1AllowedDirtyScope);
   const unexpected = git(['status', '--short', '--untracked-files=all']).split(/\r?\n/).filter(Boolean).map(parseStatus).filter(path => path && !isGuard(path) && !allowed.has(path));
   if (unexpected.length) fail('UNEXPECTED_DIRTY_FILE_' + unexpected[0].replace(/[^A-Za-z0-9]+/g, '_').toUpperCase());
 }
@@ -173,4 +177,4 @@ function main() {
   console.log('D7_E4A1_CARDINALITY_CHECK=PASS');
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === fs.realpathSync(process.argv[1])) main();

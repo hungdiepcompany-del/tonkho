@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
+import { assertV6ScopeGate, composePhase0CandidateScope } from './check-ai-governance-bootstrap.mjs';
+import { fileURLToPath } from 'node:url';
 
 const files = Object.freeze({
   docs: 'docs/phases/D7_E4A2_EXACT_FIRESTORE_RECONCILIATION_PLAN_FINALIZATION.md',
@@ -35,8 +36,7 @@ function statusPath(line) {
   return normalized(String(line || '').slice(3));
 }
 
-function assertDirtyScope() {
-  const allowed = new Set([
+const historicalDirtyScope = Object.freeze([
     'D7_E4C_ExactPreconditionDiagnostic.js',
     'tests/unit/d7-e4c-exact-precondition-diagnostic.test.mjs',
     'scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs',
@@ -81,6 +81,10 @@ function assertDirtyScope() {
     'scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs',
     'docs/phases/D7_E4B1_EXACT_RECONCILIATION_RUNTIME_IMPLEMENTATION_AND_SOURCE_SYNC.md'
   ]);
+export const d7E4A2AllowedDirtyScope = composePhase0CandidateScope(historicalDirtyScope);
+
+function assertDirtyScope() {
+  const allowed = new Set(d7E4A2AllowedDirtyScope);
   const unexpected = execFileSync('git', ['status', '--short', '--untracked-files=all'], { encoding: 'utf8' })
     .split(/\r?\n/)
     .filter(Boolean)
@@ -137,4 +141,4 @@ function main() {
   console.log('D7_E4A2_RECONCILIATION_PLAN_CHECK=PASS');
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === fs.realpathSync(process.argv[1])) main();

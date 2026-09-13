@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import test from 'node:test';
 import { loadGasSource } from '../harness/load-gas-source.mjs';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
+import { phase0CandidateScope } from '../../scripts/checkers/check-ai-governance-bootstrap.mjs';
+import { d7E4A1AllowedDirtyScope } from '../../scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs';
 
 const TEST_METADATA = defineTestMetadata({
   testClass: 'REGRESSION_INVARIANT',
@@ -92,6 +94,11 @@ test('D7-E4A1 declares the bounded production read-only cardinality contract', (
   assert.equal(gas.exports.D7_E4A1_PHASE_, 'D7_E4A1_BOUNDED_FIRESTORE_IDENTITY_CARDINALITY_READ_ONLY_PROOF');
   assert.equal(gas.exports.D7_E4A1_PUBLIC_ENTRYPOINT_, 'runD7E4A1BoundedFirestoreIdentityCardinalityReadOnlyProof');
   assert.equal(gas.exports.D7_E4A1_SCHEMA_VERSION_, 'D7_E4A1_FIRESTORE_CARDINALITY_RESULT_V1');
+});
+
+test('D7-E4A1 composes the frozen exact Phase 0 candidate scope', () => {
+  assert.equal(Object.isFrozen(d7E4A1AllowedDirtyScope), true);
+  for (const file of phase0CandidateScope) assert.equal(d7E4A1AllowedDirtyScope.includes(file), true, file);
 });
 
 test('one exact bounded composite result proves cardinality and duplicate absence', () => {

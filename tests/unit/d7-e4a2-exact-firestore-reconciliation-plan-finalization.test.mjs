@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
+import { phase0CandidateScope } from '../../scripts/checkers/check-ai-governance-bootstrap.mjs';
+import { d7E4A2AllowedDirtyScope } from '../../scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs';
 
 const TEST_METADATA = defineTestMetadata({
   testClass: 'REGRESSION_INVARIANT',
@@ -34,6 +36,11 @@ test('D7-E4A2 records one-job current state and an exact seven-write reconciliat
     'PRODUCTION_DATA_MUTATION=NONE',
     'FINAL_STATUS=PASS_D7_E4A2_EXACT_FIRESTORE_RECONCILIATION_PLAN_READY_FOR_OWNER_APPROVAL'
   ]) assert.equal(document.includes(marker), true, marker);
+});
+
+test('D7-E4A2 composes the frozen exact Phase 0 candidate scope', () => {
+  assert.equal(Object.isFrozen(d7E4A2AllowedDirtyScope), true);
+  for (const file of phase0CandidateScope) assert.equal(d7E4A2AllowedDirtyScope.includes(file), true, file);
 });
 
 test('D7-E4A2 retains the legal durable state transition and external no-write boundary', () => {

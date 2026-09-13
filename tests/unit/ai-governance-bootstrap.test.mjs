@@ -7,7 +7,7 @@ import test from 'node:test';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
-import { assertV6ScopeEntries, assertWindowsNoReparsePoints, authoritativeContractPreamble, checkStaticGovernance, deriveV10GuardBehaviorEvidence, interpretBatchCfgEvidence, parsePorcelainV1Z, readIsolationIdentity, resolveControllerReceiptPath, validateControllerInspectionReceiptPayload } from '../../scripts/checkers/check-ai-governance-bootstrap.mjs';
+import { assertAggregateGateOrdering, assertV6ScopeEntries, assertWindowsNoReparsePoints, authoritativeContractPreamble, checkStaticGovernance, deriveV10GuardBehaviorEvidence, interpretBatchCfgEvidence, parsePorcelainV1Z, phase0CandidateScope, reachableHeadObjectGraphIdentity, readIsolationIdentity, resolveControllerReceiptPath, validateControllerInspectionReceiptPayload } from '../../scripts/checkers/check-ai-governance-bootstrap.mjs';
 import { createWindowsPowerShellEnvironment } from '../../scripts/test/powershell-module-env.mjs';
 
 const TEST_METADATA = defineTestMetadata({ testClass: 'REGRESSION_INVARIANT', sourceFiles: ['scripts/ai/Manage-NonWriterIsolation.ps1', 'scripts/test/powershell-module-env.mjs'], ownerPolicyRequired: true, runtimeMutation: 'NONE' });
@@ -29,7 +29,7 @@ const semanticIndexIdentity = repo => {
 export function validateActiveContracts(base) {
   const active = path.join(base, 'docs', 'exec-plans', 'active');
   const files = fs.existsSync(active) ? fs.readdirSync(active).filter(name => name.endsWith('.md')).sort() : [];
-  return files.length === 1 && files[0] === 'SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md';
+  return files.length === 1 && files[0] === 'SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md';
 }
 function fixture() {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'sgds-wa3-'));
@@ -163,8 +163,29 @@ test('N complete tracked materialization preserves raw bytes, status, and index 
     const validated = invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable);
     assert.equal(validated.timedOut, false, `${executable} ValidateIsolation must terminate`); ok(validated);
     const manifest = JSON.parse(fs.readFileSync(path.join(isolation, 'non-writer-isolation.manifest.json'), 'utf8'));
-    assert.equal(manifest.schema_version, 3);
-    assert.equal(manifest.magic, 'syncgmaildrivesheet.non-writer-isolation/v3');
+    assert.equal(manifest.schema_version, 4);
+    assert.equal(manifest.magic, 'syncgmaildrivesheet.non-writer-isolation/v4');
+    assert.match(manifest.reachable_head_object_graph_identity, /^sha256:[0-9a-f]{64}$/);
+    assert.equal(manifest.reachable_head_object_graph_identity, reachableHeadObjectGraphIdentity(worktree, manifest.head));
+    assert.equal(Object.hasOwn(manifest, 'object_database_identity'), false);
+    const unreachableObject = execFileSync('git', ['hash-object', '-w', '--stdin'], { cwd: repo, encoding: 'utf8', input: `unreachable content-addressed snapshot object ${executable}\n` }).trim();
+    assert.match(unreachableObject, /^[0-9a-f]{40}$/);
+    assert.equal(execFileSync('git', ['rev-list', '--objects', '--no-object-names', 'HEAD'], { cwd: repo, encoding: 'utf8' }).split(/\r?\n/).includes(unreachableObject), false);
+    ok(invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable));
+    const reachableBlob = execFileSync('git', ['rev-parse', 'HEAD:README.md'], { cwd: repo, encoding: 'utf8' }).trim();
+    const commonDirectory = path.resolve(repo, execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: repo, encoding: 'utf8' }).trim());
+    const reachableLooseObject = path.join(commonDirectory, 'objects', reachableBlob.slice(0, 2), reachableBlob.slice(2));
+    if (fs.existsSync(reachableLooseObject)) {
+      const reachableLooseBytes = fs.readFileSync(reachableLooseObject);
+      fs.rmSync(reachableLooseObject);
+      const missingReachable = invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable);
+      assert.notEqual(missingReachable.status, 0);
+      assert.match(missingReachable.output, /GIT_REACHABLE_HEAD_OBJECT_(?:ENUMERATION|BATCH_CHECK)_FAILED/);
+      fs.writeFileSync(reachableLooseObject, reachableLooseBytes);
+      ok(invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable));
+    }
+    execFileSync('git', ['repack', '-ad'], { cwd: repo });
+    ok(invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable));
     assert.ok(manifest.tracked_materialization_paths.includes('tracked-clean-lf.txt'));
     assert.ok(manifest.tracked_materialization_paths.includes('tracked-delete.txt'));
     assert.ok(manifest.tracked_materialization_paths.indexOf(upperTrackedName) < manifest.tracked_materialization_paths.indexOf(underscoreTrackedName), `${executable} must use ordinal UTF-16 ordering`);
@@ -195,6 +216,14 @@ test('N complete tracked materialization preserves raw bytes, status, and index 
     assert.match(drift.output, /ISOLATED_TRACKED_RAW_IDENTITY_DRIFT/);
     fs.writeFileSync(path.join(worktree, 'tracked-clean-lf.txt'), cleanTrackedBytes);
     ok(invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable));
+    const manifestPath = path.join(isolation, 'non-writer-isolation.manifest.json');
+    const manifestBytes = fs.readFileSync(manifestPath);
+    fs.writeFileSync(manifestPath, JSON.stringify({ ...manifest, reachable_head_object_graph_identity: `sha256:${'0'.repeat(64)}` }));
+    const graphDrift = invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable);
+    assert.notEqual(graphDrift.status, 0);
+    assert.match(graphDrift.output, /GIT_REACHABLE_HEAD_OBJECT_GRAPH_DRIFT/);
+    fs.writeFileSync(manifestPath, manifestBytes);
+    ok(invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable));
     assert.notEqual(invoke(repo, 'ControllerAssign', { AssignmentId: `${id}-n-${executable}`, OperationId: `n-a-${executable}` }, executable).status, 0);
     const cleaned = invoke(repo, 'Cleanup', { IsolationRoot: isolation }, executable);
     assert.equal(cleaned.timedOut, false, `${executable} Cleanup must terminate`); ok(cleaned);
@@ -220,6 +249,45 @@ test('N complete tracked materialization preserves raw bytes, status, and index 
 test('O complete lifecycle is equivalent in Windows PowerShell 5.1', () => withRepo(repo => { const r = lifecycle(repo, 'powershell.exe', 'o'); r.release(); assert.equal(field(ok(invoke(repo, 'InspectWriter')).output, 'SLOT_STATE'), 'NONE'); }));
 test('P complete lifecycle is equivalent in PowerShell 7', () => withRepo(repo => { const r = lifecycle(repo, 'pwsh', 'p'); r.release(); assert.equal(field(ok(invoke(repo, 'InspectWriter', {}, 'pwsh')).output, 'SLOT_STATE'), 'NONE'); }));
 test('Q checker static contract and reachable-v3 authority proof align with this matrix', () => {
+  const expectedPhase0CandidateScope = [
+    'scripts/ai/Manage-NonWriterIsolation.ps1',
+    'scripts/checkers/check-ai-governance-bootstrap.mjs',
+    'tests/unit/ai-governance-bootstrap.test.mjs',
+    'scripts/test/run-all-checks.mjs',
+    'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
+    'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
+    'scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs',
+    'tests/unit/d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.test.mjs',
+    'scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs',
+    'tests/unit/d7-e4a1a-canonical-identity-configuration-read-only-recovery.test.mjs',
+    'scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs',
+    'tests/unit/d7-e4a1b-owner-configure-canonical-properties.test.mjs',
+    'scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs',
+    'tests/unit/d7-e4a1c-owner-marker-single-read-only-cardinality-execution.test.mjs',
+    'scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs',
+    'tests/unit/d7-e4a2-exact-firestore-reconciliation-plan-finalization.test.mjs',
+    'docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
+    'docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md',
+    'docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
+    'docs/00_INDEX.md', 'docs/04_MASTER_PLAN.md', 'docs/12_AI_WORK_LOG.md', 'docs/13_DECISION_LOG.md', 'docs/99_NEXT_AI_HANDOFF.md', 'docs/FILE_MANIFEST.md'
+  ];
+  assert.equal(Object.isFrozen(phase0CandidateScope), true);
+  assert.deepEqual(phase0CandidateScope, expectedPhase0CandidateScope);
+  const aggregateRunner = fs.readFileSync(path.join(root, 'scripts', 'test', 'run-all-checks.mjs'), 'utf8');
+  assert.equal(assertAggregateGateOrdering(aggregateRunner), true);
+  const replaceExactlyOnce = (source, from, to) => {
+    assert.equal(source.split(from).length - 1, 1, `aggregate mutation anchor must be unique: ${from}`);
+    return source.replace(from, to);
+  };
+  assert.throws(() => assertAggregateGateOrdering(replaceExactlyOnce(aggregateRunner, 'runReceiptBoundGovernanceGate();\n', '')), /AGGREGATE_RECEIPT_BOUND_GATE_UNIQUE_REQUIRED/);
+  assert.throws(() => assertAggregateGateOrdering(replaceExactlyOnce(aggregateRunner, 'runReceiptBoundGovernanceGate();\n', 'runReceiptBoundGovernanceGate();\nrunReceiptBoundGovernanceGate();\n')), /AGGREGATE_RECEIPT_BOUND_GATE_UNIQUE_REQUIRED/);
+  const movedReceiptGate = replaceExactlyOnce(
+    replaceExactlyOnce(aggregateRunner, 'runScopeGate();\nrunReceiptBoundGovernanceGate();\nconst {', 'runScopeGate();\nconst {'),
+    'const commands = [',
+    'runReceiptBoundGovernanceGate();\n\nconst commands = ['
+  );
+  assert.throws(() => assertAggregateGateOrdering(movedReceiptGate), /AGGREGATE_GOVERNANCE_GATE_ORDER_REQUIRED/);
+  assert.throws(() => assertAggregateGateOrdering(replaceExactlyOnce(aggregateRunner, 'const commands = [', "const commands = [\n  ['node', ['scripts/checkers/check-ai-governance-bootstrap.mjs']],")), /AGGREGATE_GOVERNANCE_GATE_IN_LONG_COMMAND_LIST_FORBIDDEN/);
   const sourceEnvironment = {
     SystemRoot: 'C:\\Windows\\',
     PSModulePath: [
@@ -252,35 +320,35 @@ test('Q checker static contract and reachable-v3 authority proof align with this
   createWindowsPowerShellEnvironment(process.env);
   assert.equal(process.env.PSModulePath, processModulePath);
   const receiptContext = { sourceRoot: 'C:\\Primary', commonDirectory: 'C:\\Primary\\.git' };
-  const receiptBinding = { authorityId: 'OWNER_GO_V15B_CURRENT_AUTHORITY_BINDING_EXACT_7_PATHS', assignmentId: 'SGDS_LOCAL_ONLY_CURRENT_AUTHORITY_BINDING_V15B_01a0805f', writerId: '01a0805f-1435-7aa0-b65e-ae60449aac34' };
+  const receiptBinding = { authorityId: 'OWNER_GO_CURRENT_PHASE_TEST', assignmentId: 'CURRENT_ASSIGNMENT_TEST', writerId: '01a080f5-91bb-7e60-ad4e-fa42d61846b8' };
   const authoritativeContract = [
     '# Active contract',
-    'AUTHORITY_ID=OWNER_GO_V15B_CURRENT_AUTHORITY_BINDING_EXACT_7_PATHS',
-    'OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID=SGDS_LOCAL_ONLY_CURRENT_AUTHORITY_BINDING_V15B_01a0805f',
-    'OWNER_CURRENT_AUTHORITY_V15B_CODER_THREAD_ID=01a0805f-1435-7aa0-b65e-ae60449aac34',
+    'AUTHORITY_ID=OWNER_GO_CURRENT_PHASE_TEST',
+    'CURRENT_AUTHORITY_ASSIGNMENT_ID=CURRENT_ASSIGNMENT_TEST',
+    'CURRENT_AUTHORITY_CODER_THREAD_ID=01a080f5-91bb-7e60-ad4e-fa42d61846b8',
     '',
     '## Historical V14 record',
     'AUTHORITY_ID=OWNER_GO_LOCAL_ONLY_ISOLATION_LINKED_INDEX_STAT_REFRESH_V14',
-    'OWNER_ISOLATION_INDEX_V14_ASSIGNMENT_ID=SGDS_LOCAL_ONLY_ISOLATION_RECEIPT_REPARSE_V14_01a0801a',
-    'OWNER_ISOLATION_INDEX_V14_CODER_THREAD_ID=01a0801a-11d0-7680-9146-82877749e9c7',
+    'CURRENT_AUTHORITY_ASSIGNMENT_ID=HISTORICAL_ASSIGNMENT_MUST_NOT_BIND',
+    'CURRENT_AUTHORITY_CODER_THREAD_ID=01a0801a-11d0-7680-9146-82877749e9c7',
     '',
     '## Historical V15 record',
     'AUTHORITY_ID=OWNER_GO_V15_AGENT_MANIFEST_V3_ALIGNMENT_EXACT_8_PATHS',
-    'OWNER_AGENT_MANIFEST_V15_ASSIGNMENT_ID=SGDS_LOCAL_ONLY_AGENT_MANIFEST_V3_ALIGNMENT_V15_01a08051',
-    'OWNER_AGENT_MANIFEST_V15_CODER_THREAD_ID=01a08051-7e44-7d02-8b4d-16c99ce6bb18'
+    'CURRENT_AUTHORITY_ASSIGNMENT_ID=SECOND_HISTORICAL_ASSIGNMENT_MUST_NOT_BIND',
+    'CURRENT_AUTHORITY_CODER_THREAD_ID=01a08051-7e44-7d02-8b4d-16c99ce6bb18'
   ].join('\n');
   const authoritativeBinding = authoritativeContractPreamble(authoritativeContract);
   assert.deepEqual(Object.fromEntries(authoritativeBinding), {
     AUTHORITY_ID: receiptBinding.authorityId,
-    OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID: receiptBinding.assignmentId,
-    OWNER_CURRENT_AUTHORITY_V15B_CODER_THREAD_ID: receiptBinding.writerId
+    CURRENT_AUTHORITY_ASSIGNMENT_ID: receiptBinding.assignmentId,
+    CURRENT_AUTHORITY_CODER_THREAD_ID: receiptBinding.writerId
   });
   for (const malformed of [
-    authoritativeContract.replace('AUTHORITY_ID=OWNER_GO_V15B_CURRENT_AUTHORITY_BINDING_EXACT_7_PATHS\n', ''),
-    authoritativeContract.replace('AUTHORITY_ID=OWNER_GO_V15B_CURRENT_AUTHORITY_BINDING_EXACT_7_PATHS\n', 'AUTHORITY_ID=OWNER_GO_V15B_CURRENT_AUTHORITY_BINDING_EXACT_7_PATHS\nAUTHORITY_ID=duplicate\n'),
-    authoritativeContract.replace('OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID=SGDS_LOCAL_ONLY_CURRENT_AUTHORITY_BINDING_V15B_01a0805f', 'OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID='),
-    authoritativeContract.replace('OWNER_CURRENT_AUTHORITY_V15B_CODER_THREAD_ID=01a0805f-1435-7aa0-b65e-ae60449aac34\n', ''),
-    authoritativeContract.replace('OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID=SGDS_LOCAL_ONLY_CURRENT_AUTHORITY_BINDING_V15B_01a0805f\n', 'OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID=SGDS_LOCAL_ONLY_CURRENT_AUTHORITY_BINDING_V15B_01a0805f\nOWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID=duplicate\n'),
+    authoritativeContract.replace('AUTHORITY_ID=OWNER_GO_CURRENT_PHASE_TEST\n', ''),
+    authoritativeContract.replace('AUTHORITY_ID=OWNER_GO_CURRENT_PHASE_TEST\n', 'AUTHORITY_ID=OWNER_GO_CURRENT_PHASE_TEST\nAUTHORITY_ID=duplicate\n'),
+    authoritativeContract.replace('CURRENT_AUTHORITY_ASSIGNMENT_ID=CURRENT_ASSIGNMENT_TEST', 'CURRENT_AUTHORITY_ASSIGNMENT_ID='),
+    authoritativeContract.replace('CURRENT_AUTHORITY_CODER_THREAD_ID=01a080f5-91bb-7e60-ad4e-fa42d61846b8\n', ''),
+    authoritativeContract.replace('CURRENT_AUTHORITY_ASSIGNMENT_ID=CURRENT_ASSIGNMENT_TEST\n', 'CURRENT_AUTHORITY_ASSIGNMENT_ID=CURRENT_ASSIGNMENT_TEST\nCURRENT_AUTHORITY_ASSIGNMENT_ID=duplicate\n'),
     authoritativeContract.replace('# Active contract', 'not a contract title')
   ]) assert.throws(() => authoritativeContractPreamble(malformed), /RECEIPT_ACTIVE_PREAMBLE_(?:INVALID|BINDING_INVALID)/);
   const receiptCandidate = {
@@ -288,7 +356,7 @@ test('Q checker static contract and reachable-v3 authority proof align with this
     manifest_content_aware_primary_worktree_state_sha256: `sha256:${'f'.repeat(64)}`,
     manifest_semantic_primary_index_identity: `sha256:${'0'.repeat(64)}`,
     manifest_canonical_tracked_diff_sha256: `sha256:${'1'.repeat(64)}`,
-    manifest_object_database_identity: `sha256:${'2'.repeat(64)}`
+    manifest_reachable_head_object_graph_identity: `sha256:${'2'.repeat(64)}`
   };
   const isolatedCandidate = { head: 'a'.repeat(40), status_sha256: `sha256:${'4'.repeat(64)}`, index_sha256: `sha256:${'5'.repeat(64)}`, content_sha256: `sha256:${'6'.repeat(64)}` };
   const receiptIsolation = {
@@ -298,10 +366,10 @@ test('Q checker static contract and reachable-v3 authority proof align with this
     manifest_content_aware_primary_worktree_state_sha256: `sha256:${'f'.repeat(64)}`,
     manifest_semantic_primary_index_identity: `sha256:${'0'.repeat(64)}`,
     manifest_canonical_tracked_diff_sha256: `sha256:${'1'.repeat(64)}`,
-    manifest_object_database_identity: `sha256:${'2'.repeat(64)}`
+    manifest_reachable_head_object_graph_identity: `sha256:${'2'.repeat(64)}`
   };
   const receipt = {
-    magic: 'syncgmaildrivesheet.controller-inspection-receipt/v1', schema_version: 1, issued_utc_ms: 1000,
+    magic: 'syncgmaildrivesheet.controller-inspection-receipt/v2', schema_version: 2, issued_utc_ms: 1000,
     primary_root: receiptContext.sourceRoot, git_common_directory: receiptContext.commonDirectory,
     authority_id: receiptBinding.authorityId, assignment_id: receiptBinding.assignmentId, writer_id: receiptBinding.writerId,
     inspection: { action: 'INSPECTWRITER', status: 'INSPECTED', slot_state: 'NONE', revision: 12, state_sha256: `sha256:${'3'.repeat(64)}` },
@@ -327,10 +395,10 @@ test('Q checker static contract and reachable-v3 authority proof align with this
       return fs.existsSync(localPath) ? `sha256:${sha(fs.readFileSync(localPath))}` : 'missing';
     };
     const writeManifest = (paths, identities = paths.map(relativePath => ({ path: relativePath, raw_sha256: rawIdentity(relativePath) }))) => fs.writeFileSync(manifestPath, JSON.stringify({
-      magic: 'syncgmaildrivesheet.non-writer-isolation/v3', schema_version: 3,
+      magic: 'syncgmaildrivesheet.non-writer-isolation/v4', schema_version: 4,
       source_root: path.join(receiptRepo, 'declared-primary-that-does-not-exist'), git_common_directory: path.join(receiptRepo, '.git'), isolation_root: receiptRepo, worktree_path: receiptRepo, purpose: 'REVIEWER', head: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: receiptRepo, encoding: 'utf8' }).trim(),
       tracked_materialization_paths: paths, tracked_materialization_raw_identities: identities,
-      content_aware_primary_worktree_state_sha256: fixtureSha, semantic_primary_index_identity: fixtureSha, canonical_tracked_diff_sha256: fixtureSha, object_database_identity: fixtureSha,
+      content_aware_primary_worktree_state_sha256: fixtureSha, semantic_primary_index_identity: fixtureSha, canonical_tracked_diff_sha256: fixtureSha, reachable_head_object_graph_identity: reachableHeadObjectGraphIdentity(receiptRepo, execFileSync('git', ['rev-parse', 'HEAD'], { cwd: receiptRepo, encoding: 'utf8' }).trim()),
       source_status_after_linked_stat_refresh_sha256: fixtureSha, linked_status_before_stat_refresh_sha256: fixtureSha, linked_status_after_stat_refresh_sha256: fixtureSha,
       linked_semantic_index_before_stat_refresh: fixtureSha, linked_semantic_index_after_stat_refresh: fixtureSha, linked_staged_entries_before_stat_refresh: fixtureSha, linked_staged_entries_after_stat_refresh: fixtureSha,
       linked_stat_refresh_path_count: paths.length, linked_stat_refresh_exit_code: 0
@@ -425,6 +493,11 @@ test('Q checker static contract and reachable-v3 authority proof align with this
   assert.deepEqual(porcelain[2].paths, ['docs/13_DECISION_LOG.md', 'docs/old-name.md']);
   assert.throws(() => assertV6ScopeEntries([{ x: '?', y: '?', paths: ['_guard/deploy/output.txt'] }]), /FORBIDDEN_DEPLOY_OUTPUT_RESIDUE/);
   assert.throws(() => assertV6ScopeEntries([{ x: '?', y: '?', paths: ['outside-v6-scope.txt'] }]), /UNAUTHORIZED_PATH_CHANGE/);
+  for (const file of phase0CandidateScope) {
+    assert.equal(assertV6ScopeEntries([{ x: ' ', y: 'M', paths: [file] }]), true);
+    assert.throws(() => assertV6ScopeEntries([{ x: '?', y: '?', paths: [`${file}.copy`] }]), /UNAUTHORIZED_PATH_CHANGE/);
+    assert.throws(() => assertV6ScopeEntries([{ x: 'M', y: ' ', paths: [file] }]), /STAGED_CHANGE/);
+  }
   assert.throws(() => assertV6ScopeEntries([{ x: 'M', y: ' ', paths: ['GUARD.bat'] }]), /STAGED_CHANGE/);
   const engine = fs.readFileSync(path.join(root, '_guard', 'PROJECT_GUARD_ENGINE.bat'), 'utf8');
   const adapter = fs.readFileSync(path.join(root, '_guard', 'deploy', 'DEPLOY_GOOGLE_APPS_FIREBASE.bat'), 'utf8');

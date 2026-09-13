@@ -7,7 +7,14 @@ OWNER_MARKER=APPROVE_RECOMMENDED_20
 DATA_CONTRACT_STATUS=OWNER_APPROVED_V1
 INVARIANTS_STATUS=OWNER_APPROVED_V1
 OWNER_DECISIONS_PENDING_COUNT=0
-NEXT_ALLOWED_BUNDLE=SGDS_CRIT_003_D5D_PRODUCTION_READ_ONLY_SHADOW_SMOKE
+CURRENT_PHASE=SGDS_PHASE0_FINAL_EVIDENCE_CLOSEOUT
+CURRENT_HEAD_AND_ORIGIN_MAIN=bf6f792631896acbf85caa21d7a597dfcebe0648
+AUTHORING_WRITER_SLOT=AUTHORING_ACTIVE_REVISION_186
+POST_RELEASE_WRITER_SLOT=POST_RELEASE_EXPECTED_NONE_REVISION_188_AFTER_CONTROLLER_RELEASE
+CURRENT_ISOLATION=ABSENT
+PRODUCTION_RECONCILIATION=NOT_COMPLETE
+NEXT_ALLOWED_BUNDLE=PHASE_1_FRESH_PRODUCTION_READ_ONLY_FORENSIC_REBASELINE_AFTER_FRESH_OWNER_AUTHORITY
+PHASE0_EXTERNAL_READ_AUTHORIZED=false
 
 ## Roadmap
 
@@ -28,7 +35,7 @@ NEXT_ALLOWED_BUNDLE=SGDS_CRIT_003_D5D_PRODUCTION_READ_ONLY_SHADOW_SMOKE
 
 ## Current Next Step
 
-D5C production read-only snapshot adapters are complete locally. Next allowed phase is D5D production read-only shadow smoke only. Do not wire production scanners, run production Firestore writes, push GAS, deploy Firebase, mutate production data, or run repair without a separate owner marker.
+Phase 0 final evidence closeout records the V6 normal completion/release and independent aggregate acceptance without changing source or external state. It does not mint a receipt while the writer is active. The next phase remains a fresh production read-only forensic rebaseline after fresh Owner authority. Do not reconcile or repair production data, retry D7-E4B, run runtime writes, push GAS, deploy Firebase, or mutate production data.
 
 ## Bundle C-S1 Single-Thread Smoke Executor Local Patch
 

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
+import { phase0CandidateScope } from '../../scripts/checkers/check-ai-governance-bootstrap.mjs';
+import { d7E4A1AAllowedDirtyScope } from '../../scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs';
 
 const TEST_METADATA = defineTestMetadata({
   testClass: 'REGRESSION_INVARIANT',
@@ -33,6 +35,11 @@ test('canonical historical evidence retains four distinct full SHA-256 values', 
     fullHistoricalSha('D7_E3G_EXPECTED_ATTACHMENT_SET_SHA256_')
   ];
   assert.equal(new Set(values).size, 4);
+});
+
+test('D7-E4A1A composes the frozen exact Phase 0 candidate scope', () => {
+  assert.equal(Object.isFrozen(d7E4A1AAllowedDirtyScope), true);
+  for (const file of phase0CandidateScope) assert.equal(d7E4A1AAllowedDirtyScope.includes(file), true, file);
 });
 
 test('D7-E plan binds canonical invoice identity to the candidate fingerprint', () => {

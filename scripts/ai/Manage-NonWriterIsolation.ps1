@@ -35,8 +35,8 @@ $script:UntrackedPathPayloadProvided = $PSBoundParameters.ContainsKey('Untracked
 $script:ManifestName = 'non-writer-isolation.manifest.json'
 $script:CreationMarkerName = '.creation-owner-v1.json'
 $script:CreationMarkerMagic = 'syncgmaildrivesheet.non-writer-creation-marker/v1'
-$script:ManifestMagic = 'syncgmaildrivesheet.non-writer-isolation/v3'
-$script:ManifestSchemaVersion = 3
+$script:ManifestMagic = 'syncgmaildrivesheet.non-writer-isolation/v4'
+$script:ManifestSchemaVersion = 4
 $script:WriterLeaseName = 'non-writer-isolation.writer-authority-v3.json'
 $script:LegacyWriterLeaseName = 'non-writer-isolation.writer-lease.json'
 $script:WriterLeaseMagic = 'syncgmaildrivesheet.writer-authority/v3'
@@ -1011,15 +1011,56 @@ function ConvertFrom-StrictUntrackedPathPayload {
     return ,$paths.ToArray()
 }
 
-function Get-GitObjectDatabaseIdentity {
-    param([Parameter(Mandatory = $true)][string]$WorkingDirectory)
-    $common = Get-RequiredGitOutput -Arguments @('-C', $WorkingDirectory, 'rev-parse', '--path-format=absolute', '--git-common-dir') -WorkingDirectory $WorkingDirectory -FailureCode 'GIT_COMMON_DIRECTORY_UNAVAILABLE'
-    $objects = Join-Path $common 'objects'
-    if (-not (Test-Path -LiteralPath $objects -PathType Container)) { Throw-Failure 'GIT_OBJECT_DATABASE_MISSING' }
-    $entries = @(Get-ChildItem -LiteralPath $objects -File -Recurse -Force | Sort-Object FullName | ForEach-Object {
-            ($_.FullName.Substring($objects.Length).TrimStart([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + ':' + (Get-FileSha256 $_.FullName))
-        })
-    return Get-TextSha256 ($entries -join "`n")
+function Get-ReachableHeadObjectGraphIdentity {
+    param(
+        [Parameter(Mandatory = $true)][string]$WorkingDirectory,
+        [Parameter(Mandatory = $true)][string]$Head
+    )
+    $formatResult = Get-GitResult -Arguments @('-C', $WorkingDirectory, 'rev-parse', '--show-object-format') -WorkingDirectory $WorkingDirectory
+    if ($formatResult.ExitCode -ne 0 -or -not [string]::IsNullOrWhiteSpace($formatResult.StandardError)) { Throw-Failure 'GIT_OBJECT_FORMAT_RESOLUTION_FAILED' }
+    $objectFormat = $formatResult.StandardOutput.Trim()
+    $objectIdPattern = switch ($objectFormat) {
+        'sha1' { '^[0-9a-f]{40}$' }
+        'sha256' { '^[0-9a-f]{64}$' }
+        default { Throw-Failure 'GIT_OBJECT_FORMAT_UNSUPPORTED' }
+    }
+    if ($Head -cnotmatch $objectIdPattern) { Throw-Failure 'GIT_REACHABLE_HEAD_INVALID' }
+
+    $resolvedHead = Get-GitResult -Arguments @('-C', $WorkingDirectory, 'rev-parse', '--verify', ($Head + '^{commit}')) -WorkingDirectory $WorkingDirectory
+    if ($resolvedHead.ExitCode -ne 0 -or -not [string]::IsNullOrWhiteSpace($resolvedHead.StandardError) -or $resolvedHead.StandardOutput.Trim() -cne $Head) { Throw-Failure 'GIT_REACHABLE_HEAD_INVALID' }
+
+    $enumeration = Get-GitResult -Arguments @('-C', $WorkingDirectory, 'rev-list', '--objects', '--no-object-names', '--missing=error', $Head) -WorkingDirectory $WorkingDirectory
+    if ($enumeration.ExitCode -ne 0 -or -not [string]::IsNullOrWhiteSpace($enumeration.StandardError)) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_ENUMERATION_FAILED' }
+    $normalizedEnumeration = $enumeration.StandardOutput.Replace("`r`n", "`n")
+    if ($normalizedEnumeration.Contains("`r") -or -not $normalizedEnumeration.EndsWith("`n")) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_ENUMERATION_MALFORMED' }
+    $objectIds = @($normalizedEnumeration.Substring(0, $normalizedEnumeration.Length - 1) -split "`n")
+    if ($objectIds.Count -eq 0) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_ENUMERATION_MALFORMED' }
+    foreach ($objectId in $objectIds) {
+        if ([string]$objectId -cnotmatch $objectIdPattern) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_ENUMERATION_MALFORMED' }
+    }
+    $objectIds = @(ConvertTo-CanonicalOrdinalUtf16Array -Value $objectIds -DuplicateFailureCode 'GIT_REACHABLE_HEAD_OBJECT_DUPLICATE')
+
+    $batchInput = ($objectIds -join "`n") + "`n"
+    $batch = Get-GitResult -Arguments @('-C', $WorkingDirectory, 'cat-file', '--batch-check=%(objectname) %(objecttype) %(objectsize)') -WorkingDirectory $WorkingDirectory -StandardInput $batchInput
+    if ($batch.ExitCode -ne 0 -or -not [string]::IsNullOrWhiteSpace($batch.StandardError)) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_FAILED' }
+    $normalizedBatch = $batch.StandardOutput.Replace("`r`n", "`n")
+    if ($normalizedBatch.Contains("`r") -or -not $normalizedBatch.EndsWith("`n")) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_MALFORMED' }
+    $batchLines = @($normalizedBatch.Substring(0, $normalizedBatch.Length - 1) -split "`n")
+    if ($batchLines.Count -ne $objectIds.Count) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_CARDINALITY_MISMATCH' }
+
+    $canonicalLines = New-Object System.Collections.Generic.List[string]
+    $canonicalLines.Add('reachable-head-object-graph/v1')
+    $canonicalLines.Add('head=' + $Head)
+    $canonicalLines.Add('object_format=' + $objectFormat)
+    $canonicalLines.Add('object_count=' + $objectIds.Count)
+    for ($index = 0; $index -lt $objectIds.Count; $index++) {
+        if ($batchLines[$index] -cnotmatch ('^(' + $objectIdPattern.Substring(1, $objectIdPattern.Length - 2) + ') (blob|tree|commit|tag) ([0-9]+)$')) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_MALFORMED' }
+        if ($Matches[1] -cne $objectIds[$index]) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_ORDER_MISMATCH' }
+        $objectSize = 0L
+        if (-not [long]::TryParse($Matches[3], [Globalization.NumberStyles]::None, [Globalization.CultureInfo]::InvariantCulture, [ref]$objectSize) -or $objectSize -lt 0) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_MALFORMED' }
+        $canonicalLines.Add($Matches[1] + ' ' + $Matches[2] + ' ' + $Matches[3])
+    }
+    return Get-TextSha256 ($canonicalLines -join "`n")
 }
 
 function Assert-StringArray {
@@ -1275,7 +1316,7 @@ function Read-OwnershipManifest {
     Assert-NoReparsePoint $manifestPath
     try { $manifest = [System.IO.File]::ReadAllText($manifestPath, [System.Text.UTF8Encoding]::new($false)) | ConvertFrom-Json }
     catch { Throw-Failure 'OWNERSHIP_MANIFEST_INVALID' }
-    foreach ($requiredField in @('physical_layout', 'path_budget_status', 'path_budget_limit', 'path_budget_observed_maximum', 'path_budget_remaining', 'worktree_path_length', 'scratch_path_length', 'tracked_patch_paths', 'tracked_materialization_paths', 'phase_owned_tracked_paths', 'inherited_protected_tracked_paths', 'tracked_canonical_content_identities', 'tracked_materialization_raw_identities', 'canonical_tracked_diff_sha256', 'retained_patch_path', 'retained_patch_sha256', 'retained_patch_bom_state', 'approved_untracked_paths', 'untracked_overlay_identities', 'content_aware_primary_worktree_state_sha256', 'content_aware_isolated_worktree_state_sha256', 'semantic_primary_index_identity', 'semantic_linked_index_identity', 'object_database_identity', 'source_status_after_linked_stat_refresh_sha256', 'linked_status_before_stat_refresh_sha256', 'linked_status_after_stat_refresh_sha256', 'linked_semantic_index_before_stat_refresh', 'linked_semantic_index_after_stat_refresh', 'linked_staged_entries_before_stat_refresh', 'linked_staged_entries_after_stat_refresh', 'linked_stat_refresh_path_count', 'linked_stat_refresh_exit_code', 'sibling_baseline_sha256', 'created_utc', 'head', 'workspace_identity', 'git_common_directory')) {
+    foreach ($requiredField in @('physical_layout', 'path_budget_status', 'path_budget_limit', 'path_budget_observed_maximum', 'path_budget_remaining', 'worktree_path_length', 'scratch_path_length', 'tracked_patch_paths', 'tracked_materialization_paths', 'phase_owned_tracked_paths', 'inherited_protected_tracked_paths', 'tracked_canonical_content_identities', 'tracked_materialization_raw_identities', 'canonical_tracked_diff_sha256', 'retained_patch_path', 'retained_patch_sha256', 'retained_patch_bom_state', 'approved_untracked_paths', 'untracked_overlay_identities', 'content_aware_primary_worktree_state_sha256', 'content_aware_isolated_worktree_state_sha256', 'semantic_primary_index_identity', 'semantic_linked_index_identity', 'reachable_head_object_graph_identity', 'source_status_after_linked_stat_refresh_sha256', 'linked_status_before_stat_refresh_sha256', 'linked_status_after_stat_refresh_sha256', 'linked_semantic_index_before_stat_refresh', 'linked_semantic_index_after_stat_refresh', 'linked_staged_entries_before_stat_refresh', 'linked_staged_entries_after_stat_refresh', 'linked_stat_refresh_path_count', 'linked_stat_refresh_exit_code', 'sibling_baseline_sha256', 'created_utc', 'head', 'workspace_identity', 'git_common_directory')) {
         if ($manifest.PSObject.Properties.Name -notcontains $requiredField) { Throw-Failure 'OWNERSHIP_MANIFEST_MISMATCH' }
     }
     if ((Get-FileBomState $manifestPath) -ne 'NONE') { Throw-Failure 'MANIFEST_BOM_REJECTED' }
@@ -1332,6 +1373,7 @@ function Assert-ValidIsolationManifest {
     if (-not (Test-Path -LiteralPath $worktreePath -PathType Container)) { Throw-Failure 'ISOLATION_WORKTREE_MISSING' }
     Assert-NoReparsePoint $worktreePath
     if ([bool]$manifest.scratch_allowed -and (Test-Path -LiteralPath ([string]$manifest.scratch_path))) { Assert-NoReparsePointsUnderRoot ([string]$manifest.scratch_path) }
+    if ((Get-ReachableHeadObjectGraphIdentity -WorkingDirectory $SourceRoot -Head ([string]$manifest.head)) -cne [string]$manifest.reachable_head_object_graph_identity) { Throw-Failure 'GIT_REACHABLE_HEAD_OBJECT_GRAPH_DRIFT' }
 
     $sourcePaths = @(Get-TrackedPatchPaths $SourceRoot)
     $materializationPaths = @(Get-TrackedMaterializationPaths $SourceRoot)
@@ -1352,7 +1394,6 @@ function Assert-ValidIsolationManifest {
     Assert-NoReparsePoint $patchPath
     if ((Get-FileSha256 $patchPath) -cne [string]$manifest.retained_patch_sha256 -or (Get-FileBomState $patchPath) -cne 'NONE' -or [string]$manifest.retained_patch_bom_state -cne 'NONE' -or (Get-TextSha256 ([System.IO.File]::ReadAllText($patchPath, [System.Text.UTF8Encoding]::new($false)))) -cne [string]$manifest.canonical_tracked_diff_sha256) { Throw-Failure 'RETAINED_PATCH_IDENTITY_INVALID' }
     $primaryStatusUnchanged = ((Get-ContentAwareWorktreeIdentity $SourceRoot) -ceq [string]$manifest.content_aware_primary_worktree_state_sha256)
-    if ((Get-GitObjectDatabaseIdentity $SourceRoot) -cne [string]$manifest.object_database_identity) { Throw-Failure 'GIT_OBJECT_DATABASE_DRIFT' }
     $primaryIndexPath = Get-GitIndexPath $SourceRoot
     $primaryIndexUnchanged = ([string]::Equals((Get-FullPath $primaryIndexPath), (Get-FullPath ([string]$manifest.primary_index_path)), [System.StringComparison]::OrdinalIgnoreCase) -and (Get-OptionalFileSha256 $primaryIndexPath) -ceq [string]$manifest.primary_index_sha256 -and (Get-SemanticIndexIdentity $SourceRoot) -ceq [string]$manifest.semantic_primary_index_identity)
     $linkedIndex = Get-GitIndexPath $worktreePath
@@ -1423,7 +1464,7 @@ function Invoke-Create {
         $primaryStatusSha = Get-GitStatusSha256 $sourceRoot
         $primaryContentAwareState = Get-ContentAwareWorktreeIdentity $sourceRoot
         $semanticPrimaryIndex = Get-SemanticIndexIdentity $sourceRoot
-        $objectDatabaseIdentity = Get-GitObjectDatabaseIdentity $sourceRoot
+        $reachableHeadObjectGraphIdentity = Get-ReachableHeadObjectGraphIdentity -WorkingDirectory $sourceRoot -Head $head
         $trackedPatchPaths = @(Get-TrackedPatchPaths $sourceRoot)
         $trackedMaterializationPaths = @(Get-TrackedMaterializationPaths $sourceRoot)
         $inheritedProtectedPaths = @('GUARD.bat', '_guard/PROJECT_GUARD.config.bat', '_guard/PROJECT_GUARD_ENGINE.bat', '_guard/README.md')
@@ -1534,7 +1575,7 @@ function Invoke-Create {
             content_aware_isolated_worktree_state_sha256 = Get-ContentAwareWorktreeIdentity $worktreePath
             semantic_primary_index_identity = $semanticPrimaryIndex
             semantic_linked_index_identity = Get-SemanticIndexIdentity $worktreePath
-            object_database_identity = $objectDatabaseIdentity
+            reachable_head_object_graph_identity = $reachableHeadObjectGraphIdentity
             source_status_after_linked_stat_refresh_sha256 = $linkedStatRefresh.SourceStatusSha256
             linked_status_before_stat_refresh_sha256 = $linkedStatRefresh.LinkedStatusBeforeSha256
             linked_status_after_stat_refresh_sha256 = $linkedStatRefresh.LinkedStatusAfterSha256

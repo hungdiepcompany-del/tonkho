@@ -120,3 +120,158 @@ allowlisted artifacts by final SHA-256.
 - `docs/12_AI_WORK_LOG.md` — SHA256 `e4446e372496be7a7bde99e5450e871787ba5f400022d4171abcdc2474878fee`
 - `docs/13_DECISION_LOG.md` — SHA256 `7776adf24f17c1977f4126b4eea5add05d837667f78859a31477354eae3fd6a2`
 - `docs/99_NEXT_AI_HANDOFF.md` — SHA256 `6222a9907b2f9df72765c87083dc5790d36f0793c05107d0eeb958f82b2db626`
+
+## Phase 0 Current-State Normalization Final-Byte Inventory
+
+The manifest does not hash itself. `docs/FILE_MANIFEST.md` is the sole
+self-referential exception; every other final Phase 0 artifact is listed below.
+The retired active contract path is absent. Its replacement archive has Git
+blob identity `0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c`, exactly matching the committed
+`HEAD` blob at the retired path.
+
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` — SHA256 `c027355e36fcde4af0dbd8c313f3d68dddb9b96d362c5bc35988b593fb97634e`
+- `tests/unit/ai-governance-bootstrap.test.mjs` — SHA256 `f037bf6b00cf5f1896662ecc59ff9aedddc315fcc4cae9ec7e016f8d128ee15b`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` — SHA256 `4531c31e0d967806871769417ae5075c77fb373d8f72e26807d79504970dba07`
+- `docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md` — SHA256 `fa49f3dc5bd1ecf56e3eb415ddcca4636d62a147487e1341dffe61dac35469d8`
+- `docs/00_INDEX.md` — SHA256 `09053e5836a2d132278f339b01877ce70b092e8384fd463fee4a4ee7e3ad8650`
+- `docs/04_MASTER_PLAN.md` — SHA256 `337cb69d92c6613012743a7112669c6411106f758de86a5c3bf3c44df9ebe113`
+- `docs/12_AI_WORK_LOG.md` — SHA256 `5075df07e6ca4eafb9bd6d01b341100d97ca858fc99599cd6760a9caf7bd6634`
+- `docs/13_DECISION_LOG.md` — SHA256 `54c1dd202783e845f2ef9a94a021d5aac6949f5c193e4c37e56cdc01e4f1e196`
+- `docs/99_NEXT_AI_HANDOFF.md` — SHA256 `8622b139e8880f336a6126851f5908cc2f0635097ae88f900acc9e2f01af2b52`
+
+## Phase 0 Compatibility Repair Final-Byte Inventory
+
+This inventory supersedes the preceding Phase 0 authoring hashes. The manifest
+itself is the sole self-referential exception. The retired active Writer
+Authority v3 contract remains absent; its archive retains the original bytes.
+Receipt-bound aggregate verification is deferred until release and isolation.
+
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `d06122dc5d45bb129bc07bba695b906ae3a3390edac426b616808843f0776bc3`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `d06134c3712c35aa19853d6f6290454d42b80c6f9bf93dc07362c758b0612c5c`
+- `scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs` - SHA256 `ddf227a5a029679de2c4c9cbf5460590ae96e32d3af619b366942e15c8ce8a1d`
+- `tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs` - SHA256 `92e030e14d2996bce4ae8d71d2e400d42cc25a98b9f7a1c502a7d197eb7303cf`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `f564437b5b6103487b89cbcb0f0fd23572807c115879ad710449b320bfdb8393`
+- `docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md` - SHA256 `fa49f3dc5bd1ecf56e3eb415ddcca4636d62a147487e1341dffe61dac35469d8`
+- `docs/00_INDEX.md` - SHA256 `e4ce1852fc3bf10eeca5d17bba19baba49b96b74fa3688db00a80a21af2d77fa`
+- `docs/04_MASTER_PLAN.md` - SHA256 `697f7501824ce164519617483ef746ef6c542582418b1feb12c1a36c9ae5076f`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `3bdb0f2e1886782bf656c2077aef0e8443e29e20697ab99cfef968685b756c23`
+- `docs/13_DECISION_LOG.md` - SHA256 `23e2717ad1f0744455d29af083a763a5a7e2de0f942df70e29634d731d62bb50`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `ab86fd2e02c599a881d38fc749b1aacbccf0aadfbab3971b611e9a9516f9fc8f`
+
+## Phase 0 Aggregate Receipt-Order Repair Final-Byte Inventory
+
+The manifest does not hash itself. `docs/FILE_MANIFEST.md` is the sole
+self-referential exception. The retired active Writer Authority v3 contract
+remains absent; its completed archive has Git blob identity
+`0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c`, equal to the committed `HEAD`
+blob at the retired path. Receipt-bound aggregate acceptance remains deferred
+until Controller completion, release, and independent isolation.
+
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `06c8c1706bd5e9481b24c8dfad04dc0f9791009381c72a24b72e9258b2b70124`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `54c86120fcee0e379dc2ed296e03cf0e4ab5b4941a425a1c4df0467771870e52`
+- `scripts/test/run-all-checks.mjs` - SHA256 `9491acc297e1c56e9e574eaa4029ac1766ca6ace9ee61fe794bd6e14627244e3`
+- `scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs` - SHA256 `19aa353ddb9c591979e3466cda094d0c7323b17ac37af519aa4fcbf2c1de4c2e`
+- `tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs` - SHA256 `386b5640c0efdeb8a0d7de532ea4f7db2988b2eb0a2f35dd91040806c402666b`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `0b7200c3bf88e93de1487106593cb56b97e8221af363ea06b3a17ccb6c1df56b`
+- `docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md` - SHA256 `fa49f3dc5bd1ecf56e3eb415ddcca4636d62a147487e1341dffe61dac35469d8`
+- `docs/00_INDEX.md` - SHA256 `dc1c2cbda91741ad52bb30d4d974d20d03a1ad692000d2fe67df1771915af99f`
+- `docs/04_MASTER_PLAN.md` - SHA256 `bbb5cb48dc46d8a5c260ce77028c66b346adbaacbe967de3dc1ec82307c806fb`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `e5abb67044ac2f0a47fe0d577b0a9faa7de451d0515250e5a05b29e0264968dc`
+- `docs/13_DECISION_LOG.md` - SHA256 `aef37f634f0c286257945627f42e5c52dadae29f320eb5751e4009982adaea1e`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `4ead87c98eb14a42f652a1caebf465af667a616d2f684cc739a78c81334ded2b`
+
+## Phase 0 Integrated Legacy D7 Scope Alignment Final-Byte Inventory
+
+The manifest does not hash itself. The retired active contract path is a
+deliberate deletion; its completed archive is unchanged and retains Git blob
+`0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c`. The following is the frozen
+24-path active-contract candidate, with the manifest as the self-referential
+exception.
+
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `0ce15cc41620991faa07f168fd5a7f4a837fc51261d91e214385e2aa45c4b86a`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `89deb4182b27af479ce8eb86b4896e0d118fa6758f74b96551211fb5edf03cf4`
+- `scripts/test/run-all-checks.mjs` - SHA256 `9491acc297e1c56e9e574eaa4029ac1766ca6ace9ee61fe794bd6e14627244e3`
+- `scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs` - SHA256 `19aa353ddb9c591979e3466cda094d0c7323b17ac37af519aa4fcbf2c1de4c2e`
+- `tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs` - SHA256 `386b5640c0efdeb8a0d7de532ea4f7db2988b2eb0a2f35dd91040806c402666b`
+- `scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs` - SHA256 `25f208a83cd7f78898dbf4e6867b07a375bcaa54fb7b71781c841f5db8f0928b`
+- `tests/unit/d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.test.mjs` - SHA256 `d60068ed85b5fa73d31a695064b440bf603502da557ce0ad3ec91c5354090529`
+- `scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs` - SHA256 `3e084a546370aaeae37cd5e105bf841753b56c259bcfc594ccf3af0861be5483`
+- `tests/unit/d7-e4a1a-canonical-identity-configuration-read-only-recovery.test.mjs` - SHA256 `f1a7d4db30b047e295d2f29545b4cfb98f4f42a297502fe7e8288f808d9a9ffd`
+- `scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs` - SHA256 `13d025dddcc5fccfd3043c1b5b3de0bcfd8b676e45502da8dccc5e5a539cd1b5`
+- `tests/unit/d7-e4a1b-owner-configure-canonical-properties.test.mjs` - SHA256 `471ab24be45794a9a50edc1d4804d4f43c4da6f87c058a7f762aa08e55132abf`
+- `scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs` - SHA256 `05f1e15dc2a18ca2c2cf2939aa8ae6a307864b93f51294809c87fa285eefcef7`
+- `tests/unit/d7-e4a1c-owner-marker-single-read-only-cardinality-execution.test.mjs` - SHA256 `4877f61c755b6658af652f8ba5e55e261e761bde7c96ea271060fc022aac899a`
+- `scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs` - SHA256 `59442ce587930f89642e38dc159853805a9f569831fb67faf07ce5fd505072a6`
+- `tests/unit/d7-e4a2-exact-firestore-reconciliation-plan-finalization.test.mjs` - SHA256 `3549dfe1729f5f28413aff6efe957eddc8721126c66663edccae2bfcb24e0575`
+- `docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md` - deleted; archived below
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `3e2ef0ebff9808455efcbda07259a3d31b6e3a4f2b42cf0f41420f6797dd5955`
+- `docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md` - SHA256 `fa49f3dc5bd1ecf56e3eb415ddcca4636d62a147487e1341dffe61dac35469d8`
+- `docs/00_INDEX.md` - SHA256 `dc1c2cbda91741ad52bb30d4d974d20d03a1ad692000d2fe67df1771915af99f`
+- `docs/04_MASTER_PLAN.md` - SHA256 `bbb5cb48dc46d8a5c260ce77028c66b346adbaacbe967de3dc1ec82307c806fb`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `3032b709e4d4a2289cd3a929b4c59bac437f2e261c41f082963f1d3d41abbc25`
+- `docs/13_DECISION_LOG.md` - SHA256 `8ff758df8513e35cd2c4339b7cc730b070db332010a3d290242c2fe2c8f32787`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `9c7e074b7f6ef3f29aad7791a2c290fefa874563fbd6f4d5c54a1e1b99fb1433`
+
+## Phase 0 Review-Documentation Correction Final-Byte Inventory
+
+The manifest remains the explicit self-hash exception. The preceding integrated
+scope-alignment code hashes remain unchanged. This inventory refreshes every
+changed hashable documentation artifact only; the completed archive remains
+byte-for-byte unchanged at Git blob `0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c`.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `6185c4b147cd8de6f74af05cb49e8678cdfd9d9bc7485716c3506050a7d73d74`
+- `docs/00_INDEX.md` - SHA256 `13144080587ad50abab34e0188ce81b1f191876cbec92771aa255097ae57d270`
+- `docs/04_MASTER_PLAN.md` - SHA256 `c6c2a75e265bec238474254a6f2d2cdb1bc293a1cdbad1f864613069722b3904`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `e30a51547f89942db01004e8c0a2707e260ca882ac9101a7f76a99611934dfd4`
+- `docs/13_DECISION_LOG.md` - SHA256 `79eab04b10696e49f5e04050f52b83a589344d73776131fd1ad8e1fd86adc6eb`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `644d5a76be1aa55f4bd4f46197546078bfe0f5ad94d4cdca2aec7a001535517b`
+
+## Phase 0 Isolation Object Identity Repair Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This is the frozen exact
+25-path active-contract candidate. The retired active contract path remains a
+deliberate deletion; its completed archive is byte-for-byte unchanged at Git
+blob `0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c` with 1118 raw LF records.
+
+- `scripts/ai/Manage-NonWriterIsolation.ps1` - SHA256 `2bc49da64cf62bfe49bfd9ae071a8d9114db66de4f512cdda660b6aacff91aa8`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `9f47760eb9e6618c64023e64ec48c4ba02735469687c17a935081068e3154d48`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `766dca84c1396cf062596c5430d521642d6789d393d78b3ec12d4c349ebce374`
+- `scripts/test/run-all-checks.mjs` - SHA256 `9491acc297e1c56e9e574eaa4029ac1766ca6ace9ee61fe794bd6e14627244e3`
+- `scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs` - SHA256 `19aa353ddb9c591979e3466cda094d0c7323b17ac37af519aa4fcbf2c1de4c2e`
+- `tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs` - SHA256 `386b5640c0efdeb8a0d7de532ea4f7db2988b2eb0a2f35dd91040806c402666b`
+- `scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs` - SHA256 `25f208a83cd7f78898dbf4e6867b07a375bcaa54fb7b71781c841f5db8f0928b`
+- `tests/unit/d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.test.mjs` - SHA256 `d60068ed85b5fa73d31a695064b440bf603502da557ce0ad3ec91c5354090529`
+- `scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs` - SHA256 `3e084a546370aaeae37cd5e105bf841753b56c259bcfc594ccf3af0861be5483`
+- `tests/unit/d7-e4a1a-canonical-identity-configuration-read-only-recovery.test.mjs` - SHA256 `f1a7d4db30b047e295d2f29545b4cfb98f4f42a297502fe7e8288f808d9a9ffd`
+- `scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs` - SHA256 `13d025dddcc5fccfd3043c1b5b3de0bcfd8b676e45502da8dccc5e5a539cd1b5`
+- `tests/unit/d7-e4a1b-owner-configure-canonical-properties.test.mjs` - SHA256 `471ab24be45794a9a50edc1d4804d4f43c4da6f87c058a7f762aa08e55132abf`
+- `scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs` - SHA256 `05f1e15dc2a18ca2c2cf2939aa8ae6a307864b93f51294809c87fa285eefcef7`
+- `tests/unit/d7-e4a1c-owner-marker-single-read-only-cardinality-execution.test.mjs` - SHA256 `4877f61c755b6658af652f8ba5e55e261e761bde7c96ea271060fc022aac899a`
+- `scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs` - SHA256 `59442ce587930f89642e38dc159853805a9f569831fb67faf07ce5fd505072a6`
+- `tests/unit/d7-e4a2-exact-firestore-reconciliation-plan-finalization.test.mjs` - SHA256 `3549dfe1729f5f28413aff6efe957eddc8721126c66663edccae2bfcb24e0575`
+- `docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md` - deleted; archived below
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `e6ed1cba9519ee3ea4c31c0f45c47c1be5ee49a4058af69e666cb99128d6a59a`
+- `docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md` - SHA256 `fa49f3dc5bd1ecf56e3eb415ddcca4636d62a147487e1341dffe61dac35469d8`
+- `docs/00_INDEX.md` - SHA256 `13144080587ad50abab34e0188ce81b1f191876cbec92771aa255097ae57d270`
+- `docs/04_MASTER_PLAN.md` - SHA256 `c6c2a75e265bec238474254a6f2d2cdb1bc293a1cdbad1f864613069722b3904`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `589e3cb2bc641569c94334f6574e9c53c5c7552ec695a8585f9174f2a4e9ceef`
+- `docs/13_DECISION_LOG.md` - SHA256 `129ffa6e4843962e49a4a1e042fde046dae476412e47a0cdc87d1bd76766ddca`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `0a7e49830bea6c80a1bd24762dc776aa637d68a39d786fb51c7da86d4db361f9`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Phase 0 Final Evidence Closeout Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. V7 changes exactly the six
+hashable documentation artifacts below plus this manifest. The frozen 25-path
+candidate otherwise remains intact: all 18 non-document candidate entries keep
+the preceding inventory bytes, including the deliberate retired-path deletion
+and the completed archive at Git blob
+`0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c` with 1118 LF and 0 CR.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `d5217ef78e07ca3b20d42ef4eef31bd3edca6d12d6f4ee7d6d5f0ec4e57aabb6`
+- `docs/00_INDEX.md` - SHA256 `5c9ba6805ee65166515b443a0de15aa763a9796ad830695f541c0a080538bd8b`
+- `docs/04_MASTER_PLAN.md` - SHA256 `e15123a04ba4fc7f221657cfca113643c9552d6448476314dca7555d7dbdc965`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `e40a1bd1ade954d249f6e612000bf1c00b6f8cf11f7f464504d1218deec67630`
+- `docs/13_DECISION_LOG.md` - SHA256 `72855325c96e4540507bb7f3283a56a551966d8546ebd989a964bb422770e45f`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `aa8d70a49737d6ae9b37da76558d618a03fd8bc9a021f42ee16417c1df55c6f2`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash

@@ -6,72 +6,53 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = process.cwd();
-const activeName = 'SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md';
+const activeName = 'SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md';
 const matrix = 'ABCDEFGHIJKLMNOPQ'.split('');
 const read = file => fs.readFileSync(file, 'utf8');
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
-const candidateScope = [
-  'GUARD.bat',
-  '_guard/PROJECT_GUARD.config.bat',
-  '_guard/PROJECT_GUARD_ENGINE.bat',
-  '_guard/README.md',
-  '_guard/deploy/DEPLOY_GOOGLE_APPS_FIREBASE.bat',
-  '.codex/agents/explorer.toml',
-  '.codex/agents/reviewer.toml',
-  '.codex/agents/verifier.toml',
-  '.codex/config.toml',
-  'AGENTS.md',
+export const phase0CandidateScope = Object.freeze([
+  'scripts/ai/Manage-NonWriterIsolation.ps1',
+  'scripts/checkers/check-ai-governance-bootstrap.mjs',
+  'tests/unit/ai-governance-bootstrap.test.mjs',
+  'scripts/test/run-all-checks.mjs',
+  'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
+  'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
+  'scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs',
+  'tests/unit/d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.test.mjs',
+  'scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs',
+  'tests/unit/d7-e4a1a-canonical-identity-configuration-read-only-recovery.test.mjs',
+  'scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs',
+  'tests/unit/d7-e4a1b-owner-configure-canonical-properties.test.mjs',
+  'scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs',
+  'tests/unit/d7-e4a1c-owner-marker-single-read-only-cardinality-execution.test.mjs',
+  'scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs',
+  'tests/unit/d7-e4a2-exact-firestore-reconciliation-plan-finalization.test.mjs',
+  'docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
+  'docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md',
+  'docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
   'docs/00_INDEX.md',
   'docs/04_MASTER_PLAN.md',
-  'docs/07_WORK_LOG.md',
-  'docs/08_DECISION_LOG.md',
-  'docs/09_VALIDATION_LOG.md',
-  'docs/AI_EXECUTION_ROUTING.md',
-  'docs/AI_WORKFLOW.md',
-  'docs/FILE_MANIFEST.md',
-  'docs/WORKFLOW_V2_CHANGE_SUMMARY.md',
-  'docs/WORKFLOW_V2_FILE_INVENTORY.md',
-  'docs/exec-plans/completed/D7_E4B2_POLICY_REPAIR_WRITER_LIFECYCLE_AND_MR2R_CLOSURE.md',
-  'docs/exec-plans/completed/D7_E4B2_PRODUCTION_EXECUTION_READINESS_AND_OWNER_GATE.md',
-  'docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_INTEGRATED_REPAIR_AND_EXACT_LEASE_DISPOSITION.md',
-  'docs/exec-plans/completed/SYNC_GOV1_REPO_GOVERNANCE_BOOTSTRAP.md',
-  'package.json',
-  'scripts/ai/Manage-NonWriterIsolation.ps1',
-  'scripts/checkers/check-ai-governance-bootstrap.mjs',
-  'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
-  'scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs',
-  'scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs',
-  'scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs',
-  'scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs',
-  'scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs',
-  'scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs',
-  'scripts/test/run-all-checks.mjs',
-  'tests/unit/ai-governance-bootstrap.test.mjs',
-  'docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
-  'docs/12_AI_WORK_LOG.md',
-  'docs/13_DECISION_LOG.md',
-  'docs/99_NEXT_AI_HANDOFF.md'
-];
-const v14Scope = [
-  'scripts/ai/Manage-NonWriterIsolation.ps1',
-  'tests/unit/ai-governance-bootstrap.test.mjs',
-  'scripts/checkers/check-ai-governance-bootstrap.mjs',
-  'docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md',
   'docs/12_AI_WORK_LOG.md',
   'docs/13_DECISION_LOG.md',
   'docs/99_NEXT_AI_HANDOFF.md',
   'docs/FILE_MANIFEST.md'
-];
-const allowed = new Set(candidateScope);
-const controllerReceiptMagic = 'syncgmaildrivesheet.controller-inspection-receipt/v1';
-const controllerReceiptSchemaVersion = 1;
+]);
+const candidateScope = phase0CandidateScope;
+const allowed = new Set(phase0CandidateScope);
+export function composePhase0CandidateScope(historicalScope) {
+  assert.ok(Array.isArray(historicalScope), 'HISTORICAL_SCOPE_ARRAY_REQUIRED');
+  assert.ok(historicalScope.every(value => typeof value === 'string' && value.length > 0), 'HISTORICAL_SCOPE_PATH_INVALID');
+  return Object.freeze([...new Set([...historicalScope, ...phase0CandidateScope])]);
+}
+const controllerReceiptMagic = 'syncgmaildrivesheet.controller-inspection-receipt/v2';
+const controllerReceiptSchemaVersion = 2;
 const controllerReceiptMaximumAgeMs = 5 * 60 * 1000;
 const controllerReceiptKeys = ['magic', 'schema_version', 'issued_utc_ms', 'primary_root', 'git_common_directory', 'authority_id', 'assignment_id', 'writer_id', 'inspection', 'candidate', 'isolated_candidate', 'isolation'];
 const controllerInspectionKeys = ['action', 'status', 'slot_state', 'revision', 'state_sha256'];
-const controllerCandidateKeys = ['head', 'status_sha256', 'index_sha256', 'content_sha256', 'manifest_content_aware_primary_worktree_state_sha256', 'manifest_semantic_primary_index_identity', 'manifest_canonical_tracked_diff_sha256', 'manifest_object_database_identity'];
-const controllerIsolationKeys = ['manifest_path', 'manifest_sha256', 'isolation_root', 'worktree_path', 'purpose', 'manifest_source_root', 'manifest_git_common_directory', 'manifest_head', 'manifest_content_aware_primary_worktree_state_sha256', 'manifest_semantic_primary_index_identity', 'manifest_canonical_tracked_diff_sha256', 'manifest_object_database_identity'];
-const controllerReceiptAssignmentKey = 'OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID';
-const controllerReceiptWriterKey = 'OWNER_CURRENT_AUTHORITY_V15B_CODER_THREAD_ID';
+const controllerCandidateKeys = ['head', 'status_sha256', 'index_sha256', 'content_sha256', 'manifest_content_aware_primary_worktree_state_sha256', 'manifest_semantic_primary_index_identity', 'manifest_canonical_tracked_diff_sha256', 'manifest_reachable_head_object_graph_identity'];
+const controllerIsolationKeys = ['manifest_path', 'manifest_sha256', 'isolation_root', 'worktree_path', 'purpose', 'manifest_source_root', 'manifest_git_common_directory', 'manifest_head', 'manifest_content_aware_primary_worktree_state_sha256', 'manifest_semantic_primary_index_identity', 'manifest_canonical_tracked_diff_sha256', 'manifest_reachable_head_object_graph_identity'];
+const controllerReceiptAssignmentKey = 'CURRENT_AUTHORITY_ASSIGNMENT_ID';
+const controllerReceiptWriterKey = 'CURRENT_AUTHORITY_CODER_THREAD_ID';
 const controllerReceiptEnvironmentName = 'SGDS_CONTROLLER_INSPECTION_RECEIPT';
 const authoritativePreambleBindingKeys = ['AUTHORITY_ID', controllerReceiptAssignmentKey, controllerReceiptWriterKey];
 const sha256Label = value => `sha256:${sha(value)}`;
@@ -175,6 +156,31 @@ function declaredAbsolutePath(value, code) {
 }
 function samePath(left, right) { return path.normalize(left).toLowerCase() === path.normalize(right).toLowerCase(); }
 function compareOrdinalUtf16(left, right) { return left < right ? -1 : left > right ? 1 : 0; }
+function strictGitLines(base, args, { input, code }) {
+  const run = spawnSync('git', ['-C', base, ...args], { encoding: 'utf8', input, windowsHide: true });
+  if (run.error || run.signal || run.status !== 0 || (run.stderr ?? '') !== '') receiptFailure(code);
+  const normalized = (run.stdout ?? '').replaceAll('\r\n', '\n');
+  if (normalized.includes('\r') || !normalized.endsWith('\n')) receiptFailure(code);
+  return normalized.slice(0, -1).split('\n');
+}
+export function reachableHeadObjectGraphIdentity(worktreePath, head) {
+  const [objectFormat] = strictGitLines(worktreePath, ['rev-parse', '--show-object-format'], { code: 'RECEIPT_GIT_OBJECT_FORMAT_INVALID' });
+  const objectIdPattern = objectFormat === 'sha1' ? /^[0-9a-f]{40}$/ : objectFormat === 'sha256' ? /^[0-9a-f]{64}$/ : null;
+  if (!objectIdPattern || typeof head !== 'string' || !objectIdPattern.test(head)) receiptFailure('RECEIPT_REACHABLE_HEAD_INVALID');
+  const resolvedHead = strictGitLines(worktreePath, ['rev-parse', '--verify', `${head}^{commit}`], { code: 'RECEIPT_REACHABLE_HEAD_INVALID' });
+  if (resolvedHead.length !== 1 || resolvedHead[0] !== head) receiptFailure('RECEIPT_REACHABLE_HEAD_INVALID');
+  const enumerated = strictGitLines(worktreePath, ['rev-list', '--objects', '--no-object-names', '--missing=error', head], { code: 'RECEIPT_REACHABLE_HEAD_OBJECT_ENUMERATION_FAILED' });
+  if (enumerated.length === 0 || enumerated.some(objectId => !objectIdPattern.test(objectId)) || new Set(enumerated).size !== enumerated.length) receiptFailure('RECEIPT_REACHABLE_HEAD_OBJECT_ENUMERATION_MALFORMED');
+  const objectIds = [...enumerated].sort(compareOrdinalUtf16);
+  const metadata = strictGitLines(worktreePath, ['cat-file', '--batch-check=%(objectname) %(objecttype) %(objectsize)'], { input: `${objectIds.join('\n')}\n`, code: 'RECEIPT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_FAILED' });
+  if (metadata.length !== objectIds.length) receiptFailure('RECEIPT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_CARDINALITY_MISMATCH');
+  const canonicalMetadata = metadata.map((line, index) => {
+    const match = line.match(/^([0-9a-f]+) (blob|tree|commit|tag) ([0-9]+)$/);
+    if (!match || !objectIdPattern.test(match[1]) || match[1] !== objectIds[index] || !Number.isSafeInteger(Number(match[3]))) receiptFailure('RECEIPT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_MALFORMED');
+    return line;
+  });
+  return sha256Label(['reachable-head-object-graph/v1', `head=${head}`, `object_format=${objectFormat}`, `object_count=${objectIds.length}`, ...canonicalMetadata].join('\n'));
+}
 function assertCanonicalMaterializationPath(value) {
   if (typeof value !== 'string' || value.length === 0 || path.isAbsolute(value) || path.posix.isAbsolute(value) || value.includes('\\') || path.posix.normalize(value) !== value) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
   const segments = value.split('/');
@@ -244,9 +250,9 @@ export function readIsolationIdentity(manifestPath, options = {}) {
   let manifest;
   const raw = fs.readFileSync(canonicalManifestPath);
   try { manifest = JSON.parse(raw.toString('utf8')); } catch { receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED'); }
-  const required = ['magic', 'schema_version', 'source_root', 'git_common_directory', 'isolation_root', 'worktree_path', 'purpose', 'head', 'tracked_materialization_paths', 'tracked_materialization_raw_identities', 'content_aware_primary_worktree_state_sha256', 'semantic_primary_index_identity', 'canonical_tracked_diff_sha256', 'object_database_identity', 'source_status_after_linked_stat_refresh_sha256', 'linked_status_before_stat_refresh_sha256', 'linked_status_after_stat_refresh_sha256', 'linked_semantic_index_before_stat_refresh', 'linked_semantic_index_after_stat_refresh', 'linked_staged_entries_before_stat_refresh', 'linked_staged_entries_after_stat_refresh', 'linked_stat_refresh_path_count', 'linked_stat_refresh_exit_code'];
+  const required = ['magic', 'schema_version', 'source_root', 'git_common_directory', 'isolation_root', 'worktree_path', 'purpose', 'head', 'tracked_materialization_paths', 'tracked_materialization_raw_identities', 'content_aware_primary_worktree_state_sha256', 'semantic_primary_index_identity', 'canonical_tracked_diff_sha256', 'reachable_head_object_graph_identity', 'source_status_after_linked_stat_refresh_sha256', 'linked_status_before_stat_refresh_sha256', 'linked_status_after_stat_refresh_sha256', 'linked_semantic_index_before_stat_refresh', 'linked_semantic_index_after_stat_refresh', 'linked_staged_entries_before_stat_refresh', 'linked_staged_entries_after_stat_refresh', 'linked_stat_refresh_path_count', 'linked_stat_refresh_exit_code'];
   if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest) || required.some(key => !Object.hasOwn(manifest, key))) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
-  if (manifest.magic !== 'syncgmaildrivesheet.non-writer-isolation/v3' || manifest.schema_version !== 3) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
+  if (manifest.magic !== 'syncgmaildrivesheet.non-writer-isolation/v4' || manifest.schema_version !== 4) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
   const sourceRoot = declaredAbsolutePath(manifest.source_root, 'RECEIPT_ISOLATION_MANIFEST_MISMATCH');
   const commonDirectory = declaredAbsolutePath(manifest.git_common_directory, 'RECEIPT_ISOLATION_MANIFEST_MISMATCH');
   const isolationRoot = canonicalExistingPath(manifest.isolation_root, 'RECEIPT_ISOLATION_MANIFEST_MISMATCH');
@@ -256,7 +262,7 @@ export function readIsolationIdentity(manifestPath, options = {}) {
   if (options.expectedWorktreePath && !samePath(worktreePath, options.expectedWorktreePath)) receiptFailure('RECEIPT_ISOLATION_WORKTREE_MISMATCH');
   if (options.expectedPrimaryRoot && !samePath(sourceRoot, options.expectedPrimaryRoot)) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MISMATCH');
   if (options.requirePrimaryBinding && !samePath(canonicalExistingPath(sourceRoot, 'RECEIPT_ISOLATION_MANIFEST_MISMATCH'), options.requirePrimaryBinding)) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MISMATCH');
-  for (const key of ['head', 'content_aware_primary_worktree_state_sha256', 'semantic_primary_index_identity', 'canonical_tracked_diff_sha256', 'object_database_identity']) if (typeof manifest[key] !== 'string' || manifest[key].length === 0) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
+  for (const key of ['head', 'content_aware_primary_worktree_state_sha256', 'semantic_primary_index_identity', 'canonical_tracked_diff_sha256', 'reachable_head_object_graph_identity']) if (key === 'head' ? typeof manifest[key] !== 'string' || manifest[key].length === 0 : !isSha256(manifest[key])) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
   if (!Array.isArray(manifest.tracked_materialization_paths) || !Array.isArray(manifest.tracked_materialization_raw_identities) || manifest.tracked_materialization_paths.length !== manifest.tracked_materialization_raw_identities.length) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
   const materializationPaths = [...manifest.tracked_materialization_paths];
   for (const value of materializationPaths) assertCanonicalMaterializationPath(value);
@@ -268,6 +274,7 @@ export function readIsolationIdentity(manifestPath, options = {}) {
     if (!identity || typeof identity !== 'object' || Array.isArray(identity) || Object.keys(identity).sort().join('|') !== 'path|raw_sha256' || identity.path !== materializationPaths[index] || (identity.raw_sha256 !== 'missing' && !isSha256(identity.raw_sha256))) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
     if (identity.raw_sha256 !== localTrackedMaterializationRawIdentity(worktreePath, materializationPaths[index], windowsReparsePaths)) receiptFailure('RECEIPT_ISOLATION_RAW_IDENTITY_MISMATCH');
   }
+  if (manifest.reachable_head_object_graph_identity !== reachableHeadObjectGraphIdentity(worktreePath, manifest.head)) receiptFailure('RECEIPT_REACHABLE_HEAD_OBJECT_GRAPH_MISMATCH');
   for (const key of ['source_status_after_linked_stat_refresh_sha256', 'linked_status_before_stat_refresh_sha256', 'linked_status_after_stat_refresh_sha256', 'linked_semantic_index_before_stat_refresh', 'linked_semantic_index_after_stat_refresh', 'linked_staged_entries_before_stat_refresh', 'linked_staged_entries_after_stat_refresh']) if (!isSha256(manifest[key])) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
   if (manifest.source_status_after_linked_stat_refresh_sha256 !== manifest.linked_status_after_stat_refresh_sha256 || manifest.linked_semantic_index_before_stat_refresh !== manifest.linked_semantic_index_after_stat_refresh || manifest.linked_staged_entries_before_stat_refresh !== manifest.linked_staged_entries_after_stat_refresh || !Number.isSafeInteger(manifest.linked_stat_refresh_path_count) || manifest.linked_stat_refresh_path_count < 0 || ![0, 1].includes(manifest.linked_stat_refresh_exit_code)) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MALFORMED');
   return {
@@ -282,7 +289,7 @@ export function readIsolationIdentity(manifestPath, options = {}) {
     manifest_content_aware_primary_worktree_state_sha256: manifest.content_aware_primary_worktree_state_sha256,
     manifest_semantic_primary_index_identity: manifest.semantic_primary_index_identity,
     manifest_canonical_tracked_diff_sha256: manifest.canonical_tracked_diff_sha256,
-    manifest_object_database_identity: manifest.object_database_identity
+    manifest_reachable_head_object_graph_identity: manifest.reachable_head_object_graph_identity
   };
 }
 function parseInspectionOutput(output) {
@@ -309,12 +316,12 @@ export function validateControllerInspectionReceiptPayload(receipt, expected) {
   exactKeys(receipt.inspection, controllerInspectionKeys, 'RECEIPT_INSPECTION_SCHEMA_INVALID');
   if (receipt.inspection.action !== 'INSPECTWRITER' || receipt.inspection.status !== 'INSPECTED' || receipt.inspection.slot_state !== 'NONE' || !Number.isSafeInteger(receipt.inspection.revision) || receipt.inspection.revision < 0 || !isSha256(receipt.inspection.state_sha256)) receiptFailure('RECEIPT_INSPECTION_MISMATCH');
   exactKeys(receipt.candidate, controllerCandidateKeys, 'RECEIPT_CANDIDATE_SCHEMA_INVALID');
-  if (typeof receipt.candidate.head !== 'string' || receipt.candidate.head.length === 0 || !['status_sha256', 'index_sha256', 'content_sha256', 'manifest_content_aware_primary_worktree_state_sha256', 'manifest_semantic_primary_index_identity', 'manifest_canonical_tracked_diff_sha256', 'manifest_object_database_identity'].every(key => isSha256(receipt.candidate[key]))) receiptFailure('RECEIPT_CANDIDATE_SCHEMA_INVALID');
+  if (typeof receipt.candidate.head !== 'string' || receipt.candidate.head.length === 0 || !['status_sha256', 'index_sha256', 'content_sha256', 'manifest_content_aware_primary_worktree_state_sha256', 'manifest_semantic_primary_index_identity', 'manifest_canonical_tracked_diff_sha256', 'manifest_reachable_head_object_graph_identity'].every(key => isSha256(receipt.candidate[key]))) receiptFailure('RECEIPT_CANDIDATE_SCHEMA_INVALID');
   exactKeys(receipt.isolated_candidate, ['head', 'status_sha256', 'index_sha256', 'content_sha256'], 'RECEIPT_ISOLATED_CANDIDATE_SCHEMA_INVALID');
   if (!sameJson(receipt.isolated_candidate, expected.localCandidate)) receiptFailure('RECEIPT_ISOLATED_CANDIDATE_MISMATCH');
   exactKeys(receipt.isolation, controllerIsolationKeys, 'RECEIPT_ISOLATION_SCHEMA_INVALID');
   if (!sameJson(receipt.isolation, expected.isolation)) receiptFailure('RECEIPT_ISOLATION_MANIFEST_MISMATCH');
-  if (receipt.isolation.manifest_head !== receipt.candidate.head || !samePath(receipt.isolation.manifest_source_root, receipt.primary_root) || !samePath(receipt.isolation.manifest_git_common_directory, receipt.git_common_directory) || receipt.candidate.manifest_content_aware_primary_worktree_state_sha256 !== receipt.isolation.manifest_content_aware_primary_worktree_state_sha256 || receipt.candidate.manifest_semantic_primary_index_identity !== receipt.isolation.manifest_semantic_primary_index_identity || receipt.candidate.manifest_canonical_tracked_diff_sha256 !== receipt.isolation.manifest_canonical_tracked_diff_sha256 || receipt.candidate.manifest_object_database_identity !== receipt.isolation.manifest_object_database_identity) receiptFailure('RECEIPT_MANIFEST_CANDIDATE_MISMATCH');
+  if (receipt.isolation.manifest_head !== receipt.candidate.head || !samePath(receipt.isolation.manifest_source_root, receipt.primary_root) || !samePath(receipt.isolation.manifest_git_common_directory, receipt.git_common_directory) || receipt.candidate.manifest_content_aware_primary_worktree_state_sha256 !== receipt.isolation.manifest_content_aware_primary_worktree_state_sha256 || receipt.candidate.manifest_semantic_primary_index_identity !== receipt.isolation.manifest_semantic_primary_index_identity || receipt.candidate.manifest_canonical_tracked_diff_sha256 !== receipt.isolation.manifest_canonical_tracked_diff_sha256 || receipt.candidate.manifest_reachable_head_object_graph_identity !== receipt.isolation.manifest_reachable_head_object_graph_identity) receiptFailure('RECEIPT_MANIFEST_CANDIDATE_MISMATCH');
   return true;
 }
 function readReceipt(receiptPath) {
@@ -361,7 +368,7 @@ export function createControllerInspectionReceipt({ receiptPath, isolationManife
     manifest_content_aware_primary_worktree_state_sha256: isolation.manifest_content_aware_primary_worktree_state_sha256,
     manifest_semantic_primary_index_identity: isolation.manifest_semantic_primary_index_identity,
     manifest_canonical_tracked_diff_sha256: isolation.manifest_canonical_tracked_diff_sha256,
-    manifest_object_database_identity: isolation.manifest_object_database_identity
+    manifest_reachable_head_object_graph_identity: isolation.manifest_reachable_head_object_graph_identity
   };
   const isolatedCandidate = currentCandidateIdentity(canonicalRepositoryContext(isolation.worktree_path));
   const receipt = {
@@ -387,15 +394,10 @@ function parseTap(output) { const get = key => Number(output.match(new RegExp(`#
 function contractScope(contract) { const section = contract.match(/## Allowed mutation scope\r?\n([\s\S]*?)\r?\n## /)?.[1] ?? ''; return [...section.matchAll(/^- `([^`]+)`/gm)].map(([, item]) => item); }
 function activeContract(base = root) {
   const dir = path.join(base, 'docs', 'exec-plans', 'active'); const files = fs.readdirSync(dir).filter(name => name.endsWith('.md')).sort();
-  assert.deepEqual(files, [activeName], 'ACTIVE_CONTRACT_EXACTLY_ONE'); const contract = read(path.join(dir, activeName)); const preamble = authoritativeContractPreamble(contract); const v = values(contract);
-  assert.deepEqual(Object.fromEntries(authoritativePreambleBindingKeys.map(key => [key, preamble.get(key)])), {
-    AUTHORITY_ID: 'OWNER_GO_V15B_CURRENT_AUTHORITY_BINDING_EXACT_7_PATHS',
-    OWNER_CURRENT_AUTHORITY_V15B_ASSIGNMENT_ID: 'SGDS_LOCAL_ONLY_CURRENT_AUTHORITY_BINDING_V15B_01a0805f',
-    OWNER_CURRENT_AUTHORITY_V15B_CODER_THREAD_ID: '01a0805f-1435-7aa0-b65e-ae60449aac34'
-  }, 'ACTIVE_CONTRACT_PREAMBLE_BINDING_EXACT');
-  for (const [key, value] of Object.entries({ TASK_ID: 'SGDS_WRITER_AUTHORITY_V3_MODEL_B_BOOTSTRAP_CODER_V1', STATUS: 'ACTIVE', SELECTED_MODEL: 'MODEL_B_CONTROLLER_ENFORCED_SINGLE_WRITER', REPOSITORY_PRIMITIVE: 'MODEL_C_STYLE_ATOMIC_DURABLE_WRITER_SLOT', NON_SPOOFABLE_TASK_ATTESTATION_REQUIRED: 'false' })) assert.equal(preamble.get(key), value, `contract ${key}`);
+  assert.deepEqual(files, [activeName], 'ACTIVE_CONTRACT_EXACTLY_ONE'); const contract = read(path.join(dir, activeName)); const preamble = authoritativeContractPreamble(contract);
+  for (const key of authoritativePreambleBindingKeys) assert.ok(preamble.get(key)?.trim(), `ACTIVE_CONTRACT_PREAMBLE_BINDING_REQUIRED=${key}`);
+  assert.equal(preamble.get('STATUS'), 'ACTIVE', 'ACTIVE_CONTRACT_STATUS');
   assert.deepEqual(contractScope(contract), candidateScope, 'ACTIVE_CONTRACT_CANDIDATE_SCOPE_EXACT');
-  assert.deepEqual((v.get('V14_SCOPE') ?? '').split(';').filter(Boolean), v14Scope, 'V14_SCOPE_EXACT');
 }
 function functionBody(source, name) {
   const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -411,6 +413,16 @@ function helperStatic(base = root) {
   const gitResult = functionBody(text, 'Get-GitResult');
   assert.match(gitResult, /\$standardOutputTask = \$process\.StandardOutput\.ReadToEndAsync\(\)\s*\r?\n\s*\$standardErrorTask = \$process\.StandardError\.ReadToEndAsync\(\)[\s\S]*?\$process\.WaitForExit\(\)\s*\r?\n\s*\$standardOutput = \$standardOutputTask\.GetAwaiter\(\)\.GetResult\(\)\s*\r?\n\s*\$standardError = \$standardErrorTask\.GetAwaiter\(\)\.GetResult\(\)/, 'GIT_DUAL_STREAM_CONCURRENT_DRAIN_REQUIRED');
   assert.doesNotMatch(gitResult, /\.ReadToEnd\(\)|Begin(?:Output|Error)ReadLine|(?:Output|Error)DataReceived/, 'GIT_LINE_OR_SEQUENTIAL_DRAIN_FORBIDDEN');
+  const reachableGraph = functionBody(text, 'Get-ReachableHeadObjectGraphIdentity');
+  assert.match(reachableGraph, /'rev-list', '--objects', '--no-object-names', '--missing=error', \$Head/, 'REACHABLE_HEAD_EXACT_OBJECT_ENUMERATION_REQUIRED');
+  assert.match(reachableGraph, /ConvertTo-CanonicalOrdinalUtf16Array/, 'REACHABLE_HEAD_OBJECT_ORDINAL_ORDER_REQUIRED');
+  assert.match(reachableGraph, /'cat-file', '--batch-check=%\(objectname\) %\(objecttype\) %\(objectsize\)'[\s\S]*?-StandardInput \$batchInput/, 'REACHABLE_HEAD_OBJECT_BATCH_CHECK_REQUIRED');
+  for (const token of ['GIT_REACHABLE_HEAD_OBJECT_ENUMERATION_FAILED', 'GIT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_FAILED', 'GIT_REACHABLE_HEAD_OBJECT_BATCH_CHECK_CARDINALITY_MISMATCH', 'GIT_REACHABLE_HEAD_OBJECT_GRAPH_DRIFT']) assert.match(text, new RegExp(token), `REACHABLE_HEAD_FAIL_CLOSED_REQUIRED=${token}`);
+  assert.doesNotMatch(reachableGraph, /Get-ChildItem|git-common-dir|[\\/]objects/i, 'PHYSICAL_OBJECT_DATABASE_INVENTORY_FORBIDDEN');
+  assert.doesNotMatch(text, /object_database_identity|manifest_object_database_identity|Get-GitObjectDatabaseIdentity|GIT_OBJECT_DATABASE_DRIFT/, 'LEGACY_PHYSICAL_OBJECT_IDENTITY_FORBIDDEN');
+  const receiptGraph = functionBody(checker, 'reachableHeadObjectGraphIdentity');
+  assert.match(receiptGraph, /'rev-list', '--objects', '--no-object-names', '--missing=error', head/, 'RECEIPT_REACHABLE_HEAD_ENUMERATION_REQUIRED');
+  assert.match(receiptGraph, /'cat-file', '--batch-check=%\(objectname\) %\(objecttype\) %\(objectsize\)'/, 'RECEIPT_REACHABLE_HEAD_BATCH_CHECK_REQUIRED');
   const reparseProbe = functionBody(checker, 'assertWindowsNoReparsePoints');
   const reparseCollection = functionBody(checker, 'localTrackedMaterializationReparsePaths');
   const rawIdentity = functionBody(checker, 'localTrackedMaterializationRawIdentity');
@@ -445,15 +457,14 @@ function focusedSource(base = root) {
   const text = read(path.join(base, 'tests/unit/ai-governance-bootstrap.test.mjs'));
   assert.equal((text.match(/\btest\('/g) ?? []).length, 17, 'A_Q_TEST_COUNT_EXACT'); assert.doesNotMatch(text, /\b(?:test\.(?:skip|todo)|\.skip\(|\.todo\()/, 'A_Q_SKIP_OR_TODO_FORBIDDEN');
   for (const letter of matrix) assert.match(text, new RegExp(`test\\('${letter} `), `missing matrix ${letter}`);
-  for (const token of ['spawnInvoke', 'waitForFile', 'SGDS_GOVERNANCE_TEST_LOCK_PRE_RELEASE_HOLD_MS', "OperationId: 'g-v'", 'legacy', 'malformed', 'complete tracked materialization', 'core.autocrlf', 'tracked_materialization_paths', 'linked_status_before_stat_refresh', 'linked_status_after_stat_refresh', 'linked_semantic_index_before_stat_refresh', 'linked_staged_entries_before_stat_refresh', 'ISOLATED_TRACKED_RAW_IDENTITY_DRIFT', 'post-checkout', 'high-volume stderr', 'timeout', 'nul-path', 'checkStaticGovernance', 'createWindowsPowerShellEnvironment', 'relative-root', 'embeddedClaspParserCommand', 'runEmbeddedClaspParser', 'decoy occurrence', 'non-string', 'whitespace-only', 'wrong value case', 'generic mismatch', 'exact case-sensitive match', 'GIT_INDEX_FILE', 'GIT_CONFIG_PARAMETERS', 'repository preflight failure', 'Firebase service preflight failure', 'immediate repository recheck failure', 'Firebase command unknown quarantine', 'confirmed Firebase success', 'decoy assignment has no effect']) assert.match(text, new RegExp(token, 'i'));
+  for (const token of ['spawnInvoke', 'waitForFile', 'SGDS_GOVERNANCE_TEST_LOCK_PRE_RELEASE_HOLD_MS', "OperationId: 'g-v'", 'legacy', 'malformed', 'complete tracked materialization', 'core.autocrlf', 'tracked_materialization_paths', 'reachable_head_object_graph_identity', 'hash-object', 'unreachable content-addressed snapshot object', 'linked_status_before_stat_refresh', 'linked_status_after_stat_refresh', 'linked_semantic_index_before_stat_refresh', 'linked_staged_entries_before_stat_refresh', 'ISOLATED_TRACKED_RAW_IDENTITY_DRIFT', 'post-checkout', 'high-volume stderr', 'timeout', 'nul-path', 'checkStaticGovernance', 'createWindowsPowerShellEnvironment', 'relative-root', 'embeddedClaspParserCommand', 'runEmbeddedClaspParser', 'decoy occurrence', 'non-string', 'whitespace-only', 'wrong value case', 'generic mismatch', 'exact case-sensitive match', 'GIT_INDEX_FILE', 'GIT_CONFIG_PARAMETERS', 'repository preflight failure', 'Firebase service preflight failure', 'immediate repository recheck failure', 'Firebase command unknown quarantine', 'confirmed Firebase success', 'decoy assignment has no effect']) assert.match(text, new RegExp(token, 'i'));
   assert.match(text, /spawnSync\('powershell\.exe', \['-NoProfile', '-NonInteractive', '-Command', embeddedClaspParserCommand\(\)\]/, 'ACTUAL_EMBEDDED_POWERSHELL_PARSER_EXECUTION_REQUIRED');
   assert.doesNotMatch(text, /hasExactTopLevelClaspScriptId|parseTopLevelClaspScriptId|assignmentAfter|lastAssignment|spawnSync\(['"]cmd(?:\.exe)?['"]/i, 'DUPLICATE_JS_PARSER_OR_BATCH_EXECUTION_FORBIDDEN');
 }
 function aggregateStatic(base = root) {
   const runner = read(path.join(base, 'scripts/test/run-all-checks.mjs'));
   const helper = read(path.join(base, 'scripts/test/powershell-module-env.mjs'));
-  assert.match(runner, /runScopeGate\(\);[\s\S]*await import\('\.\/powershell-module-env\.mjs'\)/, 'SCOPE_GATE_PRECEDES_DYNAMIC_HELPER_IMPORT');
-  assert.match(runner, /check-ai-governance-bootstrap\.mjs', '--scope-only'/, 'AGGREGATE_SCOPE_GATE_REQUIRED');
+  assertAggregateGateOrdering(runner);
   assert.match(runner, /createWindowsPowerShellEnvironment\(process\.env\)/, 'POWERSHELL_MODULE_ENV_HELPER_USE_REQUIRED');
   assert.doesNotMatch(runner, /requiredPowerShellModulePath|inheritedPowerShellModulePaths|seenPowerShellModulePaths/, 'EMBEDDED_POWERSHELL_MODULE_ENV_LOGIC_FORBIDDEN');
   for (const token of ['path.win32.isAbsolute', 'path.win32.delimiter', 'SystemRoot', 'WindowsPowerShell', 'PSModulePath', 'toLowerCase']) {
@@ -461,6 +472,31 @@ function aggregateStatic(base = root) {
   }
   assert.match(helper, /\[requiredModulePath, \.\.\.inheritedModulePaths\]/, 'POWERSHELL_SYSTEM_MODULE_PATH_PRECEDENCE_REQUIRED');
   assert.match(helper, /if \(!windowsRoot\) throw new Error\('ABSOLUTE_SYSTEMROOT_REQUIRED_FOR_POWERSHELL_MODULES'\)/, 'POWERSHELL_INVALID_SYSTEMROOT_FAIL_CLOSED_REQUIRED');
+}
+export function assertAggregateGateOrdering(runner) {
+  assert.equal(typeof runner, 'string', 'AGGREGATE_RUNNER_SOURCE_REQUIRED');
+  const scopeInvocation = 'runScopeGate();';
+  const receiptInvocation = 'runReceiptBoundGovernanceGate();';
+  const dynamicImport = "await import('./powershell-module-env.mjs')";
+  const invocationCount = (source, token) => source.split(token).length - 1;
+  assert.match(runner, /function runScopeGate\(\) \{[\s\S]*?\['scripts\/checkers\/check-ai-governance-bootstrap\.mjs', '--scope-only'\]/, 'AGGREGATE_SCOPE_GATE_REQUIRED');
+  const receiptGate = runner.match(/function runReceiptBoundGovernanceGate\(\) \{([\s\S]*?)\r?\n\}/)?.[1] ?? '';
+  assert.match(receiptGate, /\['scripts\/checkers\/check-ai-governance-bootstrap\.mjs'\]/, 'AGGREGATE_RECEIPT_BOUND_GATE_REQUIRED');
+  assert.doesNotMatch(receiptGate, /--scope-only/, 'AGGREGATE_RECEIPT_BOUND_GATE_MUST_NOT_BE_SCOPE_ONLY');
+  assert.equal(invocationCount(runner, scopeInvocation), 1, 'AGGREGATE_SCOPE_GATE_UNIQUE_REQUIRED');
+  assert.equal(invocationCount(runner, receiptInvocation), 1, 'AGGREGATE_RECEIPT_BOUND_GATE_UNIQUE_REQUIRED');
+  const scopeIndex = runner.indexOf(scopeInvocation);
+  const receiptIndex = runner.indexOf(receiptInvocation);
+  const importIndex = runner.indexOf(dynamicImport);
+  assert.notEqual(importIndex, -1, 'AGGREGATE_DYNAMIC_HELPER_IMPORT_REQUIRED');
+  assert.ok(scopeIndex < receiptIndex && receiptIndex < importIndex, 'AGGREGATE_GOVERNANCE_GATE_ORDER_REQUIRED');
+  assert.match(runner, /runScopeGate\(\);\r?\nrunReceiptBoundGovernanceGate\(\);\r?\nconst \{ createWindowsPowerShellEnvironment \} = await import\('\.\/powershell-module-env\.mjs'\)/, 'AGGREGATE_GOVERNANCE_GATE_ORDER_REQUIRED');
+  const commandsStart = runner.indexOf('const commands = [');
+  const commandsEnd = commandsStart === -1 ? -1 : runner.indexOf('\n];', commandsStart);
+  assert.notEqual(commandsStart, -1, 'AGGREGATE_LONG_COMMAND_LIST_REQUIRED');
+  assert.notEqual(commandsEnd, -1, 'AGGREGATE_LONG_COMMAND_LIST_TERMINATOR_REQUIRED');
+  assert.doesNotMatch(runner.slice(commandsStart, commandsEnd + 3), /check-ai-governance-bootstrap\.mjs/, 'AGGREGATE_GOVERNANCE_GATE_IN_LONG_COMMAND_LIST_FORBIDDEN');
+  return true;
 }
 function deployStatic(base = root) {
   const deploy = read(path.join(base, '_guard', 'deploy', 'DEPLOY_GOOGLE_APPS_FIREBASE.bat'));

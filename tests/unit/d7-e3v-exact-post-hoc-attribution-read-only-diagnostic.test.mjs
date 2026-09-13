@@ -79,6 +79,14 @@ function evaluatePhaseState(patch = {}) {
   });
 }
 
+function evaluateDefaultPhaseState(patch = {}) {
+  return evaluateD7E3VPhaseFileState_({
+    statusLines: patch.statusLines || [],
+    trackedFiles: patch.trackedFiles || D7_E3V_PHASE_REQUIRED_FILES,
+    existingFiles: patch.existingFiles || D7_E3V_PHASE_REQUIRED_FILES
+  });
+}
+
 function evaluateSourceSemantics(runtimePatch = source) {
   return evaluateD7E3VSourceSemantics_({
     runtime: runtimePatch,
@@ -527,6 +535,46 @@ test('55d checker accepts the exact D7-E4A recovery closeout record', () => {
   });
   assert.equal(state.ok, true);
   assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
+});
+
+test('55e checker accepts the exact Phase 0 active contract path', () => {
+  const state = evaluateDefaultPhaseState({
+    statusLines: ['?? docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md']
+  });
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
+});
+
+test('55f checker accepts the exact completed Writer Authority v3 archive path', () => {
+  const state = evaluateDefaultPhaseState({
+    statusLines: ['?? docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md']
+  });
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
+});
+
+test('55g checker rejects a similarly named Phase 0 contract path', () => {
+  const state = evaluateDefaultPhaseState({
+    statusLines: ['?? docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF-copy.md']
+  });
+  assert.equal(state.ok, false);
+  assert.match(state.failureCode, /^UNAPPROVED_DIRTY_FILE_/);
+});
+
+test('55h checker accepts the exact Phase 0 aggregate runner path', () => {
+  const state = evaluateDefaultPhaseState({
+    statusLines: [' M scripts/test/run-all-checks.mjs']
+  });
+  assert.equal(state.ok, true);
+  assert.equal(state.mode, 'ALL_REQUIRED_FILES_TRACKED_AND_CLEAN');
+});
+
+test('55i checker rejects a similarly named Phase 0 aggregate runner path', () => {
+  const state = evaluateDefaultPhaseState({
+    statusLines: [' M scripts/test/run-all-checks-copy.mjs']
+  });
+  assert.equal(state.ok, false);
+  assert.match(state.failureCode, /^UNAPPROVED_DIRTY_FILE_/);
 });
 
 test('56 checker ignores exact known guard paths', () => {

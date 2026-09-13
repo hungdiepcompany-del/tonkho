@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
+import { assertV6ScopeGate, composePhase0CandidateScope } from './check-ai-governance-bootstrap.mjs';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const files = Object.freeze({
   historical: 'D7_E3G_PartialStateReadOnlyDiagnostic.js',
@@ -48,8 +49,7 @@ function assertHistoricalConstant(text, name) {
   return match[1];
 }
 
-function assertDirtyScope() {
-  const allowed = new Set([
+const historicalDirtyScope = Object.freeze([
     'D7_E4C_ExactPreconditionDiagnostic.js',
     'tests/unit/d7-e4c-exact-precondition-diagnostic.test.mjs',
     'scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs',
@@ -106,6 +106,10 @@ function assertDirtyScope() {
     'scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs',
     'docs/phases/D7_E4B1_EXACT_RECONCILIATION_RUNTIME_IMPLEMENTATION_AND_SOURCE_SYNC.md'
   ]);
+export const d7E4A1AAllowedDirtyScope = composePhase0CandidateScope(historicalDirtyScope);
+
+function assertDirtyScope() {
+  const allowed = new Set(d7E4A1AAllowedDirtyScope);
   const status = execFileSync('git', ['status', '--short', '--untracked-files=all'], { encoding: 'utf8' });
   const unexpected = status.split(/\r?\n/).filter(Boolean).map(line => normalized(line.slice(3))).filter(path => path && !knownGuardDirty.has(path) && !allowed.has(path));
   if (unexpected.length) fail(`UNEXPECTED_DIRTY_FILE_${unexpected[0].replace(/[^A-Za-z0-9]+/g, '_').toUpperCase()}`);
@@ -161,4 +165,4 @@ function main() {
   console.log('D7_E4A1A_CANONICAL_IDENTITY_RECOVERY_CHECK=PASS');
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === fs.realpathSync(process.argv[1])) main();
