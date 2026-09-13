@@ -259,6 +259,39 @@ blob `0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c` with 1118 raw LF records.
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `0a7e49830bea6c80a1bd24762dc776aa637d68a39d786fb51c7da86d4db361f9`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
 
+## Clean-Worktree Isolation Review Correction V2 Final-Byte Inventory
+
+The V1 writer completed and released to slot `NONE` at revision 200; its
+isolated aggregate recorded 772 total / 771 pass / 0 fail / 1 expected skip,
+with scoped D7 and aggregate PASS. Independent review findings opened this V2
+correction. V2 remains ACTIVE and this inventory does not claim V2 completion,
+release, or final independent review/verification PASS. The manifest remains
+the sole self-hash exception.
+
+- `scripts/ai/Manage-NonWriterIsolation.ps1` - SHA256 `f95a4e09345ed6e2b9b4a02ff8772e0dc504709a6782f584f6c16af984016f65`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `73bc51eb7a9a733d740afda5e32435a030645da534a44a82595f42384cbb54cf`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `5eb7df7fc9180f3b085021114702bffae333fbc99f065b913d0351194bc9e2b5`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `fd4c34aef36ad9d98929103484243e0d8babd436395637f04721e87bde78b82c`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `3195cf26aeda4157bdb065bd5eead1a1f0027600bb42632175db90836512972f`
+- `docs/13_DECISION_LOG.md` - SHA256 `c17bae7b7f1f78439732ede335fc3a3b7bf35023c1966916687a2527bdf2ab94`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `5f84bd78eb52be170df1fc22db78873d8daeb81f1aa1da7227effcf9b70eda38`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Clean-Worktree Empty-Status Repair Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This local-only repair
+changes exactly the seven hashable files below; no other path is included in
+the repair delta.
+
+- `scripts/ai/Manage-NonWriterIsolation.ps1` - SHA256 `a6bff5028f594331f36324860330e0629875b6bfdef6a0665d152732b86e7f09`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `35880bf200efcd4f7ac3dbd0e3659fbfab7965a82c93aa29df619bd27a3129cb`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `732ebf75f66737590ba1de4ae6ac203bde1a3d6980b3a2785a87c97b2cc63ded`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `88477c92cf3ab7b48b06492efa3f1eedd4bdcec1a2d97a21cbd9d133bb17fbb3`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `f2c4b042f651a3dcdd7643ff55b5220cb9c3203a492bddb08f18834e7f4b236e`
+- `docs/13_DECISION_LOG.md` - SHA256 `08531b4ab484d9a3e3397355c6810c7b8227201e893ee866168264c6456c2767`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `2f16497dfcca8b6ff2746c8cbbec1192bb4164f3937c5730d1a0044c9a0827f4`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
 ## Phase 0 Final Evidence Closeout Final-Byte Inventory
 
 The manifest remains the sole self-hash exception. V7 changes exactly the six

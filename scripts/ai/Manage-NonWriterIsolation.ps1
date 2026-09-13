@@ -246,8 +246,9 @@ function Get-StagedEntryIdentity {
 }
 
 function Get-SourceChangedTrackedPaths {
-    param([Parameter(Mandatory = $true)][string]$PorcelainV1Z)
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$PorcelainV1Z)
     $changed = New-Object System.Collections.Generic.HashSet[string]([System.StringComparer]::Ordinal)
+    if ($PorcelainV1Z.Length -gt 0 -and $PorcelainV1Z[$PorcelainV1Z.Length - 1] -ne [char]0) { Throw-Failure 'SOURCE_STATUS_PORCELAIN_INVALID' }
     $records = @($PorcelainV1Z -split "`0")
     for ($index = 0; $index -lt ($records.Count - 1); $index += 1) {
         $record = [string]$records[$index]
@@ -263,7 +264,7 @@ function Get-SourceChangedTrackedPaths {
             }
         }
     }
-    return $changed
+    return ,$changed
 }
 
 function ConvertTo-CanonicalOrdinalUtf16Array {

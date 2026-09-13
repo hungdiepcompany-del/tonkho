@@ -1,36 +1,73 @@
-# Phase 1 fresh production read-only forensic rebaseline
+# Local-only clean-worktree isolation empty-status binding repair
 
-PHASE_ID=SGDS_PHASE1_FRESH_PRODUCTION_READ_ONLY_FORENSIC_REBASELINE
-TASK_ID=01a09872-e890-76f3-9e74-319ace1372ff
-WRITER_ID=01a09872-e890-76f3-9e74-319ace1372ff
+PHASE_ID=SGDS_LOCAL_ONLY_CLEAN_WORKTREE_ISOLATION_EMPTY_STATUS_BINDING_REPAIR
+TASK_ID=01a098a7-99d6-7892-a1a5-101bfdc84686
+WRITER_ID=01a098a7-99d6-7892-a1a5-101bfdc84686
 STATUS=ACTIVE
 OWNER_AUTHORITY=DIRECT_OWNER_DELEGATED_TO_PHASE_CONTROLLER
-AUTHORITY_ID=OWNER_DELEGATED_AUTO_GO_PHASE1_DOC_REVIEW_CORRECTION_V1
-CURRENT_AUTHORITY_ASSIGNMENT_ID=SGDS_PHASE1_DOC_REVIEW_CORRECTION_01a09872
-CURRENT_AUTHORITY_CODER_THREAD_ID=01a09872-e890-76f3-9e74-319ace1372ff
-CURRENT_AUTHORITY_CODER_ROLE=SOLE_PHASE1_DOC_REVIEW_CORRECTION_CODER
-CURRENT_AUTHORITY_ASSIGN_OPERATION_ID=phase1-doc-review-correction-assign-01a09872
-CURRENT_AUTHORITY_VERIFY_OPERATION_ID=phase1-doc-review-correction-verify-01a09872
-CURRENT_AUTHORITY_COMPLETE_OPERATION_ID=phase1-doc-review-correction-complete-01a09872
-CURRENT_AUTHORITY_RELEASE_OPERATION_ID=phase1-doc-review-correction-release-01a09872
-AUTHORITY_PREDECESSOR=OWNER_GO_PHASE1_FRESH_PRODUCTION_READ_ONLY_FORENSIC_REBASELINE_EXACTLY_ONCE_V1_CLOSED_RELEASED_NONE_REVISION_192
-OWNER_GO_RECEIVED=OWNER_DELEGATED_AUTO_GO_FOR_NON_PRIVILEGED_IN_SCOPE_CORRECTION
+AUTHORITY_ID=OWNER_DELEGATED_AUTO_GO_CLEAN_WORKTREE_ISOLATION_REVIEW_CORRECTION_V2
+CURRENT_AUTHORITY_ASSIGNMENT_ID=SGDS_CLEAN_WORKTREE_ISOLATION_REVIEW_CORRECTION_01a098a7
+CURRENT_AUTHORITY_CODER_THREAD_ID=01a098a7-99d6-7892-a1a5-101bfdc84686
+CURRENT_AUTHORITY_CODER_ROLE=SOLE_LOCAL_GOVERNANCE_REVIEW_CORRECTION_CODER
+CURRENT_AUTHORITY_ASSIGN_OPERATION_ID=clean-worktree-review-correction-assign-01a098a7
+CURRENT_AUTHORITY_VERIFY_OPERATION_ID=clean-worktree-review-correction-verify-01a098a7
+CURRENT_AUTHORITY_COMPLETE_OPERATION_ID=clean-worktree-review-correction-complete-01a098a7
+CURRENT_AUTHORITY_RELEASE_OPERATION_ID=clean-worktree-review-correction-release-01a098a7
+AUTHORITY_PREDECESSOR=OWNER_GO_LOCAL_ONLY_CLEAN_WORKTREE_ISOLATION_EMPTY_STATUS_BINDING_REPAIR_V1_CLOSED_RELEASED_NONE_REVISION_200_CHECKPOINT_bfa13dc
+OWNER_GO_RECEIVED=OWNER_DELEGATED_AUTO_GO_FOR_NONPRIVILEGED_IN_SCOPE_REVIEW_CORRECTION
 OWNER_BOOTSTRAP_EXCEPTION=CONTROLLER_MAY_UPDATE_ONLY_THIS_CURRENT_AUTHORITY_PREAMBLE_BEFORE_ASSIGN_VERIFY_NO_WRITER_SLOT_LEASE_LOCK_OR_STATE_IS_CREATED_FORGED_OR_IMPLIED
-RISK_CLASS=LOW_LOCAL_ONLY_DOCUMENTATION_CORRECTION
+RISK_CLASS=MEDIUM_LOCAL_ONLY_GOVERNANCE_AND_ISOLATION_PORTABILITY_REPAIR
 CURRENT_AUTHORITY_RULE=THE_TITLE_TO_FIRST_SECTION_PREAMBLE_IS_THE_ONLY_AUTHORITY_SOURCE_FOR_AUTHORITY_ID_CURRENT_AUTHORITY_ASSIGNMENT_ID_AND_CURRENT_AUTHORITY_CODER_THREAD_ID
-CURRENT_AUTHORITY_BOUNDARY=CORRECT_ONLY_THE_TWO_INDEPENDENT_REVIEW_DOCUMENTATION_FINDINGS_AND_REQUIRED_CLOSEOUT_HASH_RECORDS_IN_EXACT_FIVE_DOCUMENT_PATHS
+CURRENT_AUTHORITY_BOUNDARY=CORRECT_ONLY_REVIEW_P1_TERMINAL_NUL_FAIL_CLOSED_P2_BEHAVIORAL_REGRESSION_AND_P2_CURRENT_HANDOFF_WITH_REQUIRED_HASH_RECORDS
+LOCAL_REPAIR_WRITE_SCOPE=scripts/ai/Manage-NonWriterIsolation.ps1;scripts/checkers/check-ai-governance-bootstrap.mjs;tests/unit/ai-governance-bootstrap.test.mjs;docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;docs/FILE_MANIFEST.md
 PHASE1_RUNTIME_INVOCATION_BUDGET=CONSUMED_EXACTLY_ONCE_NO_RERUN_AUTHORIZED
-PHASE1_PRODUCTION_READ_SCOPE=ONE_EXACT_GMAIL_THREAD_AND_MESSAGE;TWO_EXACT_DRIVE_ARTIFACTS;ONE_EXACT_SHEET_A_TO_P_ROW;EXACT_DETERMINISTIC_FIRESTORE_JOB_LEASE_ATTACHMENT_RECORDS_EVENTS_AND_RECONCILIATION_REPORTS
-PHASE1_DOC_WRITE_SCOPE=docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;docs/FILE_MANIFEST.md
-PHASE1_FORBIDDEN=NO_APPLICATION_RUNTIME_TEST_OR_CHECKER_EDIT_NO_RECONCILIATION_OR_REPAIR_NO_GMAIL_DRIVE_SHEETS_FIRESTORE_OR_SCRIPT_PROPERTY_WRITE_NO_MARKER_CREATE_DELETE_NO_TRIGGER_CHANGE_NO_CLASP_PUSH_NO_DEPLOY_NO_GIT_STAGE_COMMIT_PUSH
+LOCAL_REPAIR_FORBIDDEN=NO_OTHER_SOURCE_TEST_CHECKER_OR_DOCUMENT_EDIT_NO_PRODUCTION_READ_WRITE_RECONCILIATION_OR_REPAIR_NO_GMAIL_DRIVE_SHEETS_FIRESTORE_SCRIPT_PROPERTY_MARKER_TRIGGER_CLASP_DEPLOY_GIT_STAGE_COMMIT_PUSH_NO_MANUAL_WRITER_OR_ISOLATION_STATE_MUTATION_NO_PROTECTED_W_W1_CHANGE
 
-## Current Phase 1 authority
+## Current local repair authority
 
-This preamble is the current Owner authority for a local documentation
-correction only. The runtime invocation budget was consumed exactly once by
-the completed `runD7E3IExactProductionConflictForensicReadOnly` dispatch. No
-external read, remote parity pull, credential/project verification, or runtime
-rerun is authorized by this correction authority.
+This preamble is the current Owner authority for the exact eight-path local
+governance repair listed in `LOCAL_REPAIR_WRITE_SCOPE`. The observed local
+checkpoint is `bfa13dc64b5581e1c9f5920bb2da6afaa1c78873`; no stage, commit,
+push, deployment, remote, or production action is authorized.
+
+The prior clean-worktree `Create` failed and rolled back with
+`ROLLBACK=MARKER_OWNED_REMOVED`, leaving no active registry residue. The
+coupled local defect has two stages: first, valid empty
+`status --porcelain=v1 -z` could not bind to the mandatory string because
+`AllowEmptyString` was absent. After that binding fix, PowerShell exposed the
+latent second failure by enumerating the empty changed-path `HashSet` into no
+pipeline object, yielding `$null` before `Invoke-LinkedIndexStatRefresh`
+called `.Contains()`; unary comma preserves the empty `HashSet` object.
+
+The V1 lifecycle is now historical: it completed and released normally to
+writer slot `NONE` at revision 200. Its isolated aggregate evidence is 772
+total / 771 pass / 0 fail / 1 expected skip, with the scoped D7 checks and
+aggregate PASS. Independent review then found P1 missing terminal-NUL
+fail-closed framing, P2 missing direct behavior coverage of the extracted real
+function AST, and P2 stale active routing in the final handoff section.
+
+Current V2 lifecycle evidence is exact: ControllerAssign and ControllerVerify
+bind `OWNER_DELEGATED_AUTO_GO_CLEAN_WORKTREE_ISOLATION_REVIEW_CORRECTION_V2`,
+`SGDS_CLEAN_WORKTREE_ISOLATION_REVIEW_CORRECTION_01a098a7`, and
+`01a098a7-99d6-7892-a1a5-101bfdc84686`, with `STATUS=VERIFIED` and
+`SLOT_STATE=ACTIVE`. The Coder must freeze after local validation and must not
+invoke any lifecycle action. V2 is not yet complete or released, and no final
+independent V2 review or verification PASS is claimed.
+
+Acceptance direction is exact: `Get-SourceChangedTrackedPaths` accepts valid
+empty input and terminal-NUL records, rejects every nonempty input whose last
+UTF-16 character is not `[char]0`, preserves rename/copy and per-record guards,
+and returns its `HashSet` as one object. Static governance requires the
+terminal-NUL guard before splitting. Existing case N remains one of A-Q's 17
+tests and behaviorally probes the extracted real function AST under
+`powershell.exe` 5.1 and `pwsh` 7 for empty, valid terminal-NUL, unterminated,
+and terminal-NUL-plus-garbage inputs while retaining clean isolation and all
+dirty/raw-byte/stat-refresh coverage.
+
+The runtime invocation budget was consumed exactly once by the completed
+`runD7E3IExactProductionConflictForensicReadOnly` dispatch. No external read,
+remote parity pull, credential/project verification, or runtime rerun is
+authorized by this local repair authority.
 
 The exact D7-E3I reachable definition files and `appsscript` manifest byte
 match was only a bounded static parity prerequisite. It is not full-project
@@ -40,12 +77,11 @@ remains. The sanitized execution result below remains factual evidence, and
 its stop-before-reconciliation-or-mutation direction remains a hard stop.
 
 The controller bootstrap above changes no writer lease, lock, or state. The
-named Coder may edit only the five documentation paths in
-`PHASE1_DOC_WRITE_SCOPE` after exact normal `ControllerAssign` and
-`ControllerVerify`. All Phase 0 text below is retained as historical evidence
-and cannot widen this Phase 1 authority.
+named Coder may edit only the eight paths in `LOCAL_REPAIR_WRITE_SCOPE` after
+the exact normal `ControllerAssign` and `ControllerVerify`. All text below is
+historical evidence and cannot widen this authority.
 
-## Phase 1 sanitized execution evidence
+## Historical Phase 1 sanitized execution evidence
 
 PHASE1_DISPATCH=ONE_AND_ONLY_ONE_CONFIRMED_APPS_SCRIPT_DISPATCH_OF_runD7E3IExactProductionConflictForensicReadOnly
 PHASE1_EXECUTION=COMPLETED_NORMALLY
@@ -259,25 +295,42 @@ in the canonical frozen candidate scope is hash-invariant for this closeout.
   unreachable content-addressed snapshot object added after isolation creation
   does not block validation or normal cleanup; existing raw-byte, status, index,
   overlay, linked-index, and content-drift rejection remains intact.
-- Final bytes are listed in `docs/FILE_MANIFEST.md`; the six hashable changed
-  documents are listed and the manifest is the explicit self-hash exception.
+- `Get-SourceChangedTrackedPaths` accepts an empty porcelain-v1-z string and
+  preserves its empty changed-path set as an object; malformed nonempty records
+  continue to fail closed with `SOURCE_STATUS_PORCELAIN_INVALID`.
+- Static governance requires the exact empty-string parameter tolerance and
+  empty-collection preservation, and case N remains exactly one A-Q test while
+  proving clean Create, ValidateIsolation, and Cleanup under PowerShell 5.1
+  and 7 with an empty approved-overlay payload, empty status, unchanged source
+  index/status, and no active registry residue.
+- Final bytes are listed in `docs/FILE_MANIFEST.md`; this repair's seven
+  hashable changed files are listed and the manifest is the explicit self-hash
+  exception.
 - Both PowerShell AST parsers, Node syntax/static checks, scope-only, A-Q 17/17,
   six D7 checkers and focused suites, full npm test, diff, exact 25-path
   candidate, exact seven-document delta, empty staging, archive blob/LF proof,
   and final manifest verification pass.
 
-## Next phase handoff
+## Current V2 correction and next handoff
 
-V6 completed and released normally, and independent Reviewer and Verifier
-acceptance is recorded above. V7 is a local documentation-only closeout: no
-receipt is minted or bypassed while this writer is ACTIVE. Phase 1 production
-read-only forensic rebaseline remains a distinct fresh-authority boundary and
-is not authorized by this contract.
+V1 completion/release `NONE` at revision 200, its 772/771/0/1 aggregate, and
+the independent findings are historical evidence. Current routing is only the
+V2 local review correction bound in the authoritative preamble. V2 remains
+ACTIVE until the Controller validates this frozen candidate and performs the
+normal exact lifecycle transitions.
 
-NEXT_PHASE=PHASE_1_FRESH_PRODUCTION_READ_ONLY_FORENSIC_REBASELINE
-NEXT_PHASE_STATUS=REQUIRES_FRESH_OWNER_AUTHORITY
-NEXT_PHASE_ALLOWED_ACTION=READ_ONLY_FORENSIC_REBASELINE_ONLY_AFTER_A_FRESH_CONTRACT
-NEXT_PHASE_FORBIDDEN=NO_RECONCILIATION_REPAIR_NO_RUNTIME_WRITE_NO_RETRY_OF_D7_E4B
-PHASE0_EXTERNAL_READ_AUTHORIZED=false
+CURRENT_PHASE=SGDS_CLEAN_WORKTREE_ISOLATION_REVIEW_CORRECTION_V2
+CURRENT_PHASE_STATUS=ACTIVE_VERIFIED_CANDIDATE_FROZEN_PENDING_CONTROLLER_VALIDATION
+CURRENT_SCOPE=EXACT_EIGHT_PATH_LOCAL_ONLY_REVIEW_CORRECTION
+V1_LIFECYCLE=COMPLETED_RELEASED_SLOT_NONE_REVISION_200
+V1_AGGREGATE=772_TOTAL_771_PASS_0_FAIL_1_EXPECTED_SKIP_D7_AND_AGGREGATE_PASS
+INDEPENDENT_FINDINGS=P1_TERMINAL_NUL_FAIL_CLOSED_GUARD_MISSING;P2_EXTRACTED_REAL_FUNCTION_AST_BEHAVIOR_PROBE_MISSING;P2_FINAL_ACTIVE_ROUTING_STALE
+V2_LIFECYCLE=CONTROLLERVERIFY_STATUS_VERIFIED_SLOT_STATE_ACTIVE
+V2_UNPROVEN=NOT_COMPLETED_NOT_RELEASED_NO_FINAL_INDEPENDENT_REVIEW_OR_VERIFIER_PASS_YET
 CODER_CLOSEOUT=FREEZE_AND_REPORT_NO_WRITERCOMPLETE_NO_CONTROLLERRELEASE
-CONTROLLER_NEXT_ACTION=INDEPENDENTLY_CONFIRM_FROZEN_CANDIDATE_THEN_EXACT_ACTIVE_ONLY_WRITERCOMPLETE_AND_ONLY_AFTER_COMPLETED_EXACT_CONTROLLERRELEASE
+CONTROLLER_NEXT_ACTION=VALIDATE_FROZEN_CANDIDATE_THEN_ACTIVE_ONLY_WRITERCOMPLETE_THEN_CONTROLLERRELEASE_TO_NONE
+NEXT_PHASE=V2_POST_RELEASE_INDEPENDENT_REVIEW_AND_VERIFICATION
+NEXT_PHASE_STATUS=BLOCKED_UNTIL_V2_WRITERCOMPLETE_AND_CONTROLLERRELEASE_TO_NONE
+NEXT_PHASE_SEQUENCE=CREATE_INDEPENDENT_REVIEWER_ISOLATION_REVIEW_ACCEPTANCE_CLEANUP_THEN_CREATE_INDEPENDENT_VERIFIER_ISOLATION_VERIFICATION_ACCEPTANCE_CLEANUP
+NEXT_PHASE_CHECKPOINT=AFTER_REVIEWER_AND_VERIFIER_PASS_AND_CLEANUP_WITH_SLOT_NONE_AND_NO_ACTIVE_ISOLATION_SURFACE_CHECKPOINT_TO_OWNER
+NEXT_PHASE_FORBIDDEN=NO_STAGE_COMMIT_PUSH_DEPLOY_NETWORK_CLASP_GAS_PRODUCTION_OR_MANUAL_STATE_REGISTRY_ACTION

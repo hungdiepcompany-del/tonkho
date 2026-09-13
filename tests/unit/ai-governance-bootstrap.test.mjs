@@ -67,6 +67,39 @@ async function withAsyncRepo(body) { const repo = fixture(); try { await body(re
 function statePath(repo) { return path.join(repo, '.git', 'non-writer-isolation.writer-authority-v3.json'); }
 function registryPath(repo) { return path.join(repo, '.git', 'non-writer-isolation.active-v3.json'); }
 function indexSha(repo) { return sha(fs.readFileSync(path.join(repo, '.git', 'index'))); }
+function sourceChangedTrackedPathsAstProbe(executable) {
+  const helperPathBase64 = Buffer.from(helper, 'utf8').toString('base64');
+  const script = `
+$helperPath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${helperPathBase64}'))
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($helperPath, [ref]$tokens, [ref]$errors)
+$functions = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq 'Get-SourceChangedTrackedPaths' }, $true))
+if ($errors.Count -ne 0 -or $functions.Count -ne 1) { throw 'SOURCE_STATUS_FUNCTION_AST_EXTRACTION_FAILED' }
+function Throw-Failure { param([string]$Code) throw [System.InvalidOperationException]::new($Code) }
+Invoke-Expression $functions[0].Extent.Text
+$nul = [char]0
+$empty = Get-SourceChangedTrackedPaths -PorcelainV1Z ''
+$valid = Get-SourceChangedTrackedPaths -PorcelainV1Z (' M tracked.txt' + $nul)
+try { [void](Get-SourceChangedTrackedPaths -PorcelainV1Z ' M tracked.txt'); $unterminatedError = 'NO_ERROR' } catch { $unterminatedError = $_.Exception.Message }
+try { [void](Get-SourceChangedTrackedPaths -PorcelainV1Z (' M tracked.txt' + $nul + 'garbage')); $trailingGarbageError = 'NO_ERROR' } catch { $trailingGarbageError = $_.Exception.Message }
+[ordered]@{
+  emptyIsHashSet = $empty -is [System.Collections.Generic.HashSet[string]]
+  emptyCount = $empty.Count
+  validIsHashSet = $valid -is [System.Collections.Generic.HashSet[string]]
+  validCount = $valid.Count
+  validContains = $valid.Contains('tracked.txt')
+  unterminatedError = $unterminatedError
+  trailingGarbageError = $trailingGarbageError
+} | ConvertTo-Json -Compress
+`;
+  const encoded = Buffer.from(script, 'utf16le').toString('base64');
+  const run = spawnSync(executable, ['-NoProfile', '-EncodedCommand', encoded], { cwd: root, encoding: 'utf8', timeout: 15_000 });
+  assert.equal(run.status, 0, (run.stdout || '') + (run.stderr || ''));
+  const line = (run.stdout || '').split(/\r?\n/).find(value => value.trim().startsWith('{'));
+  assert.ok(line, `${executable} source status AST probe must emit JSON`);
+  return JSON.parse(line);
+}
 function embeddedClaspParserCommand() {
   const deploy = fs.readFileSync(path.join(root, '_guard', 'deploy', 'DEPLOY_GOOGLE_APPS_FIREBASE.bat'), 'utf8');
   const line = deploy.split(/\r?\n/).find(value => value.includes('ConvertFrom-Json') && value.includes('CLASP_SCRIPT_ID'));
@@ -126,7 +159,32 @@ test('J Release response-loss replay binds writer and release semantics', () => 
 test('K shared app-server liveness has no authority effect', () => withRepo(repo => { const a = `${id}-k`; ok(invoke(repo, 'ControllerAssign', { AssignmentId: a, OperationId: 'k-a', WriterRuntimePid: 2292 })); assert.equal(field(ok(invoke(repo, 'InspectWriter')).output, 'PROCESS_AUTHORITY'), 'NONE'); }));
 test('L PID restart reuse has no authority effect', () => withRepo(repo => { const a = `${id}-l`; ok(invoke(repo, 'ControllerAssign', { AssignmentId: a, OperationId: 'l-a', WriterRuntimePid: 1 })); ok(invoke(repo, 'ControllerVerify', { AssignmentId: a, OperationId: 'l-v', WriterRuntimePid: 99999 })); }));
 test('M late completion uses committed receipt and rejects an operation-id collision', () => withRepo(repo => { const a = `${id}-m`; ok(invoke(repo, 'ControllerAssign', { AssignmentId: a, OperationId: 'm-a' })); ok(invoke(repo, 'ControllerVerify', { AssignmentId: a, OperationId: 'm-v' })); assert.notEqual(invoke(repo, 'WriterComplete', { AssignmentId: a, OperationId: 'm-complete', env: { SGDS_WRITER_AUTHORITY_V3_TEST_MODE: 'RESPONSE_LOSS_AFTER_COMMIT', SGDS_WRITER_AUTHORITY_V3_TEST_OPERATION: 'm-complete' } }).status, 0); assert.equal(field(ok(invoke(repo, 'WriterComplete', { AssignmentId: a, OperationId: 'm-complete' })).output, 'STATUS'), 'RECONCILED'); assert.notEqual(invoke(repo, 'ControllerRelease', { AssignmentId: a, OperationId: 'm-complete' }).status, 0); }));
-test('N complete tracked materialization preserves raw bytes, status, and index across PS5.1 and PS7', () => withRepo(repo => {
+test('N complete tracked materialization covers clean and dirty status across PS5.1 and PS7', () => withRepo(repo => {
+  for (const executable of ['powershell.exe', 'pwsh']) {
+    const probe = sourceChangedTrackedPathsAstProbe(executable);
+    assert.deepEqual(probe, {
+      emptyIsHashSet: true,
+      emptyCount: 0,
+      validIsHashSet: true,
+      validCount: 1,
+      validContains: true,
+      unterminatedError: 'SOURCE_STATUS_PORCELAIN_INVALID',
+      trailingGarbageError: 'SOURCE_STATUS_PORCELAIN_INVALID'
+    });
+  }
+  const cleanPayload = Buffer.from(JSON.stringify([])).toString('base64');
+  const cleanStatusV1Z = gitStatusV1Z(repo); const cleanIndex = indexSha(repo);
+  assert.deepEqual(cleanStatusV1Z, Buffer.alloc(0));
+  for (const executable of ['powershell.exe', 'pwsh']) {
+    const created = ok(invoke(repo, 'Create', { IsolationPurpose: 'REVIEWER', UntrackedPathPayload: cleanPayload }, executable));
+    const isolation = field(created.output, 'ISOLATION_ROOT');
+    assert.notEqual(isolation, '');
+    ok(invoke(repo, 'ValidateIsolation', { IsolationRoot: isolation }, executable));
+    ok(invoke(repo, 'Cleanup', { IsolationRoot: isolation }, executable));
+    assert.deepEqual(gitStatusV1Z(repo), cleanStatusV1Z, `${executable} clean source status must remain empty`);
+    assert.equal(indexSha(repo), cleanIndex, `${executable} clean source index must remain unchanged`);
+    assert.equal(fs.existsSync(registryPath(repo)), false, `${executable} clean cleanup must leave no active registry residue`);
+  }
   execFileSync('git', ['config', 'core.autocrlf', 'true'], { cwd: repo });
   const cleanTracked = path.join(repo, 'tracked-clean-lf.txt');
   const upperTrackedName = 'D7_B_BoundedReadOnlyCandidateDiscovery.js';
