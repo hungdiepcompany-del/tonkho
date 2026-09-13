@@ -275,3 +275,31 @@ and the completed archive at Git blob
 - `docs/13_DECISION_LOG.md` - SHA256 `72855325c96e4540507bb7f3283a56a551966d8546ebd989a964bb422770e45f`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `aa8d70a49737d6ae9b37da76558d618a03fd8bc9a021f42ee16417c1df55c6f2`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Phase 1 Fresh Production Read-Only Forensic Rebaseline Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This documentation-only
+Phase 1 evidence record lists the six other authorized documentation artifacts
+by final SHA-256. It records one completed read-only forensic dispatch and does
+not authorize reconciliation, repair, source synchronization, or production
+mutation.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `db4a998bcfd7d35894e545a5b7b6259ea368f6059f5915ef596881098b71d8ea`
+- `docs/00_INDEX.md` - SHA256 `17f8d5c0a9a267e25fff4837abb85c9962b4ba0544d6edcc31647b6481add8f9`
+- `docs/04_MASTER_PLAN.md` - SHA256 `de7e7468038d72b9318a8492293a674da8a2d1e72004708a05c43bc357590fba`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `6616b9f65b895c8ed8149235f80dd5b8810da4ac3149e8efe00d6303c5670d4e`
+- `docs/13_DECISION_LOG.md` - SHA256 `b799a378b8cd93895249a21c8d34bb59e1b1c34b64e228698c894e1c184ba414`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `67d98d1b2ea34b14e54d0185ed80b5e041dfa5d34e7caf82e0a714e6103e40ca`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Phase 1 Documentation Review Correction Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This local correction lists
+only the four other changed files in its exact five-path scope. It preserves
+the prior one-shot/no-rerun, zero-mutation, checkpoint, and origin evidence.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `b7af389727d5de8736cb0e63da40c578047c6403fdd9ff73e14614cd7dedd37a`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `fbca43d977546c5a35ca1c0b104bfd8c6d8f4b4eba95edc2772315c4e7b7d7a8`
+- `docs/13_DECISION_LOG.md` - SHA256 `f1d3266e42ee434f17a1f99606e88728135f5525c11cba9086ba8d11d3e9d052`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `187bfbfee9cfa2c5f653283e6c72a95563588f399989dd26e4b0252239cc8b14`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash

@@ -7,14 +7,15 @@ OWNER_MARKER=APPROVE_RECOMMENDED_20
 DATA_CONTRACT_STATUS=OWNER_APPROVED_V1
 INVARIANTS_STATUS=OWNER_APPROVED_V1
 OWNER_DECISIONS_PENDING_COUNT=0
-CURRENT_PHASE=SGDS_PHASE0_FINAL_EVIDENCE_CLOSEOUT
-CURRENT_HEAD_AND_ORIGIN_MAIN=bf6f792631896acbf85caa21d7a597dfcebe0648
-AUTHORING_WRITER_SLOT=AUTHORING_ACTIVE_REVISION_186
-POST_RELEASE_WRITER_SLOT=POST_RELEASE_EXPECTED_NONE_REVISION_188_AFTER_CONTROLLER_RELEASE
+CURRENT_PHASE=SGDS_PHASE1_FRESH_PRODUCTION_READ_ONLY_FORENSIC_REBASELINE
+CURRENT_HEAD=8512cae06cf57a58f2bcb01f0558c9aa0dcec293
+ORIGIN_MAIN=bf6f792631896acbf85caa21d7a597dfcebe0648
+AUTHORING_WRITER_SLOT=VERIFIED_ACTIVE_REVISION_190
+ACTIVE_WRITER_ASSIGNMENT=SGDS_PHASE1_READ_ONLY_REBASELINE_01a09857
 CURRENT_ISOLATION=ABSENT
-PRODUCTION_RECONCILIATION=NOT_COMPLETE
-NEXT_ALLOWED_BUNDLE=PHASE_1_FRESH_PRODUCTION_READ_ONLY_FORENSIC_REBASELINE_AFTER_FRESH_OWNER_AUTHORITY
-PHASE0_EXTERNAL_READ_AUTHORIZED=false
+PRODUCTION_RECONCILIATION=BLOCKED_D7_E3I_FORENSICS_INCOMPLETE
+NEXT_ALLOWED_BUNDLE=FRESH_LATER_FORENSICS_AND_PROVENANCE_DIAGNOSIS_AFTER_FRESH_OWNER_AUTHORITY
+PHASE1_READ_ONLY_DISPATCH=ONE_CONFIRMED_COMPLETED_NORMALLY
 
 ## Roadmap
 
@@ -35,7 +36,13 @@ PHASE0_EXTERNAL_READ_AUTHORIZED=false
 
 ## Current Next Step
 
-Phase 0 final evidence closeout records the V6 normal completion/release and independent aggregate acceptance without changing source or external state. It does not mint a receipt while the writer is active. The next phase remains a fresh production read-only forensic rebaseline after fresh Owner authority. Do not reconcile or repair production data, retry D7-E4B, run runtime writes, push GAS, deploy Firebase, or mutate production data.
+The Phase 1 forensic rebaseline made one confirmed read-only D7-E3I dispatch and completed normally, but it is blocked as `FORENSICS_INCOMPLETE`: the canonical Sheet row is absent, the job is `VALIDATED_NOT_COMPLETED` with unknown-write-outcome evidence, and both exact Drive artifacts are unavailable. The exact reachable forensic call graph and Apps Script manifest match local source, but full-project remote/local drift remains unresolved. Stop before reconciliation or mutation; a fresh later phase must diagnose the missing Drive artifacts, unknown Firestore outcome, and provenance drift before any production write can be authorized.
+
+PHASE1_READS=GMAIL_VERIFIED_READ_OK;SHEETS_READ_OK_CANONICAL_ROW_ABSENT;FIRESTORE_READ_OK_VALIDATED_NOT_COMPLETED_UNKNOWN_WRITE_OUTCOME;DRIVE_PDF_XML_RESOURCE_NOT_FOUND
+PHASE1_READ_COUNTS=DRIVE_4_FIRESTORE_5_GMAIL_1_SHEETS_1_WITHIN_MAXIMA
+PHASE1_PERMISSION_PROBE=EXECUTED_NO_BROAD_SCOPE_OR_CLOUD_PLATFORM_SCOPE_ADDITION_REQUIRED
+PHASE1_MUTATIONS=ZERO_PRODUCTION_DESTRUCTIVE_REPAIR_RECONCILIATION_GMAIL_DRIVE_SHEETS_FIRESTORE_TRIGGER
+PHASE1_REMOTE_DRIFT=REMOTE_ONLY_invoiceCanonical.js_SKU_ENGINE.js;LOCAL_ONLY_D7_E4C_ExactPreconditionDiagnostic.js;14_MISMATCHES_D7_E4B_ExactFirestoreReconciliationRuntime.js_gmailLabels.js_gmailProcessInvoiceXML.js_gmailSearch.js_hashUtils.js_Invoice_AttachmentParser.js_main.js_sheetHoaDon.js_sheetMenu.js_sheetNhapXuat.js_sheetSidebar.html_sheetTonKho.js_sheetUtils.js_triggers.js
 
 ## Bundle C-S1 Single-Thread Smoke Executor Local Patch
 
