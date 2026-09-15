@@ -336,3 +336,40 @@ the prior one-shot/no-rerun, zero-mutation, checkpoint, and origin evidence.
 - `docs/13_DECISION_LOG.md` - SHA256 `f1d3266e42ee434f17a1f99606e88728135f5525c11cba9086ba8d11d3e9d052`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `187bfbfee9cfa2c5f653283e6c72a95563588f399989dd26e4b0252239cc8b14`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Fresh Read-Only Forensics and Remote/Local Provenance Diagnosis Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This documentation-only
+closeout lists the other four changed files in its exact five-path scope. It
+records the unresolved full-project drift hard stop, an unconsumed production
+read budget, and zero production data access or mutation.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `b0745471c7851e90497c82a02ed9e4c0d1aa0429418ab3d63939b02c9eb20c13`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `a36800cd511916c6297eaf068351f9ada862fd465303bdcf5b74ca8e7106b4f3`
+- `docs/13_DECISION_LOG.md` - SHA256 `125e24227c11671b0983f3b5ccbb867b149aaeea63932af295b9c24858654af9`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `c4b83a138ff1a0d33061ffe1ac4abdab8cca99233e2d007ae1ea50d8d73e1665`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Fresh Read-Only Provenance Documentation Correction V2 Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This append-only V2
+inventory refreshes the four other files in the exact five-document correction
+scope. All frozen provenance counts and classifications remain unchanged.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `8c04230d0197feaf7f06149ac05b7a2d9cc39ca96585e34271cff1be633a7cc3`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `cb9eb20ac7eb34f91065d1f8908e82b81e8e7fd718dfc102684de0248a16c824`
+- `docs/13_DECISION_LOG.md` - SHA256 `58c6067e82aacee3fd056afb4f0ecab364b4d93a513ff12b507f9d2fcddd081d`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `e3d5a2780e5af51502ea57f2349edff554b08998c53eb174d5cd4ceab84f7e66`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Fresh Read-Only Provenance Documentation Correction V3 Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This V3 inventory refreshes
+the four other files in the exact five-document correction scope after the
+accepted V2 lifecycle-wording repair. Frozen provenance remains unchanged.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `bfe2dde511a3d11f0cb0a189952c5fdb5859dd2997e888574ef5812de4eb8ebc`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `254609023d09c96c70c0cc6a213183815ac14bc3eefa199825a3c3eaf9e23d9a`
+- `docs/13_DECISION_LOG.md` - SHA256 `e96e1f86ba71d209eb4f8f87eb535b51ffa41d129c77a33f2a49a3fd9e94edd0`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `bf0f28f77a59daec493951f7af66e987f1186e724e7e83f49fcc6f23eb33429f`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
