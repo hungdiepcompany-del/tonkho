@@ -399,3 +399,16 @@ terminal lifecycle routing without authorizing source or production action.
 - `docs/13_DECISION_LOG.md` - SHA256 `869ec7bdcea21c87dbe367744d11808d268f92171230a360c729aa8581184033`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `20267734d310a8dcf87132e6310d5a707cce469aecc2a7e38c7360e8bebd32c6`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Exact17 Local Candidate Plan Review Correction V2 Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This exact five-document
+phase translates the approved business policy into a 17-path local operation
+matrix, then records that the implementation dependency scope is not closed.
+It produces no source bytes and authorizes no source or production action.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `6badb626fb5826dd3f92340d00371d0cfc587a7c4079c9177e8693f92bb24b0b`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `a277bdc43308da1845f246a5b48f546283467ae6e65f4a8f7e1ec2ea9c4facb5`
+- `docs/13_DECISION_LOG.md` - SHA256 `335be7aacbba57404d2a39be8b519501fea292491f502a36ec5c14526911cf90`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `39510499441b316b47a6c1228cd391338ad19e1202584cace3831ee7ff3911a4`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
