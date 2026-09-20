@@ -6,6 +6,7 @@ const DURABLE_JOB_STATES_ = Object.freeze({
   FILES_SAVED: 'FILES_SAVED',
   COMMITTING: 'COMMITTING',
   ROWS_COMMITTED: 'ROWS_COMMITTED',
+  INVENTORY_PENDING: 'INVENTORY_PENDING',
   PROJECTIONS_COMMITTED: 'PROJECTIONS_COMMITTED',
   COMPLETED: 'COMPLETED',
   FAILED_RETRYABLE: 'FAILED_RETRYABLE',
@@ -23,7 +24,10 @@ const DURABLE_JOB_TRANSITIONS_ = Object.freeze({
   VALIDATED: Object.freeze(['FILES_SAVED', 'FAILED_RETRYABLE', 'FAILED_REVIEW_REQUIRED']),
   FILES_SAVED: Object.freeze(['COMMITTING', 'FAILED_RETRYABLE', 'RECONCILIATION_REQUIRED']),
   COMMITTING: Object.freeze(['ROWS_COMMITTED', 'FAILED_RETRYABLE', 'RECONCILIATION_REQUIRED']),
-  ROWS_COMMITTED: Object.freeze(['PROJECTIONS_COMMITTED', 'RECONCILIATION_REQUIRED']),
+  // PROJECTIONS_COMMITTED remains a compatibility edge for sealed historical tools.
+  // New orchestration must use INVENTORY_PENDING.
+  ROWS_COMMITTED: Object.freeze(['INVENTORY_PENDING', 'PROJECTIONS_COMMITTED', 'RECONCILIATION_REQUIRED']),
+  INVENTORY_PENDING: Object.freeze(['PROJECTIONS_COMMITTED', 'RECONCILIATION_REQUIRED']),
   PROJECTIONS_COMMITTED: Object.freeze(['COMPLETED', 'RECONCILIATION_REQUIRED']),
   COMPLETED: Object.freeze([]),
   FAILED_RETRYABLE: Object.freeze(['COLLECTED', 'PARSED', 'VALIDATED', 'FILES_SAVED', 'COMMITTING', 'RECONCILIATION_REQUIRED']),
@@ -228,8 +232,11 @@ function resolveDurableCompletedResume_(job, verification) {
   const ledgerVerified = safeVerification.ledgerVerified === true;
   const registryVerified = safeVerification.registryVerified === true;
   const projectionVerified = safeVerification.projectionVerified === true;
+  // Historical completed-job receipts predate inventory evidence. Missing is
+  // compatibility-readable; every new orchestrator receipt passes it explicitly.
+  const inventoryVerified = safeVerification.inventoryVerified !== false;
 
-  if (ledgerVerified && registryVerified && projectionVerified) {
+  if (ledgerVerified && registryVerified && projectionVerified && inventoryVerified) {
     return { action: 'IDEMPOTENT_COMPLETE_NOOP', safeToMutate: false };
   }
   return {

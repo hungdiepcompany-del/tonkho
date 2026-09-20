@@ -36,9 +36,13 @@ assert.doesNotMatch(drive, /if \(rows\.length\) \{\s*writeInvoicesToSheet_\(rows
 
 assert.match(hash, /fields = \[[\s\S]*'invoiceDate'[\s\S]*'invoiceNo'[\s\S]*'customerName'[\s\S]*'itemCode'[\s\S]*'itemName'[\s\S]*'invoiceType'[\s\S]*'qty'[\s\S]*\]/, 'Hash V1 field list changed unexpectedly');
 assert.match(sheetHoaDon, /return `\$\{date\}_\$\{mst\}_\$\{inv\}`/, 'invoiceKey persisted helper unexpectedly changed');
+assert.match(hash, /function buildLineIdentityV2_/, 'LineIdentityV2 helper missing');
+assert.match(hash, /unitPrice[\s\S]*amount/, 'LineIdentityV2 economic fields missing');
+assert.match(sheetHoaDon, /function buildInvoiceKey_/, 'legacy invoiceKey compatibility helper missing');
 
-assert.match(nx, /if \(sl > slTon\)[\s\S]*sl = slTon/, 'BQGQ over-sell cap changed in Bundle C');
-assert.match(tk, /slTon\[ma\] = 0;[\s\S]*gtTon\[ma\] = 0;[\s\S]*dgBQ\[ma\] = 0;/, 'TonKho over-sell reset changed in Bundle C');
+assert.match(nx, /if \(sl > slTon\)[\s\S]*OVERSELL_BLOCKED[\s\S]*throw new Error/, 'BQGQ over-sell block missing');
+assert.doesNotMatch(nx, /sl = slTon/, 'BQGQ still caps over-sell quantity');
+assert.match(tk, /OVERSELL_BLOCKED:[\s\S]*throw new Error/, 'TonKho over-sell block missing');
 
 for (const [name, src, running] of [['BQGQ', nx, 'NX'], ['TONKHO', tk, 'TK']]) {
   assert.match(src, /LockService\.getScriptLock\(\)/, `${name} ScriptLock missing`);

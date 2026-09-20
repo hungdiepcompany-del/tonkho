@@ -163,14 +163,24 @@ function parseInvoiceItems_(xmlDoc) {
   // Load 1 lần duy nhất
   const itemCodeList = buildItemCodeList_();
 
-  itemNodes.forEach(node => {
+  itemNodes.forEach((node, index) => {
     const name = node.getChildText("THHDVu");
+    const quantity = Number(node.getChildText("SLuong") || 0);
+    const unitPrice = Number(node.getChildText("DGia") || 0);
+    const amountText = node.getChildText("ThTien");
 
     items.push({
+      sourceLineNo: Number(node.getChildText("STT") || index + 1),
+      rawItemName: name || null,
+      normalizedRawItemName: normalizeIdentityText_(name),
       name: name || null,
       code: getItemCodeFromSheet_(name, itemCodeList),
-      qty: Number(node.getChildText("SLuong") || 0),
-      price: Number(node.getChildText("DGia") || 0)
+      unit: node.getChildText("DVTinh") || "",
+      qty: quantity,
+      quantity,
+      price: unitPrice,
+      unitPrice,
+      amount: amountText === null || amountText === "" ? quantity * unitPrice : Number(amountText)
     });
   });
 

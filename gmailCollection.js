@@ -8,9 +8,9 @@ function collectThreadMessagesAndAttachments_(thread, options = {}) {
   const bodies = [];
 
   for (const msg of messages) {
-    if (EmailDedupService.isDuplicateBodyInThread(msg)) continue;
+    const duplicateBody = EmailDedupService.isDuplicateBodyInThread(msg);
 
-    if (includeBodies) {
+    if (includeBodies && !duplicateBody) {
       bodies.push(msg);
     }
 

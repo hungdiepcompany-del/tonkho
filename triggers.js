@@ -12,6 +12,10 @@ function onEdit(e) {
   const editStartCol = e.range.getColumn();
   const editEndCol = e.range.getLastColumn();
 
+  if (routeHistoricalLedgerEditToAudit_(e, sh, startRow, numRows)) {
+    return;
+  }
+
   const isEditHashColumn =
     editStartCol === CONFIG.HASH_COLUME &&
     editEndCol === CONFIG.HASH_COLUME;
@@ -105,4 +109,23 @@ function onEdit(e) {
     "Trigger",
     3
   );
+}
+
+function routeHistoricalLedgerEditToAudit_(event, sheet, startRow, numRows) {
+  const sequences = sheet.getRange(startRow, 1, numRows, 1).getValues().flat();
+  if (!sequences.some(value => Number.isInteger(Number(value)) && Number(value) > 0)) return false;
+
+  const runId = "EDIT_" + Date.now();
+  const singleCell = event.range.getNumRows() === 1 && event.range.getNumColumns() === 1;
+  if (singleCell && event.oldValue !== undefined) {
+    event.range.setValue(event.oldValue);
+  }
+  appendFileLogEntries_([[runId, "LEDGER_EDIT", startRow, singleCell ? "HISTORICAL_EDIT_REVERTED" : "HISTORICAL_EDIT_RECONCILIATION_REQUIRED"]]);
+  PropertiesService.getScriptProperties().setProperty("NEED_LEDGER_RECONCILIATION", runId);
+  SpreadsheetApp.getActive().toast(
+    "Khong duoc sua truc tiep lich su Nhap-Xuat. Yeu cau da duoc ghi audit.",
+    "Ledger append-only",
+    5
+  );
+  return true;
 }

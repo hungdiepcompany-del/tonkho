@@ -2,7 +2,7 @@ function buildInvoiceQuery_(invoiceLabel, doneLabel1, doneLabel2) {
   return [
     `label:"${invoiceLabel}"`,
     `after:${formatGmailQueryDate_(CONFIG.INVOICE_FROMDATE)}`,
-    `(-label:"${doneLabel1}" OR -label:"${doneLabel2}")`
+    `(-label:"${doneLabel1}" OR -label:"${doneLabel2}" OR label:"${CONFIG.PENDING_LABEL}")`
   ].join(" ");
 }
 

@@ -47,7 +47,7 @@ function scanInvoiceOutEmails_() {
     if (threadHasAllLabel_(thread, [ // gmailLabel
       CONFIG.SAVE_SHEET_LABEL,
       CONFIG.SAVE_XML_LABEL
-    ])) {
+    ]) && !threadHasLabel_(thread, CONFIG.PENDING_LABEL)) {
       // const msg = thread.getMessages()[0];
       // const subject = msg.getSubject();
       // const labels = thread.getLabels().map(l => l.getName()).join(", ");
@@ -106,15 +106,10 @@ function scanInvoiceOutEmails_() {
 
           if (fileId) {
             anyXmlSaved = true;
-
-            const invoiceKey =
-              buildInvoiceKey_(
-                inv.issueDate,
-                inv.taxCode,
-                inv.invoiceNo
-              );
-
-            upsertHoaDonFile_(invoiceKey, "XML", fileId);
+            upsertHoaDonFile_(inv.invoiceKeyV2, "XML", fileId);
+            results
+              .filter(item => item.thread === thread && item.invoiceKeyV2 === inv.invoiceKeyV2)
+              .forEach(item => { item.artifactReady = true; });
           }
         });
     }
@@ -231,11 +226,8 @@ function scanInvoiceOutEmails_() {
       thread.addLabel(savePdfLabel);
     }
 
-    if (!anyXmlSaved) {
-      thread.addLabel(pendingLabel);
-    } else {
-      thread.removeLabel(pendingLabel);
-    }
+    // Pending remains until the exact per-invoice commit result is projected.
+    thread.addLabel(pendingLabel);
 
     debugLog_(
       `OUT | rowsPrepared=${sheetWritten} | xml=${anyXmlSaved} | pending=${(!anyXmlSaved)}`
@@ -316,7 +308,7 @@ function scanInvoiceInEmails_() {
       CONFIG.SAVE_SHEET_LABEL
       , CONFIG.SAVE_PDF_LABEL
       , CONFIG.SAVE_XML_LABEL
-    ])
+    ]) && !threadHasLabel_(thread, CONFIG.PENDING_LABEL)
     ) {
       // const msg = thread.getMessages()[0];
       // const subject = msg.getSubject();
@@ -352,8 +344,7 @@ function scanInvoiceInEmails_() {
       attachments,
       "NHAP",
       results,
-      thread,
-      { breakOnFirst: true }
+      thread
     );
 
     if (sheetWritten) sourceUsed = "XML";
@@ -378,15 +369,10 @@ function scanInvoiceInEmails_() {
 
           if (fileId) {
             anyXmlSaved = true;
-
-            const invoiceKey =
-              buildInvoiceKey_(
-                inv.issueDate,
-                inv.taxCode,
-                inv.invoiceNo
-              );
-
-            upsertHoaDonFile_(invoiceKey, "XML", fileId);
+            upsertHoaDonFile_(inv.invoiceKeyV2, "XML", fileId);
+            results
+              .filter(item => item.thread === thread && item.invoiceKeyV2 === inv.invoiceKeyV2)
+              .forEach(item => { item.artifactReady = true; });
           }
         });
     }
@@ -614,12 +600,8 @@ function scanInvoiceInEmails_() {
       thread.addLabel(savePdfLabel);
     }
 
-    // ⏳ Pending nếu CHƯA ĐỦ sheet hoặc PDF hoặc XML
-    if (!pdfSaved || !anyXmlSaved) {
-      thread.addLabel(pendingLabel);
-    } else {
-      thread.removeLabel(pendingLabel);
-    }
+    // Pending remains until the exact per-invoice commit result is projected.
+    thread.addLabel(pendingLabel);
 
     if (linkSaved && !pdfSaved) {
       thread.addLabel(saveLinkLabel);

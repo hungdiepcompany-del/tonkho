@@ -18,6 +18,7 @@ const DURABLE_RECONCILIATION_FINDING_CODES_ = Object.freeze([
   'LEDGER_LINE_HASH_MISMATCH',
   'LEDGER_INVOICE_KEY_MISMATCH',
   'LEDGER_DUPLICATE_LINE_IDENTITY',
+  'INVENTORY_NOT_VERIFIED',
   'GMAIL_FALSE_SAVED_LABEL',
   'GMAIL_SAVED_LABEL_MISSING',
   'GMAIL_PENDING_LABEL_CONFLICT'
@@ -38,12 +39,13 @@ const DURABLE_RECONCILIATION_STATE_ORDER_ = Object.freeze({
   FILES_SAVED: 5,
   COMMITTING: 6,
   ROWS_COMMITTED: 7,
-  PROJECTIONS_COMMITTED: 8,
-  COMPLETED: 9,
+  INVENTORY_PENDING: 8,
+  PROJECTIONS_COMMITTED: 9,
+  COMPLETED: 10,
   FAILED_RETRYABLE: 3,
   FAILED_REVIEW_REQUIRED: 3,
-  RECONCILIATION_REQUIRED: 9,
-  IGNORED_NOT_INVOICE: 9
+  RECONCILIATION_REQUIRED: 10,
+  IGNORED_NOT_INVOICE: 10
 });
 
 const DURABLE_RECONCILIATION_CONFLICT_CODES_ = Object.freeze([
@@ -70,6 +72,7 @@ function reconcileDurableInvoiceJobReportOnly(input) {
   const hoaDonRows = Array.isArray(observed.hoaDonRows) ? observed.hoaDonRows : [];
   const ledgerRows = Array.isArray(observed.ledgerRows) ? observed.ledgerRows : [];
   const gmailLabels = Array.isArray(observed.gmailLabels) ? observed.gmailLabels : [];
+  const inventoryState = observed.inventoryState;
   const findings = [];
 
   if (!job) {
@@ -88,8 +91,8 @@ function reconcileDurableInvoiceJobReportOnly(input) {
   }
 
   const evidenceState = plan
-    ? evaluateDurableReconciliationEvidence_(plan, driveEvidence, hoaDonRows, ledgerRows, gmailLabels, findings)
-    : { driveVerified: false, registryVerified: false, ledgerVerified: false, projectionVerified: false };
+    ? evaluateDurableReconciliationEvidence_(plan, driveEvidence, hoaDonRows, ledgerRows, inventoryState, gmailLabels, findings)
+    : { driveVerified: false, registryVerified: false, ledgerVerified: false, inventoryVerified: false, projectionVerified: false };
 
   if (job && plan) {
     evaluateDurableReconciliationState_(job, evidenceState, findings);
@@ -110,12 +113,24 @@ function reconcileDurableInvoiceJobReportOnly(input) {
   };
 }
 
-function evaluateDurableReconciliationEvidence_(plan, driveEvidence, hoaDonRows, ledgerRows, gmailLabels, findings) {
+function evaluateDurableReconciliationEvidence_(plan, driveEvidence, hoaDonRows, ledgerRows, inventoryState, gmailLabels, findings) {
   const driveVerified = evaluateDurableReconciliationDrive_(plan, driveEvidence, findings);
   const registryVerified = evaluateDurableReconciliationHoaDon_(plan, hoaDonRows, findings);
   const ledgerVerified = evaluateDurableReconciliationLedger_(plan, ledgerRows, findings);
+  const inventoryVerified = evaluateDurableReconciliationInventory_(inventoryState, findings);
   const projectionVerified = evaluateDurableReconciliationGmail_(plan, gmailLabels, ledgerVerified, findings);
-  return { driveVerified, registryVerified, ledgerVerified, projectionVerified };
+  return { driveVerified, registryVerified, ledgerVerified, inventoryVerified, projectionVerified };
+}
+
+function evaluateDurableReconciliationInventory_(inventoryState, findings) {
+  // Historical snapshots did not carry inventory evidence. They remain readable,
+  // while every new orchestrator snapshot supplies an explicit verified flag.
+  if (inventoryState === undefined || inventoryState === null) return true;
+  const verified = inventoryState === true || inventoryState.verified === true;
+  if (!verified) {
+    addDurableReconciliationFinding_(findings, 'INVENTORY_NOT_VERIFIED', 'ERROR', 'INVENTORY', { verified: true }, { verified: false }, 'OWNER_REVIEW_REQUIRED');
+  }
+  return verified;
 }
 
 function evaluateDurableReconciliationDrive_(plan, driveEvidence, findings) {
@@ -272,13 +287,14 @@ function evaluateDurableReconciliationGmail_(plan, gmailLabels, ledgerVerified, 
 function evaluateDurableReconciliationState_(job, evidenceState, findings) {
   const state = safeDurableReconciliationString_(job.state);
   const rank = DURABLE_RECONCILIATION_STATE_ORDER_[state] || 0;
-  const evidenceComplete = evidenceState.driveVerified && evidenceState.registryVerified && evidenceState.ledgerVerified && evidenceState.projectionVerified;
+  const evidenceComplete = evidenceState.driveVerified && evidenceState.registryVerified && evidenceState.ledgerVerified && evidenceState.inventoryVerified && evidenceState.projectionVerified;
 
   if ((state === 'COMPLETED' || state === 'RECONCILIATION_REQUIRED') && !evidenceComplete) {
     addDurableReconciliationFinding_(findings, 'TERMINAL_STATE_CONFLICT', 'CRITICAL', 'JOB', { terminalEvidenceComplete: true }, { terminalEvidenceComplete: false }, 'OWNER_REVIEW_REQUIRED');
   }
   if ((rank >= DURABLE_RECONCILIATION_STATE_ORDER_.FILES_SAVED && !evidenceState.driveVerified) ||
       (rank >= DURABLE_RECONCILIATION_STATE_ORDER_.ROWS_COMMITTED && !evidenceState.ledgerVerified) ||
+      (rank >= DURABLE_RECONCILIATION_STATE_ORDER_.INVENTORY_PENDING && !evidenceState.inventoryVerified) ||
       (rank >= DURABLE_RECONCILIATION_STATE_ORDER_.PROJECTIONS_COMMITTED && !evidenceState.registryVerified) ||
       (rank >= DURABLE_RECONCILIATION_STATE_ORDER_.PROJECTIONS_COMMITTED && !evidenceState.projectionVerified)) {
     addDurableReconciliationFinding_(findings, 'STATE_AHEAD_OF_EVIDENCE', 'ERROR', 'JOB', { state }, { evidenceComplete: false }, 'OWNER_REVIEW_REQUIRED');

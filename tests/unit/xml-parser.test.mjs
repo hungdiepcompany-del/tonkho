@@ -22,6 +22,11 @@ test('parses supported synthetic invoice XML', () => {
   assert.equal(parsed.meta.invoiceNo, '000123');
   assert.equal(parsed.seller.taxCode, '0100000001');
   assert.equal(parsed.items[0].code, 'THEPTAM');
+  assert.equal(parsed.items[0].sourceLineNo, 1);
+  assert.equal(parsed.items[0].rawItemName, 'THÉP TẤM MẪU');
+  assert.equal(parsed.items[0].quantity, 10);
+  assert.equal(parsed.items[0].unitPrice, 1000);
+  assert.equal(parsed.items[0].amount, 10000);
   assert.equal(gas.call('isVatInvoiceXML_', parsed.meta), true);
 });
 

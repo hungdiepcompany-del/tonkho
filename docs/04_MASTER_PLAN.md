@@ -712,3 +712,35 @@ dirty worktree, and production gates remain SyncGmailDriveSheet-specific.
    allowed/forbidden scope, hard stops, success criteria, routing, and exact
    Owner decision required.
 7. Sync-specific privileged gates remain unchanged.
+
+## 2026-09-20 - Exact17 Local Implementation V1
+
+PHASE=SGDS_EXACT17_LOCAL_IMPLEMENTATION_V1
+STATUS=LOCAL_CANDIDATE_FROZEN_FINAL_ACCEPTANCE_PENDING
+AUTHORITY_ID=OWNER_GO_EXACT17_LOCAL_IMPLEMENTATION_EXACT_69_PATHS_V1_20260920
+SCOPE=EXACT_69_PATHS_FOUR_CLUSTERS_LOCAL_ONLY
+
+1. Implement immutable V2 invoice/line identity while preserving legacy reads.
+2. Make Gmail retry and commit projection per invoice and artifact-aware.
+3. Require inventory verification before durable completion and Gmail success.
+4. Make inventory rebuild deterministic, oversell-blocking, run-scoped, and
+   append-only audited.
+5. Run local acceptance, release the sole writer, then run fresh independent
+   Reviewer and Verifier isolation before the Owner checkpoint gate.
+
+No source sync, production access or mutation, staging, commit, push, or deploy
+is part of this phase.
+
+## 2026-09-20 - Exact17 Aggregate Compatibility Correction V1
+
+PHASE=SGDS_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_V1
+STATUS=LOCAL_CORRECTION_FOCUSED_ACCEPTANCE_PASS_FULL_ACCEPTANCE_PENDING
+AUTHORITY_ID=OWNER_GO_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_EXACT_11_PATHS_V1_20260920
+CORRECTION_SCOPE=EXACT_11_PATHS
+CANDIDATE_SCOPE=EXACT_71_PATHS
+
+The D7-E3V aggregate checker now composes its historical dirty-file policy with
+the current governed candidate scope. A regression test proves the full current
+scope is accepted while unexpected paths still fail closed. Application runtime
+logic remains frozen. Next: full acceptance, normal writer release, independent
+Reviewer and Verifier isolation, then the Owner checkpoint gate.

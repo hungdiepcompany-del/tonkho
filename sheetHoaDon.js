@@ -18,7 +18,6 @@ function buildInvoiceKey_(issueDate, taxCode, invoiceNo) {
 }
 
 function upsertHoaDonFile_(invoiceKey, type, fileId) {
-  removeEmptyInvoiceRows_();
   const sheet = SpreadsheetApp
     .getActive()
     .getSheetByName(CONFIG.SHEET_FILES);
@@ -63,12 +62,20 @@ function upsertHoaDonFile_(invoiceKey, type, fileId) {
   } else {
 
     if (type === "XML") {
-      sheet.getRange(rowIndex, xmlIdCol + 1).setValue(fileId);
+      const existingFileId = String(data[rowIndex - 1][xmlIdCol] || "");
+      if (existingFileId && existingFileId !== String(fileId)) {
+        throw new Error("HOA_DON_XML_ARTIFACT_CONFLICT:" + invoiceKey);
+      }
+      if (!existingFileId) sheet.getRange(rowIndex, xmlIdCol + 1).setValue(fileId);
       sheet.getRange(rowIndex, xmlStatusCol + 1).setValue("✔");
     }
 
     if (type === "PDF") {
-      sheet.getRange(rowIndex, pdfIdCol + 1).setValue(fileId);
+      const existingFileId = String(data[rowIndex - 1][pdfIdCol] || "");
+      if (existingFileId && existingFileId !== String(fileId)) {
+        throw new Error("HOA_DON_PDF_ARTIFACT_CONFLICT:" + invoiceKey);
+      }
+      if (!existingFileId) sheet.getRange(rowIndex, pdfIdCol + 1).setValue(fileId);
       sheet.getRange(rowIndex, pdfStatusCol + 1).setValue("✔");
     }
   }

@@ -110,6 +110,8 @@ function createFakeSgdsSheetsLedgerAdapter_(options) {
     const invoiceKey = safeSgdsAdapterString_(request && (request.invoiceKeyV2 || request.legacyInvoiceKey));
     return state.ledgerRows.filter(row => {
       if (target && (row.transactionIdentity === target || row.lineIdentityV2 === target)) return true;
+      // Return hash collisions too; callers must compare invoice identity and
+      // classify a mismatch as conflict rather than append a second row.
       if (hash && row.legacyHashIndex === hash) return true;
       return false;
     });

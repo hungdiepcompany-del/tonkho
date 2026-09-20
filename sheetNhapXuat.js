@@ -1,14 +1,16 @@
-function capNhatNhapXuatBQGQ() {
+function capNhatNhapXuatBQGQ(requestedRunId) {
+  const runId = ProgressService.begin("NX", requestedRunId);
   const lock = LockService.getScriptLock();
   let lockAcquired = false;
+  let auditLogs = [];
 
   if (isNXRunning_()) {
-    setProgressNX_(100, "BLOCKED_ALREADY_RUNNING: Quy trinh dang chay");
+    setProgressNX_(runId, 100, "BLOCKED_ALREADY_RUNNING: Quy trinh dang chay", "BLOCKED");
     throw new Error("Quy trinh dang chay, vui long cho hoan tat.");
   }
 
   if (!lock.tryLock(1000)) {
-    setProgressNX_(100, "BLOCKED_ALREADY_RUNNING: Khong lay duoc ScriptLock");
+    setProgressNX_(runId, 100, "BLOCKED_ALREADY_RUNNING: Khong lay duoc ScriptLock", "BLOCKED");
     throw new Error("He thong dang xu ly Nhap-Xuat, thu lai sau.");
   }
 
@@ -18,47 +20,57 @@ function capNhatNhapXuatBQGQ() {
   try {
     debugLog_("Cap nhat Nhap/Xuat BQGQ");
 
-    resetProgressNX_();
-    setProgressNX_(0, "Khoi tao...");
+    setProgressNX_(runId, 0, "Khoi tao...");
 
     SpreadsheetApp.getActive().toast("Dang chay...", "Cap nhat BQGQ", 3);
     const t0 = Date.now();
 
     const ss = SpreadsheetApp.getActive();
     const sh = ss.getSheetByName(CONFIG.SHEET_INVOICE);
-    const logSh = getOrCreateASheet_(CONFIG.SHEET_LOG);
-
     if (!sh) {
-      setProgressNX_(100, "FAILED: Thieu sheet Nhap-Xuat");
+      setProgressNX_(runId, 100, "FAILED: Thieu sheet Nhap-Xuat", "FAILED");
       throw new Error("Thieu sheet Nhap-Xuat");
     }
 
     const lastRow = sh.getLastRow();
     if (lastRow < 2) {
-      setProgressNX_(100, "COMPLETED: Khong co du lieu");
-      return;
+      setProgressNX_(runId, 100, "COMPLETED: Khong co du lieu", "COMPLETED");
+      return { runId, status: "COMPLETED" };
     }
 
     const lastCol = sh.getLastColumn() - 1;
     const dataRange = sh.getRange(2, 2, lastRow - 1, lastCol - 1);
     const data = dataRange.getValues();
+    const transactionSequences = sh.getRange(2, 1, lastRow - 1, 1).getValues().flat();
 
-    logSh.getRange(2, 1, logSh.getMaxRows(), 2).clearContent();
-    logSh.getRange("A1:B1").setValues([["Dong", "Dien giai"]]);
-
-    setProgressNX_(8, "Chuan bi du lieu...");
-    setProgressNX_(12, "Dang nhom theo ma hang...");
+    setProgressNX_(runId, 8, "Chuan bi du lieu...");
+    setProgressNX_(runId, 12, "Dang nhom theo ma hang...");
     const groups = {};
     data.forEach((row, i) => {
       const ma = String(row[3] || "").trim();
       if (!ma) return;
+      if (!parseInvoiceDateValue_(row[0])) {
+        auditLogs.push([runId, "NX", i + 2, "INVALID_ISSUE_DATE"]);
+        throw new Error("Ngay hoa don khong hop le tai dong " + (i + 2));
+      }
+      const sequence = Number(transactionSequences[i]);
+      if (!Number.isInteger(sequence) || sequence < 1) {
+        auditLogs.push([runId, "NX", i + 2, "INVALID_TRANSACTION_SEQUENCE"]);
+        throw new Error("Transaction sequence khong hop le tai dong " + (i + 2));
+      }
       groups[ma] = groups[ma] || [];
       groups[ma].push(i);
     });
 
-    setProgressNX_(25, "Dang tinh toan BQGQ...");
+    Object.keys(groups).forEach(ma => {
+      groups[ma].sort((left, right) => {
+        const dateDelta = parseInvoiceDateValue_(data[left][0]).getTime() - parseInvoiceDateValue_(data[right][0]).getTime();
+        return dateDelta || Number(transactionSequences[left]) - Number(transactionSequences[right]) || left - right;
+      });
+    });
 
-    const logs = [];
+    setProgressNX_(runId, 25, "Dang tinh toan BQGQ...");
+
     const keys = Object.keys(groups);
     const TOTAL = keys.length;
     const BATCH = 20;
@@ -86,8 +98,8 @@ function capNhatNhapXuatBQGQ() {
             row[8] = gt;
           } else if (loai === "XUAT") {
             if (sl > slTon) {
-              logs.push([rowIdx + 2, "Xuat vuot ton"]);
-              sl = slTon;
+              auditLogs.push([runId, "NX", rowIdx + 2, "OVERSELL_BLOCKED"]);
+              throw new Error("Xuat vuot ton tai dong " + (rowIdx + 2));
             }
             row[7] = dgbq;
             row[8] = sl * dgbq;
@@ -110,31 +122,29 @@ function capNhatNhapXuatBQGQ() {
       const batchIndex = Math.floor(i / BATCH) + 1;
       const percent = 15 + Math.round((batchIndex / TOTAL_BATCH) * 75);
 
-      setProgressNX_(
+      setProgressNX_(runId,
         percent,
         `Dang tinh ${Math.min(i + slice.length, TOTAL)}/${TOTAL}`
       );
     }
 
-    setProgressNX_(70, "Chuan bi ghi du lieu...");
+    setProgressNX_(runId, 70, "Chuan bi ghi du lieu...");
     Utilities.sleep(50);
-    setProgressNX_(95, "Dang ghi du lieu...");
+    setProgressNX_(runId, 95, "Dang ghi du lieu...");
     dataRange.setValues(data);
 
-    if (logs.length) {
-      logSh.getRange(2, 1, logs.length, 2).setValues(logs);
-    }
-
-    setProgressNX_(98, "Hoan tat buoc cuoi...");
-    setProgressNX_(100, "COMPLETED: Hoan tat");
+    setProgressNX_(runId, 98, "Hoan tat buoc cuoi...");
+    setProgressNX_(runId, 100, "COMPLETED: Hoan tat", "COMPLETED");
     PropertiesService.getScriptProperties().deleteProperty("NEED_RECALC_NX");
     SpreadsheetApp.getActive().toast(
       `Da xong (${((Date.now() - t0) / 1000).toFixed(2)}s)`,
       "Cap nhat Nhap/Xuat",
       3
     );
+    return { runId, status: "COMPLETED" };
   } catch (err) {
-    setProgressNX_(100, "FAILED: " + sanitizeLogValue_(err.message || err));
+    appendFileLogEntries_(auditLogs);
+    setProgressNX_(runId, 100, "FAILED: " + sanitizeLogValue_(err.message || err), "FAILED");
     throw err;
   } finally {
     setNXRunning_(false);
@@ -144,16 +154,12 @@ function capNhatNhapXuatBQGQ() {
   }
 }
 
-function resetProgressNX_() {
-  ProgressService.reset("NX");
+function setProgressNX_(runId, percent, msg, status) {
+  ProgressService.set("NX", runId, percent, msg, status || "RUNNING");
 }
 
-function setProgressNX_(percent, msg) {
-  ProgressService.set("NX", percent, msg);
-}
-
-function getProgressNX() {
-  return ProgressService.get("NX"); // null nếu chưa start
+function getProgressNX(runId) {
+  return ProgressService.get("NX", runId);
 }
 
 function isNXRunning_() {

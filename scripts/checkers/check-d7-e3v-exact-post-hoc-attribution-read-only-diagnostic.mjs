@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertV6ScopeGate } from './check-ai-governance-bootstrap.mjs';
+import { assertV6ScopeGate, phase0CandidateScope } from './check-ai-governance-bootstrap.mjs';
 
 const root = process.cwd();
 
@@ -23,6 +23,7 @@ const requiredPhaseFiles = Object.freeze([
 ]);
 
 const approvedDirtyFiles = Object.freeze([
+  ...phase0CandidateScope,
   ...requiredPhaseFiles,
   'D7_E4C_ExactPreconditionDiagnostic.js',
   'tests/unit/d7-e4c-exact-precondition-diagnostic.test.mjs',

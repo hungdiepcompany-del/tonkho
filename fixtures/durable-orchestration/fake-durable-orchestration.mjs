@@ -98,6 +98,7 @@ export function createD5AFakeAdapters(options = {}) {
     driveEvidence: [],
     hoaDonRows: [],
     ledgerRows: [],
+    inventoryVerified: options.inventoryAlreadyCurrent === true,
     labels: [...(options.initialLabels || [])]
   };
 
@@ -343,6 +344,40 @@ export function createD5AFakeAdapters(options = {}) {
     }
   };
 
+  const inventoryAdapter = {
+    async readInventoryStatus() {
+      record('inventory.readInventoryStatus');
+      return state.inventoryVerified
+        ? { status: 'ALREADY_PRESENT', evidence: { verified: true } }
+        : { status: 'CONFIRMED_NOT_WRITTEN', evidence: { verified: false } };
+    },
+    async rebuildInventory() {
+      record('inventory.rebuildInventory');
+      const before = maybeFault('INVENTORY_WRITE', false);
+      if (before) return before;
+      if (!state.inventoryVerified) {
+        mutation('writeInventory');
+        state.inventoryVerified = true;
+      }
+      const after = maybeFault('INVENTORY_WRITE', true);
+      if (after) return after;
+      return { status: 'CONFIRMED_WRITTEN', evidence: { verified: true } };
+    },
+    async verifyInventory() {
+      record('inventory.verifyInventory');
+      if (options.inventoryVerificationMismatch) return { status: 'CONFLICT', errorCode: 'INVENTORY_VERIFY_MISMATCH', evidence: {} };
+      return state.inventoryVerified
+        ? { status: 'CONFIRMED_WRITTEN', evidence: { verified: true } }
+        : { status: 'CONFLICT', errorCode: 'INVENTORY_NOT_CURRENT', evidence: {} };
+    },
+    async buildSnapshot() {
+      return { verified: state.inventoryVerified };
+    },
+    mutationCount() {
+      return mutationLog.filter(item => item === 'writeInventory').length;
+    }
+  };
+
   let preloaded = false;
   function preloadOnce(plan) {
     if (preloaded) return;
@@ -374,6 +409,7 @@ export function createD5AFakeAdapters(options = {}) {
     driveEvidenceAdapter,
     hoaDonAdapter,
     ledgerAdapter,
+    inventoryAdapter,
     gmailProjectionAdapter,
     calls,
     mutationLog,

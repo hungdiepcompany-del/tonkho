@@ -53,6 +53,7 @@ function makeHarness(options = {}) {
     driveEvidenceAdapter: adapters.driveEvidenceAdapter,
     hoaDonAdapter: adapters.hoaDonAdapter,
     ledgerAdapter: adapters.ledgerAdapter,
+    inventoryAdapter: adapters.inventoryAdapter,
     gmailProjectionAdapter: adapters.gmailProjectionAdapter,
     reconciliationService,
     clock
@@ -75,6 +76,7 @@ function assertNoDuplicateExternalWrites(adapters) {
   const mutations = adapters.mutationLog;
   assert.equal(mutations.filter(item => item === 'writeHoaDon').length <= 1, true);
   assert.equal(mutations.filter(item => item === 'writeLedger').length <= 1, true);
+  assert.equal(mutations.filter(item => item === 'writeInventory').length <= 1, true);
   assert.equal(mutations.filter(item => item === 'writeGmail').length <= 1, true);
   assert.equal(mutations.filter(item => item === 'writeDriveXML').length <= 1, true);
   assert.equal(mutations.filter(item => item === 'writeDrivePDF').length <= 1, true);
@@ -84,7 +86,7 @@ test('metadata', () => assert.equal(TEST_METADATA.runtimeMutation, 'NONE'));
 
 test('D5A exposes local-only orchestrator factory, step-result contract, and required scenario vocabulary', () => {
   assert.equal(gas.exports.D5A_LOCAL_ONLY, true);
-  assert.deepEqual(fromVm(gas.exports.D5A_EXECUTION_ORDER_), ['DRIVE_XML', 'DRIVE_PDF', 'HOA_DON', 'LEDGER', 'GMAIL']);
+  assert.deepEqual(fromVm(gas.exports.D5A_EXECUTION_ORDER_), ['DRIVE_XML', 'DRIVE_PDF', 'HOA_DON', 'LEDGER', 'INVENTORY', 'GMAIL']);
   assert.deepEqual(Object.values(fromVm(gas.exports.D5A_STEP_RESULT_STATUSES_)), [
     'NOT_ATTEMPTED',
     'CONFIRMED_NOT_WRITTEN',
@@ -101,8 +103,8 @@ test('D5A exposes local-only orchestrator factory, step-result contract, and req
 test('D5A happy path one-line invoice writes Drive, Hoa-Don, ledger, Gmail in order and completes', async () => {
   const { result, adapters } = await runScenario();
   assert.equal(result.status, 'COMPLETED');
-  assert.equal(result.executionOrder, 'DRIVE_XML_DRIVE_PDF_HOA_DON_LEDGER_GMAIL');
-  assert.deepEqual(adapters.mutationLog, ['writeDriveXML', 'writeDrivePDF', 'writeHoaDon', 'writeLedger', 'writeGmail']);
+  assert.equal(result.executionOrder, 'DRIVE_XML_DRIVE_PDF_HOA_DON_LEDGER_INVENTORY_GMAIL');
+  assert.deepEqual(adapters.mutationLog, ['writeDriveXML', 'writeDrivePDF', 'writeHoaDon', 'writeLedger', 'writeInventory', 'writeGmail']);
   assert.equal(result.auditEvents.includes('JOB_COMPLETED'), true);
   assertNoDuplicateExternalWrites(adapters);
 });
@@ -184,7 +186,7 @@ test('D5A saved label is applied last and an already-correct saved label after l
   const { result, adapters } = await runScenario({ adapters: { savedLabelAlreadyCorrect: true } });
   assert.equal(result.status, 'COMPLETED');
   assert.equal(adapters.mutationLog.includes('writeGmail'), false);
-  assert.deepEqual(adapters.mutationLog, ['writeDriveXML', 'writeDrivePDF', 'writeHoaDon', 'writeLedger']);
+  assert.deepEqual(adapters.mutationLog, ['writeDriveXML', 'writeDrivePDF', 'writeHoaDon', 'writeLedger', 'writeInventory']);
 });
 
 test('D5A version conflicts before and after external mutation do not retry mutations blindly', async () => {

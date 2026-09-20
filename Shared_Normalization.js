@@ -140,3 +140,14 @@ function normalizeCompanyForCompare_(s) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+function normalizeIdentityText_(value) {
+  return normalizeTextForCompare_(value == null ? "" : String(value))
+    .toUpperCase();
+}
+
+function normalizeIdentityNumber_(value) {
+  const number = Number(value || 0);
+  if (!isFinite(number)) throw new Error("Gia tri so khong hop le: " + value);
+  return number === 0 ? "0" : String(number);
+}

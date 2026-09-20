@@ -61,3 +61,17 @@ LIVE_CONFIGURATION_STATUS=NOT_LIVE_VERIFIED_PLACEHOLDERS_ONLY
 SCANNER_RUNTIME_WIRING=NOT_STARTED
 PRODUCTION_GOOGLE_API_CALL_COUNT=0
 PRODUCTION_FIRESTORE_MUTATION=NONE
+
+## Exact17 Local Implementation V1
+
+PHASE=SGDS_EXACT17_LOCAL_IMPLEMENTATION_V1
+STATUS=LOCAL_CANDIDATE_FROZEN_ACCEPTANCE_PENDING
+DEPLOYMENT_STATUS=NOT_SYNCED_NOT_DEPLOYED
+
+The local candidate keeps Google Sheets as the canonical ledger and adds four
+coherent runtime boundaries: immutable V2 invoice/line identity for new rows,
+per-invoice Gmail retry and commit projection, durable inventory verification
+before completion, and deterministic inventory rebuild with run-scoped progress
+and append-only audit. Legacy persisted identities remain readable. Firestore
+remains workflow state and projection, not the business ledger. No production
+runtime, Google account, or remote Apps Script source was changed by this phase.

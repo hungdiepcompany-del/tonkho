@@ -37,8 +37,8 @@ function createGasSheetsReadOnlyReader(options) {
         Boolean(pdfFileReference && pdf === pdfFileReference);
       if (!matched) return;
       matches.push({
-        legacyInvoiceKey: keyCol >= 0 ? String(row[keyCol] || '') : legacyInvoiceKey,
-        invoiceKeyV2,
+        legacyInvoiceKey: key === invoiceKeyV2 ? legacyInvoiceKey : key,
+        invoiceKeyV2: key === invoiceKeyV2 ? key : invoiceKeyV2,
         xmlFileId: xmlCol >= 0 ? String(row[xmlCol] || '') : '',
         pdfFileId: pdfCol >= 0 ? String(row[pdfCol] || '') : '',
         xmlStatus: xmlStatusCol >= 0 ? String(row[xmlStatusCol] || '') : '',
@@ -63,16 +63,21 @@ function createGasSheetsReadOnlyReader(options) {
     (request && request.lineHashes || []).forEach(hash => {
       lineHashes[String(hash || '')] = true;
     });
+    (request && request.lineIdentityV2s || []).forEach(identity => {
+      lineHashes[String(identity || '')] = true;
+    });
     const matches = [];
     scanSheetRowsD5D_(sheet, 2, lastRow, width, request, row => {
-      const hash = String(row[CONFIG.NHAPXUAT_INDEX.hash] || '');
-      const key = String(row[CONFIG.NHAPXUAT_INDEX.invoiceKey] || '');
+      const hash = String(row[CONFIG.NHAPXUAT_INDEX.hash + 1] || '');
+      const key = String(row[CONFIG.NHAPXUAT_INDEX.invoiceKey + 1] || '');
       if (!(key === legacyInvoiceKey || key === invoiceKeyV2 || Boolean(lineHashes[hash]))) return;
       matches.push({
-        legacyInvoiceKey: String(row[CONFIG.NHAPXUAT_INDEX.invoiceKey] || ''),
-        invoiceKeyV2,
-        legacyHashIndex: String(row[CONFIG.NHAPXUAT_INDEX.hash] || ''),
-        lineIdentityV2: String(row[CONFIG.NHAPXUAT_INDEX.hash] || '')
+        transactionSequence: Number(row[0] || 0),
+        issueDate: row[1],
+        legacyInvoiceKey: key === invoiceKeyV2 ? legacyInvoiceKey : key,
+        invoiceKeyV2: key === invoiceKeyV2 ? key : invoiceKeyV2,
+        legacyHashIndex: hash,
+        lineIdentityV2: hash
       });
     });
     return matches.slice(0, maxRows + 1);

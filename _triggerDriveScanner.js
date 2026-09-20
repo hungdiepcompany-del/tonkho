@@ -63,17 +63,15 @@ function scanFilesInFolder_(folder, invoiceType, budget) {
 
       if (!meta) continue;
 
-      const invoiceKey = buildInvoiceKey_(
-        meta.date,
-        meta.taxCode,
-        meta.invoiceNo
-      );
+      if (fileType === "XML") {
+        parseInvoiceXMLFile_(file, invoiceType);
+        continue;
+      }
 
-      upsertHoaDonFile_(invoiceKey, fileType, file.getId());
-
-      if (fileType !== "XML") continue;
-
-      parseInvoiceXMLFile_(file, invoiceType);
+      // A filename cannot prove invoiceSymbol, so PDF-only evidence remains on
+      // the legacy registry key until XML establishes InvoiceKeyV2.
+      const legacyInvoiceKey = buildInvoiceKey_(meta.date, meta.taxCode, meta.invoiceNo);
+      upsertHoaDonFile_(legacyInvoiceKey, fileType, file.getId());
     } catch (err) {
       debugLog_("Loi xu ly Drive file: " + file.getName() + " | " + (err.stack || err));
     }
@@ -91,13 +89,27 @@ function parseInvoiceXMLFile_(file, invoiceType) {
     if (!parsed || !parsed.meta) return;
     if (!isVatInvoiceXML_(parsed.meta)) return;
 
+    const invoiceKeyV2 = buildInvoiceKeyV2_(
+      parsed.meta.invoiceDate,
+      parsed.seller?.taxCode,
+      parsed.meta.invoiceSymbol,
+      parsed.meta.invoiceNo
+    );
+    upsertHoaDonFile_(invoiceKeyV2, "XML", file.getId());
+
     const rows = buildInvoiceRowsFromParsed_(parsed, invoiceType);
 
     if (rows.length) {
       const prepared = prepareInvoiceRowsForCommit_(
         rows.map((row, index) => ({
           type: invoiceType === "IN" ? "IN" : "OUT",
-          row,
+          row: row.row,
+          invoiceKeyV2: row.invoiceKeyV2,
+          sourceLineNo: row.sourceLineNo,
+          rawItemName: row.rawItemName,
+          unit: row.unit,
+          amount: row.amount,
+          lineIdentityV2: row.lineIdentityV2,
           sourceKey: "DRIVE:" + file.getId() + ":" + index
         })),
         null,
@@ -143,24 +155,23 @@ function buildInvoiceRowsFromParsed_(parsed, type) {
   const rows = [];
   const meta = parsed.meta;
 
-  const taxCode =
-    type === "IN"
-      ? parsed.seller?.taxCode || ""
-      : parsed.buyer?.taxCode || "";
+  const sellerTaxCode = parsed.seller?.taxCode || "";
 
   const company =
     type === "IN"
       ? parsed.seller?.name || ""
       : parsed.buyer?.name || "";
 
-  const invoiceKey = buildInvoiceKey_(
+  const invoiceKeyV2 = buildInvoiceKeyV2_(
     meta.invoiceDate,
-    taxCode,
+    sellerTaxCode,
+    meta.invoiceSymbol,
     meta.invoiceNo
   );
 
-  parsed.items.forEach(item => {
+  parsed.items.forEach((item, index) => {
     const row = [];
+    const sourceLineNo = Number(item.sourceLineNo || index + 1);
 
     row[CONFIG.NHAPXUAT_INDEX.invoiceDate] = meta.invoiceDate;
     row[CONFIG.NHAPXUAT_INDEX.invoiceNo] = meta.invoiceNo;
@@ -172,22 +183,28 @@ function buildInvoiceRowsFromParsed_(parsed, type) {
     row[CONFIG.NHAPXUAT_INDEX.qty] = item.qty;
     row[CONFIG.NHAPXUAT_INDEX.price] = item.price;
 
-    const values = {
-      invoiceDate: meta.invoiceDate,
-      invoiceNo: meta.invoiceNo,
-      customerName: company,
-      itemCode: item.code,
-      itemName: item.name,
-      invoiceType: type === "IN" ? "NHAP" : "XUAT",
-      qty: item.qty
-    };
-
-    const hash = buildInvoiceItemHash_(values);
+    const hash = buildLineIdentityV2_({
+      invoiceKeyV2,
+      sourceLineNo,
+      rawItemName: item.rawItemName || item.name,
+      unit: item.unit,
+      quantity: item.quantity == null ? item.qty : item.quantity,
+      unitPrice: item.unitPrice == null ? item.price : item.unitPrice,
+      amount: item.amount
+    });
 
     row[CONFIG.NHAPXUAT_INDEX.hash] = hash;
-    row[CONFIG.NHAPXUAT_INDEX.invoiceKey] = invoiceKey;
+    row[CONFIG.NHAPXUAT_INDEX.invoiceKey] = invoiceKeyV2;
 
-    rows.push(row);
+    rows.push({
+      row,
+      invoiceKeyV2,
+      sourceLineNo,
+      rawItemName: item.rawItemName || item.name || "",
+      unit: item.unit || "",
+      amount: item.amount,
+      lineIdentityV2: hash
+    });
   });
 
   return rows;

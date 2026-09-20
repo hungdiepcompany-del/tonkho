@@ -93,20 +93,17 @@ function prepareInvoiceRowsForCommit_(items, stats, options = {}) {
 
     const customerName = normalizeCustomerName_(r[2], dic, dicVietTat);
 
-    const values = {
-      invoiceDate: r[0],
-      invoiceNo: r[1],
-      customerName,
-      itemCode: r[3],
-      itemName: r[4],
-      invoiceType: r[5],
-      qty: r[6]
-    };
-
-    const hash = buildInvoiceItemHash_(
-      values,
-      CONFIG.DEBUG_HASH ? `${debugPrefix} ${type} row ${i + 1}` : ""
-    );
+    const sourceLineNo = Number(item.sourceLineNo || i + 1);
+    const invoiceKeyV2 = item.invoiceKeyV2 || invoiceKey;
+    const hash = item.lineIdentityV2 || buildLineIdentityV2_({
+      invoiceKeyV2,
+      sourceLineNo,
+      rawItemName: item.rawItemName || r[4],
+      unit: item.unit || "",
+      quantity: r[6],
+      unitPrice: r[7],
+      amount: item.amount == null ? Number(r[6] || 0) * Number(r[7] || 0) : item.amount
+    });
 
     if (!hash) safeStats.emptyHash++;
     else safeStats.hashed++;
@@ -121,14 +118,17 @@ function prepareInvoiceRowsForCommit_(items, stats, options = {}) {
     rowOut[CONFIG.NHAPXUAT_INDEX.qty] = r[6];
     rowOut[CONFIG.NHAPXUAT_INDEX.price] = r[7];
     rowOut[CONFIG.NHAPXUAT_INDEX.hash] = hash;
-    rowOut[CONFIG.NHAPXUAT_INDEX.invoiceKey] = invoiceKey;
+    rowOut[CONFIG.NHAPXUAT_INDEX.invoiceKey] = invoiceKeyV2;
 
     return {
       ...item,
       type,
       row: rowOut,
       invoiceKey,
-      sourceKey: buildCommitSourceKey_(item, invoiceKey, i),
+      invoiceKeyV2,
+      sourceLineNo,
+      lineIdentityV2: hash,
+      sourceKey: buildCommitSourceKey_(item, invoiceKeyV2, i),
       writeStatus: "NOT_ATTEMPTED",
       errorCode: ""
     };
@@ -192,8 +192,9 @@ function projectCommitLabelsByThread_(commitResults) {
       x.writeStatus === "NOT_ATTEMPTED"
     );
     const allCommitted = eligible.length > 0 && eligible.every(x =>
-      x.writeStatus === "COMMITTED" ||
-      x.writeStatus === "ALREADY_COMMITTED"
+      (x.writeStatus === "COMMITTED" ||
+      x.writeStatus === "ALREADY_COMMITTED") &&
+      x.artifactReady !== false
     );
     setExclusiveLabel_(thread, allCommitted ? "SAVED_SHEET" : "PENDING");
   });

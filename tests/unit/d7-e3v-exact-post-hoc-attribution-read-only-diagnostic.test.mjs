@@ -7,6 +7,7 @@ import {
   evaluateD7E3VPhaseFileState_,
   evaluateD7E3VSourceSemantics_
 } from '../../scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs';
+import { phase0CandidateScope } from '../../scripts/checkers/check-ai-governance-bootstrap.mjs';
 
 const TEST_METADATA = defineTestMetadata({
   testClass: 'REGRESSION_INVARIANT',
@@ -86,6 +87,13 @@ function evaluateDefaultPhaseState(patch = {}) {
     existingFiles: patch.existingFiles || D7_E3V_PHASE_REQUIRED_FILES
   });
 }
+
+test('D7-E3V aggregate gate accepts the current governed candidate scope', () => {
+  const result = evaluateDefaultPhaseState({
+    statusLines: phase0CandidateScope.map(file => ` M ${file}`)
+  });
+  assert.equal(result.ok, true);
+});
 
 function evaluateSourceSemantics(runtimePatch = source) {
   return evaluateD7E3VSourceSemantics_({

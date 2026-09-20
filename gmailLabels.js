@@ -8,6 +8,10 @@ function threadHasAllLabel_(thread, labelNames = []) {
   return labelNames.every(n => set.has(n));
 }
 
+function threadHasLabel_(thread, labelName) {
+  return thread.getLabels().some(label => label.getName() === labelName);
+}
+
 function setExclusiveLabel_(thread, target) {
   const labelSaved = getOrCreateLabel_(CONFIG.SAVE_SHEET_LABEL);
   const labelPending = getOrCreateLabel_(CONFIG.PENDING_LABEL);

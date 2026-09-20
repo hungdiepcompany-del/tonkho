@@ -222,3 +222,26 @@ ROW_NUMBER_AS_IDENTITY=NO
 USER_EDITABLE_COLUMN_OVERWRITE=BLOCKED_REVIEW_REQUIRED
 AMBIGUOUS_DATE_POLICY=HOLD_FOR_REVIEW
 PRODUCTION_MUTATION=NONE
+
+## Exact17 Local Candidate Data Contract
+
+PHASE=SGDS_EXACT17_LOCAL_IMPLEMENTATION_V1
+STATUS=LOCAL_CANDIDATE_FROZEN_ACCEPTANCE_PENDING
+PHYSICAL_SHEET_SCHEMA_CHANGED=NO
+LEGACY_IDENTITY_READABLE=YES
+PRODUCTION_MUTATION=NONE
+
+For newly committed transaction rows, column `A` is an immutable monotonic
+transaction sequence, column `N` stores `LineIdentityV2`, and column `O` stores
+`InvoiceKeyV2`. `InvoiceKeyV2` is derived from normalized seller tax code,
+symbol, invoice number, and issue date. `LineIdentityV2` additionally binds
+source line number, normalized raw item name, unit, quantity, unit price, and
+amount. Historical v1 rows remain readable and are not rewritten.
+
+An invoice is complete only after its required Drive artifacts, ledger rows,
+and inventory projection are verified. Gmail completed labels are projections
+of that full commit; pending work remains rediscoverable. Inventory rebuild is
+ordered by issue date, transaction sequence, then source line number, and an
+oversell blocks before write. Progress is scoped by exact run ID and terminal
+status. The shared four-column file log is append-only audit; direct historical
+edits are restored when possible and mark reconciliation required.

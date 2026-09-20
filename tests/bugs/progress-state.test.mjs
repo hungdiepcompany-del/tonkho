@@ -14,6 +14,14 @@ test('C04: BQGQ and TonKho use ScriptLock plus cleanup in finally', () => {
   assert.match(tk, /finally[\s\S]*setTKRunning_\(false\)[\s\S]*lock\.releaseLock\(\)/);
 });
 test('C04: early no-data paths record terminal progress before return', () => {
-  assert.match(fs.readFileSync('sheetNhapXuat.js','utf8'), /if \(lastRow < 2\) \{\s*setProgressNX_\(100, "COMPLETED: Khong co du lieu"\);\s*return;/s);
-  assert.match(fs.readFileSync('sheetTonKho.js','utf8'), /if \(lastRowNX < 2\) \{\s*setProgressTK_\(100, "COMPLETED: Khong co du lieu"\);\s*return;/s);
+  assert.match(fs.readFileSync('sheetNhapXuat.js','utf8'), /setProgressNX_\(runId, 100, "COMPLETED: Khong co du lieu", "COMPLETED"\)/);
+  assert.match(fs.readFileSync('sheetTonKho.js','utf8'), /setProgressTK_\(runId, 100, "COMPLETED: Khong co du lieu", "COMPLETED"\)/);
+});
+test('C04: progress is bound to run identity and sidebar chains only successful NX', () => {
+  const service = fs.readFileSync('sheetUtils.js','utf8');
+  const sidebar = fs.readFileSync('sheetSidebar.html','utf8');
+  assert.match(service, /runId: normalizeRunId/);
+  assert.match(service, /progress\.runId !== expectedRunId/);
+  assert.match(sidebar, /p\.status === "COMPLETED" && !tkStarted/);
+  assert.doesNotMatch(sidebar, /if \(p\.value >= 100\)/);
 });

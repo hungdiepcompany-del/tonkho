@@ -54,6 +54,9 @@ test('metadata', () => assert.equal(TEST_METADATA.testClass, 'REGRESSION_INVARIA
 test('D1 durable transition validator accepts only approved state path', () => {
   assert.equal(gas.call('assertDurableJobTransition_', 'DETECTED', 'COLLECTED'), true);
   assert.equal(gas.call('assertDurableJobTransition_', 'FILES_SAVED', 'COMMITTING'), true);
+  assert.equal(gas.call('assertDurableJobTransition_', 'ROWS_COMMITTED', 'INVENTORY_PENDING'), true);
+  assert.equal(gas.call('assertDurableJobTransition_', 'INVENTORY_PENDING', 'PROJECTIONS_COMMITTED'), true);
+  // Historical sealed tooling remains readable during migration.
   assert.equal(gas.call('assertDurableJobTransition_', 'ROWS_COMMITTED', 'PROJECTIONS_COMMITTED'), true);
   assert.equal(gas.call('isDurableTerminalJobState_', 'COMPLETED'), true);
 
@@ -125,6 +128,7 @@ test('D1 completed job resume is idempotent only when ledger registry and projec
     fromVm(gas.call('resolveDurableCompletedResume_', completed, {
       ledgerVerified: true,
       registryVerified: true,
+      inventoryVerified: true,
       projectionVerified: true
     })),
     { action: 'IDEMPOTENT_COMPLETE_NOOP', safeToMutate: false }

@@ -1,61 +1,54 @@
-# Exact17 local source candidate plan V1
+# Exact17 aggregate compatibility correction V1
 
-PHASE_ID=SGDS_EXACT17_LOCAL_CANDIDATE_PLAN_V1
+PHASE_ID=SGDS_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_V1
 TASK_ID=01a0508a-ca2d-72b0-8138-e60315864d31
 WRITER_ID=01a0508a-ca2d-72b0-8138-e60315864d31
 STATUS=ACTIVE
 OWNER_AUTHORITY=DIRECT_OWNER_DELEGATED_TO_PHASE_CONTROLLER
-AUTHORITY_ID=OWNER_GO_EXACT17_LOCAL_CANDIDATE_PLAN_RECOMMENDED_POLICY_V1_20260920
-CURRENT_AUTHORITY_ASSIGNMENT_ID=SGDS_EXACT17_LOCAL_CANDIDATE_PLAN_REVIEW_CORRECTION_V2_01a0508a
+AUTHORITY_ID=OWNER_GO_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_EXACT_11_PATHS_V1_20260920
+CURRENT_AUTHORITY_ASSIGNMENT_ID=SGDS_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_V1_01a0508a
 CURRENT_AUTHORITY_CODER_THREAD_ID=01a0508a-ca2d-72b0-8138-e60315864d31
-CURRENT_AUTHORITY_CODER_ROLE=SOLE_LOCAL_CANDIDATE_PLAN_REVIEW_CORRECTION_CODER
-CURRENT_AUTHORITY_ASSIGN_OPERATION_ID=exact17-local-candidate-plan-review-correction-assign-01a0508a
-CURRENT_AUTHORITY_VERIFY_OPERATION_ID=exact17-local-candidate-plan-review-correction-verify-01a0508a
-CURRENT_AUTHORITY_COMPLETE_OPERATION_ID=exact17-local-candidate-plan-review-correction-complete-01a0508a
-CURRENT_AUTHORITY_RELEASE_OPERATION_ID=exact17-local-candidate-plan-review-correction-release-01a0508a
-AUTHORITY_PREDECESSOR=OFFLINE_EXACT17_PLAN_REVIEW_CORRECTION_CLOSED_NONE_REVISION_232_CHECKPOINT_0141c113be8a85ef04c98f96fc15aae8bd1610b6
-OWNER_GO_RECEIVED=GO_IN_REPLY_TO_OWNER_ADJUDICATION_RECOMMENDED_POLICY_FOUR_UNKNOWN_HOLD_FORM_LOCAL_CANDIDATE_PLAN_ONLY_NO_SYNC_NO_PRODUCTION
-OWNER_BOOTSTRAP_EXCEPTION=NONE_CURRENT_ASSIGNMENT_WAS_CREATED_FROM_NONE_REVISION_224_BEFORE_DOCUMENT_MUTATION
-RISK_CLASS=HIGH_SOURCE_CANDIDATE_DESIGN_WITH_LOCAL_ONLY_DOCUMENTATION
+CURRENT_AUTHORITY_CODER_ROLE=SOLE_EXACT17_AGGREGATE_COMPATIBILITY_CODER
+CURRENT_AUTHORITY_ASSIGN_OPERATION_ID=exact17-aggregate-compatibility-assign-01a0508a
+CURRENT_AUTHORITY_VERIFY_OPERATION_ID=exact17-aggregate-compatibility-verify-01a0508a
+CURRENT_AUTHORITY_COMPLETE_OPERATION_ID=exact17-aggregate-compatibility-complete-01a0508a
+CURRENT_AUTHORITY_RELEASE_OPERATION_ID=exact17-aggregate-compatibility-release-01a0508a
+AUTHORITY_PREDECESSOR=EXACT17_LOCAL_IMPLEMENTATION_COMPLETED_RELEASED_NONE_REVISION_244_CHECKPOINT_84618ee1cb7fd12ed79ac6f705127f0d489affaf
+OWNER_GO_RECEIVED=GO_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_EXACT_11_PATHS_FRESH_WRITER_LOCAL_ONLY_NO_SYNC_NO_PRODUCTION_NO_COMMIT_NO_PUSH
+OWNER_BOOTSTRAP_EXCEPTION=NONE_CURRENT_ASSIGNMENT_WAS_CREATED_FROM_NONE_REVISION_244_BEFORE_DOCUMENT_MUTATION
+RISK_CLASS=MEDIUM_LOCAL_GOVERNANCE_COMPATIBILITY_CORRECTION
 CURRENT_AUTHORITY_RULE=THE_TITLE_TO_FIRST_SECTION_PREAMBLE_IS_THE_ONLY_AUTHORITY_SOURCE_FOR_AUTHORITY_ID_CURRENT_AUTHORITY_ASSIGNMENT_ID_AND_CURRENT_AUTHORITY_CODER_THREAD_ID
-CURRENT_AUTHORITY_BOUNDARY=OWNER_APPROVED_POLICY_TO_EXACT17_LOCAL_OPERATION_MATRIX_CLUSTERED_IMPLEMENTATION_ACCEPTANCE_AND_ROLLBACK_PLAN_THEN_GOVERNED_FIVE_DOCUMENT_CLOSEOUT
+CURRENT_AUTHORITY_BOUNDARY=OWNER_APPROVED_EXACT_11_PATH_AGGREGATE_COMPATIBILITY_CORRECTION_WITH_71_PATH_CANDIDATE_ALLOWLIST
 READ_ONLY_SOURCE_SCOPE=D7_E4B_ExactFirestoreReconciliationRuntime.js;gmailLabels.js;gmailProcessInvoiceXML.js;gmailSearch.js;hashUtils.js;Invoice_AttachmentParser.js;main.js;sheetHoaDon.js;sheetMenu.js;sheetNhapXuat.js;sheetSidebar.html;sheetTonKho.js;sheetUtils.js;triggers.js;D7_E4C_ExactPreconditionDiagnostic.js;invoiceCanonical.js;SKU_ENGINE.js
 MODEL_ROUTING=CANDIDATE_ARCHITECTURE_SOL_HIGH;BASELINE_HASH_INSPECTION_LUNA_MEDIUM;CODER_TERRA_HIGH;REVIEWER_TERRA_HIGH;VERIFIER_TERRA_HIGH
-AUTONOMOUS_ACTIONS=READ_LOCAL_APPROVED_ARCHITECTURE_DATA_CONTRACT_OWNER_DECISIONS_AND_SEALED_PROVENANCE;DEFINE_EXACT17_LOCAL_OPERATION_MATRIX_CLUSTERED_FUTURE_IMPLEMENTATION_ACCEPTANCE_AND_ROLLBACK;NORMAL_HELPER_ISOLATION_CREATE_VALIDATE_CLEANUP;NORMAL_EXACT_CONTROLLER_WRITER_LIFECYCLE;ONE_CODER_FIVE_DOCUMENT_RECORD_AND_SAME_SCOPE_CORRECTIONS;INDEPENDENT_REVIEW_VERIFY
-DOCUMENTATION_WRITE_SCOPE=docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;docs/FILE_MANIFEST.md
+AUTONOMOUS_ACTIONS=READ_LOCAL_APPROVED_ARCHITECTURE_DATA_CONTRACT_OWNER_DECISIONS_AND_SEALED_PROVENANCE;NORMAL_EXACT_CONTROLLER_WRITER_LIFECYCLE;ONE_CODER_EXACT_11_PATH_AGGREGATE_COMPATIBILITY_CORRECTION;LOCAL_TEST_AND_STATIC_ACCEPTANCE;NORMAL_HELPER_ISOLATION_CREATE_VALIDATE_CLEANUP;INDEPENDENT_REVIEW_VERIFY;GOVERNED_DOCUMENT_CLOSEOUT
+DOCUMENTATION_WRITE_SCOPE=docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md;docs/02_TARGET_ARCHITECTURE.md;docs/03_DATA_CONTRACT.md;docs/04_MASTER_PLAN.md;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;docs/FILE_MANIFEST.md
 REMOTE_PROVENANCE_READ_BUDGET=CONSUMED_BY_ONE_SUCCESSFUL_FRESH_CLONE_ATTEMPT_NO_RETRY_NO_SECOND_FETCH_NO_RERUN
 EXACT_SCRIPT_ID=19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
 PRODUCTION_READ_ONLY_INVOCATION_BUDGET=PRIOR_UNCONSUMED_NOT_AUTHORIZED_BY_THIS_SOURCE_AUDIT
 PRODUCTION_READ_LIMITS=GMAIL_ONE_EXACT_MESSAGE;DRIVE_MAX_TWO_FILES_PER_ARTIFACT;SHEETS_MAX_TWO_EXACT_ROWS;FIRESTORE_MAX_FIVE_EXACT_DOCUMENT_READS
-HARD_STOPS=AMBIGUOUS_AUTHORITY_IDENTITY_SECOND_WRITER_SCOPE_EXPANSION_NEW_FETCH_NETWORK_OR_PRODUCTION_ACCESS_UNEXPECTED_DRIFT_OUTSIDE_FROZEN_SCOPE_ANY_APPLICATION_SOURCE_TEST_CHECKER_IMPORT_OVERWRITE_SYNC_RECONCILIATION_OR_DATA_MUTATION_REQUEST_ABNORMAL_RECOVERY_CHECKPOINT_COMMIT_PUSH
-FORBIDDEN=NO_APPLICATION_SOURCE_TEST_CHECKER_OR_NONLISTED_DOCUMENT_EDIT_NO_NEW_FETCH_NETWORK_SOURCE_IMPORT_OVERWRITE_SYNC_CLASP_PUSH_OR_REPOSITORY_PULL_NO_RECONCILIATION_REPAIR_OR_PRODUCTION_ACCESS_OR_MUTATION_NO_GMAIL_DRIVE_SHEETS_FIRESTORE_SCRIPT_PROPERTY_MARKER_TRIGGER_IAM_ACL_CREDENTIAL_DEPLOY_GIT_STAGE_COMMIT_PUSH_NO_MANUAL_WRITER_OR_ISOLATION_STATE_MUTATION_NO_PROTECTED_W_W1_CHANGE
+HARD_STOPS=AMBIGUOUS_AUTHORITY_IDENTITY_SECOND_WRITER_SCOPE_EXPANSION_UNEXPECTED_CORRECTION_DRIFT_OUTSIDE_EXACT_11_PATHS_NEW_FETCH_NETWORK_OR_PRODUCTION_ACCESS_IMPORT_OVERWRITE_SYNC_RECONCILIATION_OR_DATA_MUTATION_REQUEST_ABNORMAL_RECOVERY_ACCEPTANCE_BELOW_17_PASS_0_FAIL_0_SKIP_0_TODO_CHECKPOINT_COMMIT_PUSH
+FORBIDDEN=NO_NONLISTED_PATH_EDIT_NO_NEW_FETCH_NETWORK_SOURCE_IMPORT_OVERWRITE_SYNC_CLASP_PUSH_OR_REPOSITORY_PULL_NO_PRODUCTION_ACCESS_OR_MUTATION_NO_GMAIL_DRIVE_SHEETS_FIRESTORE_SCRIPT_PROPERTY_MARKER_TRIGGER_IAM_ACL_CREDENTIAL_DEPLOY_GIT_STAGE_COMMIT_PUSH_NO_MANUAL_WRITER_OR_ISOLATION_STATE_MUTATION_NO_PROTECTED_W_W1_CHANGE
 
 ## Current authority and authoring state
 
-This section records a non-liveness authoring snapshot for the local candidate
-plan review correction. Initial candidate-plan authoring reached WriterComplete
-revision `235` and ControllerRelease slot `NONE` revision `236`. Fresh
-InspectWriter observed that terminal state before ControllerAssign and
-ControllerVerify established the exact correction binding
-`authority_id=OWNER_GO_EXACT17_LOCAL_CANDIDATE_PLAN_RECOMMENDED_POLICY_V1_20260920`,
-`assignment_id=SGDS_EXACT17_LOCAL_CANDIDATE_PLAN_REVIEW_CORRECTION_V2_01a0508a`,
-and `writer_id=01a0508a-ca2d-72b0-8138-e60315864d31` as `ACTIVE`, revision `238`.
-This observation does not prove later slot liveness. Every later session must
-use fresh InspectWriter evidence before lifecycle routing; no historical
-assignment may be replayed.
+Fresh `InspectWriter`, `ControllerAssign`, and `ControllerVerify` established
+the exact aggregate-compatibility correction binding
+`authority_id=OWNER_GO_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_EXACT_11_PATHS_V1_20260920`,
+`assignment_id=SGDS_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_V1_01a0508a`, and
+`writer_id=01a0508a-ca2d-72b0-8138-e60315864d31` as `ACTIVE`, revision `246`,
+state hash
+`sha256:b00285cd7391ed8a81b44d51bff1c815a416951c7a907e60f6194c7694777f11`.
+The Exact17 implementation writer completed and released to slot `NONE`,
+revision `244`, before this assignment. This paragraph is a recorded snapshot,
+not permission to replay a lifecycle action.
 
-The authorized documentation delta is exactly these five paths:
-
-- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md`
-- `docs/12_AI_WORK_LOG.md`
-- `docs/13_DECISION_LOG.md`
-- `docs/99_NEXT_AI_HANDOFF.md`
-- `docs/FILE_MANIFEST.md`
-
-No application source, tests, checkers, other documentation, control-plane
-state, isolation state, Git index, protected `w`/`w1`, or external system may
-be changed by this Coder. The Coder must freeze after local documentation
-validation and must not invoke WriterComplete or ControllerRelease.
+The sole Coder may change only the 11 correction paths authorized by the Owner.
+The candidate allowlist contains the original 69 paths plus the D7-E3V checker
+and its regression test, for 71 unique paths. No application runtime logic may
+change in this correction. It does not authorize source synchronization,
+production access or mutation, staging, commit, push, deployment, manual
+lifecycle state edits, or protected `w`/`w1` changes.
 
 ## Fresh source provenance evidence
 
@@ -300,33 +293,93 @@ writes.
 - Source sync, production reads/writes, commit, push, deployment, marker, IAM,
   trigger, Gmail, Drive, Sheets, and Firestore operations remain separate gates.
 
-## Allowed mutation scope
+## Correction mutation scope
 
-This exact 25-path list is retained only as the historical Phase 0 candidate
-identity required by the local static governance checker. It does not widen
-the current five-document `DOCUMENTATION_WRITE_SCOPE` in the authoritative
-preamble.
+Only these 11 paths may be edited by the current correction writer:
 
-- `scripts/ai/Manage-NonWriterIsolation.ps1`
-- `scripts/checkers/check-ai-governance-bootstrap.mjs`
-- `tests/unit/ai-governance-bootstrap.test.mjs`
-- `scripts/test/run-all-checks.mjs`
 - `scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs`
 - `tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs`
-- `scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs`
-- `tests/unit/d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.test.mjs`
-- `scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs`
-- `tests/unit/d7-e4a1a-canonical-identity-configuration-read-only-recovery.test.mjs`
-- `scripts/checkers/check-d7-e4a1b-owner-configure-canonical-properties.mjs`
-- `tests/unit/d7-e4a1b-owner-configure-canonical-properties.test.mjs`
-- `scripts/checkers/check-d7-e4a1c-owner-marker-single-read-only-cardinality-execution.mjs`
-- `tests/unit/d7-e4a1c-owner-marker-single-read-only-cardinality-execution.test.mjs`
-- `scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs`
-- `tests/unit/d7-e4a2-exact-firestore-reconciliation-plan-finalization.test.mjs`
-- `docs/exec-plans/active/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs`
+- `tests/unit/ai-governance-bootstrap.test.mjs`
+- `scripts/checkers/check-exact17-local-candidate-implementation.mjs`
 - `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md`
-- `docs/exec-plans/completed/SGDS_WRITER_AUTHORITY_V3_CONTROLLER_ENFORCED_SINGLE_WRITER_IMPLEMENTATION.md`
-- `docs/00_INDEX.md`
+- `docs/04_MASTER_PLAN.md`
+- `docs/12_AI_WORK_LOG.md`
+- `docs/13_DECISION_LOG.md`
+- `docs/99_NEXT_AI_HANDOFF.md`
+- `docs/FILE_MANIFEST.md`
+
+## Allowed mutation scope
+
+This exact 71-path list is the complete local candidate allowlist. No path
+outside this section may be mutated by the current authority.
+
+- `config.js`
+- `Shared_Normalization.js`
+- `Shared_Hashing.js`
+- `Invoice_AttachmentParser.js`
+- `gmailProcessInvoiceXML.js`
+- `sheetHoaDon.js`
+- `hashUtils.js`
+- `sheetWriter.js`
+- `main.js`
+- `_triggerDriveScanner.js`
+- `driveUtils.js`
+- `gasSheetsReadOnlyReader.js`
+- `sgdsSheetsLedgerAdapter.js`
+- `gmailCollection.js`
+- `gmailSearch.js`
+- `gmailLabels.js`
+- `gmailScanner.js`
+- `durableScannerShadowBridge.js`
+- `durableJobState.js`
+- `durableInvoiceOrchestrator.js`
+- `durableReconciliation.js`
+- `durableShadowStateIntegration.js`
+- `firestoreShadowStateValidator.js`
+- `sheetNhapXuat.js`
+- `sheetTonKho.js`
+- `sheetUtils.js`
+- `sheetSidebar.html`
+- `sheetFileLog.js`
+- `triggers.js`
+- `tests/unit/xml-parser.test.mjs`
+- `tests/unit/invoice-key.test.mjs`
+- `tests/unit/hash.test.mjs`
+- `tests/unit/d6k-shared-foundation-consolidation.test.mjs`
+- `tests/bugs/hash-identity.test.mjs`
+- `tests/bugs/body-dedup-attachment.test.mjs`
+- `tests/bugs/xml-first-only.test.mjs`
+- `tests/bugs/batch-state.test.mjs`
+- `tests/bugs/drive-dedup-bypass.test.mjs`
+- `tests/bugs/bqgq-ordering.test.mjs`
+- `tests/bugs/oversell-display.test.mjs`
+- `tests/bugs/progress-state.test.mjs`
+- `tests/bugs/filelog-competition.test.mjs`
+- `tests/unit/durable-job-state.test.mjs`
+- `tests/unit/durable-invoice-orchestrator.test.mjs`
+- `tests/unit/durable-reconciliation.test.mjs`
+- `tests/unit/apps-script-adapters.test.mjs`
+- `tests/unit/durable-scanner-shadow-bridge.test.mjs`
+- `tests/unit/durable-shadow-state-integration.test.mjs`
+- `tests/emulator/firestore-shadow-emulator.test.mjs`
+- `tests/schema/sheet-contract.test.mjs`
+- `tests/static/static-source-safety.test.mjs`
+- `tests/unit/ai-governance-bootstrap.test.mjs`
+- `tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs`
+- `tests/unit/exact17-local-candidate-integration.test.mjs`
+- `fixtures/durable-orchestration/fake-durable-orchestration.mjs`
+- `fixtures/xml/valid-invoice-v2-multiline.xml`
+- `package.json`
+- `scripts/test/run-all-checks.mjs`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs`
+- `scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs`
+- `scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs`
+- `scripts/checkers/check-sgds-crit-003-d5a-local-orchestration.mjs`
+- `scripts/checkers/check-exact17-local-candidate-implementation.mjs`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md`
+- `docs/02_TARGET_ARCHITECTURE.md`
+- `docs/03_DATA_CONTRACT.md`
 - `docs/04_MASTER_PLAN.md`
 - `docs/12_AI_WORK_LOG.md`
 - `docs/13_DECISION_LOG.md`
@@ -344,16 +397,14 @@ pull, or lifecycle action was performed by this Coder.
 
 ## Next direction
 
-CURRENT_PHASE=SGDS_EXACT17_LOCAL_CANDIDATE_PLAN_V1
-CURRENT_PHASE_STATUS=NON_LIVENESS_REVIEW_CORRECTION_SNAPSHOT_ACTIVE_REVISION_238
-PRIOR_PHASE_TERMINAL=WRITERCOMPLETE_REVISION_231_CONTROLLERRELEASE_NONE_REVISION_232_CHECKPOINT_0141c113be8a85ef04c98f96fc15aae8bd1610b6
-PLAN_AUTHORING_TERMINAL=WRITERCOMPLETE_REVISION_235_CONTROLLERRELEASE_NONE_REVISION_236
-CORRECTION_LIFECYCLE_EXPECTED_NOT_OBSERVED=WRITERCOMPLETE_REVISION_239_CONTROLLERRELEASE_NONE_REVISION_240
-PLAN_RESULT=EXACT17_POLICY_OPERATION_MATRIX_FORMED_IMPLEMENTATION_SCOPE_NOT_CLOSED_NO_SOURCE_BYTES_12_ADAPT_3_KEEP_2_EXCLUDE_FOUR_REMOTE_UNKNOWN_QUARANTINED
-HARD_STOP=NO_APPLICATION_SOURCE_IMPLEMENTATION_UNTIL_FRESH_BOUNDED_READ_ONLY_WHOLE_PATH_DEPENDENCY_CLOSURE_AND_LATER_EXACT_OWNER_ENVELOPE
+CURRENT_PHASE=SGDS_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_V1
+CURRENT_PHASE_STATUS=CODER_CORRECTION_ACTIVE_REVISION_246
+PREDECESSOR_TERMINAL=EXACT17_IMPLEMENTATION_COMPLETED_RELEASED_SLOT_NONE_REVISION_244_CHECKPOINT_84618ee1cb7fd12ed79ac6f705127f0d489affaf
+CURRENT_WRITER_SNAPSHOT=ACTIVE_REVISION_246_STATE_HASH_sha256_b00285cd7391ed8a81b44d51bff1c815a416951c7a907e60f6194c7694777f11
+IMPLEMENTATION_RESULT=FOUR_APPROVED_CLUSTERS_PRESERVED_AND_D7_E3V_AGGREGATE_DIRTY_SCOPE_BOUND_TO_CURRENT_GOVERNED_71_PATH_CANDIDATE
+ACCEPTANCE_STATUS=FOCUSED_CORRECTION_TESTS_PASS_FULL_AGGREGATE_AND_INDEPENDENT_REVIEW_VERIFICATION_PENDING
 SOURCE_FETCH_BUDGET=CONSUMED_NO_RERUN
-CODER_CLOSEOUT=FREEZE_AND_REPORT_NO_WRITERCOMPLETE_NO_CONTROLLERRELEASE
-IMMEDIATE_NEXT_SEQUENCE=FRESH_INSPECTWRITER_THEN_ONLY_IF_EXACT_CORRECTION_BINDING_IS_ACTIVE_CONTROLLER_WRITERCOMPLETE_EXPECTED_239_AND_CONTROLLERRELEASE_NONE_EXPECTED_240;IF_INSPECTWRITER_ALREADY_SHOWS_NONE_REVISION_240_DO_NOT_REPLAY_LIFECYCLE_AND_PROCEED_TO_FRESH_ISOLATED_INDEPENDENT_REVIEWER_AND_VERIFIER_AND_CLEANUP_THEN_OWNER_CHECKPOINT_GATE
-NEXT_DIRECTION=AFTER_CHECKPOINT_REQUEST_FRESH_BOUNDED_READ_ONLY_WHOLE_PATH_DEPENDENCY_CLOSURE_TO_PRODUCE_ONE_MINIMAL_EXACT_SOURCE_TEST_CHECKER_DOCUMENT_SCOPE_AND_CLUSTER_PLAN
-NEXT_IMPLEMENTATION_SCOPE=NOT_AUTHORIZED_PLAN_ONLY
-NEXT_FORBIDDEN=NO_IMPORT_OVERWRITE_SYNC_PRODUCTION_ACCESS_DATA_ACTION_COMMIT_OR_PUSH
+CODER_CLOSEOUT=FROZEN_NO_CODER_OWNED_WRITERCOMPLETE_OR_CONTROLLERRELEASE
+IMMEDIATE_NEXT_SEQUENCE=CONTROLLER_RUN_FINAL_LOCAL_ACCEPTANCE_THEN_FRESH_INSPECTWRITER_THEN_EXACT_CORRECTION_WRITERCOMPLETE_AND_CONTROLLERRELEASE_TO_NONE_THEN_FRESH_HELPER_CREATED_REVIEWER_ISOLATION_REVIEW_ACCEPTANCE_CLEANUP_THEN_FRESH_HELPER_CREATED_VERIFIER_ISOLATION_VERIFICATION_ACCEPTANCE_CLEANUP_THEN_OWNER_CHECKPOINT_GATE
+NEXT_DIRECTION=IF_ALL_ACCEPTANCE_IS_17_PASS_0_FAIL_0_SKIP_0_TODO_AND_AGGREGATE_REVIEWER_VERIFIER_PASS_SURFACE_THE_EXACT_CHANGED_PATH_CHECKPOINT_TO_OWNER
+NEXT_FORBIDDEN=NO_STAGE_COMMIT_PUSH_SOURCE_SYNC_PRODUCTION_ACCESS_MUTATION_OR_DEPLOY

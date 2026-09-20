@@ -412,3 +412,87 @@ It produces no source bytes and authorizes no source or production action.
 - `docs/13_DECISION_LOG.md` - SHA256 `335be7aacbba57404d2a39be8b519501fea292491f502a36ec5c14526911cf90`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `39510499441b316b47a6c1228cd391338ad19e1202584cace3831ee7ff3911a4`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Exact17 Local Implementation V1 Final-Byte Inventory
+
+This local-only implementation candidate contains exactly 55 changed paths
+inside the approved 69-path allowlist. The manifest remains the sole self-hash
+exception. These hashes identify the frozen Coder bytes before final controller
+acceptance and independent review; they do not prove deployment or production
+parity.
+
+- `_triggerDriveScanner.js` - SHA256 `3012682dad8f233e5d1c516880636c9bd691cf5e1930d044d1e0eba333f30c2b`
+- `docs/02_TARGET_ARCHITECTURE.md` - SHA256 `7d889a9c3120f1effbdc39658a5712a1873bf4d2b4b8e617447953218214165a`
+- `docs/03_DATA_CONTRACT.md` - SHA256 `de3c7ed2c2a1a5d9f477cbdbd095560cd169e83590d556a11816260dbeceaa4d`
+- `docs/04_MASTER_PLAN.md` - SHA256 `389376a6e5f587bac3f37283af04bda6f61c2722d4b2e131e867861e2a6fb432`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `5625ce8d9e498f144dad4f9330b9c3670dce79e42803bb818353ae661e25422a`
+- `docs/13_DECISION_LOG.md` - SHA256 `1194c3f5a88d948a8d8d9de86e99d64b6cbd0221dbb39435e7e4908226657cde`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `83a07263c8cf2d079efc3ee028dfde75dc3d919fdf15f03171cad8a35563b0e9`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `4eb8630b69d2d594fb2ab93b09dd797df86cfac2cd8575bc6d736fb9df5a399b`
+- `durableInvoiceOrchestrator.js` - SHA256 `32877fb7a6938d9cc5d5a96904da5a1a040fc07cecbd9e54d7cd6e91c379570a`
+- `durableJobState.js` - SHA256 `d614c5d2e2cd9e4116a8a67431f350c805065d61a5019add6a388f6723339497`
+- `durableReconciliation.js` - SHA256 `559113b1ca6bde31c1757a3a2c849c8aa47478c3abe2dd1dd2d440146a0eb8c7`
+- `durableShadowStateIntegration.js` - SHA256 `5c5fc38c219c0f7a8db083add3df404e961e488f8ce6ca47687526bd59a14caa`
+- `firestoreShadowStateValidator.js` - SHA256 `15ecd8a34d1bb8e4c1e10d61db2df8ef253148d4791c6ccecdde49b232f13de5`
+- `fixtures/durable-orchestration/fake-durable-orchestration.mjs` - SHA256 `a12561e9dba2efc2e6c5eb628612e8c96b6dda6470e1279c03ce560fa2891e85`
+- `fixtures/xml/valid-invoice-v2-multiline.xml` - SHA256 `7c1a808a05604ecf2fb57b18415bf936240f05e147e5f281f6ad88a119bb9d9f`
+- `gasSheetsReadOnlyReader.js` - SHA256 `5f17d1b08c29f98561b2b4705f8ffbcca038911427abbf0de7ef10ac2f45faa2`
+- `gmailCollection.js` - SHA256 `6bb549552ea3006b88b3477cd4ac56dc0975623ddc9fbd2727a7c423ebe9a1b2`
+- `gmailLabels.js` - SHA256 `b3df9d2d998bff1c81192e6cf17faac3a8d84d8fbd3f4db61a9c88419e64ee05`
+- `gmailProcessInvoiceXML.js` - SHA256 `fad9b9f04ad38a00079ba627dfa76b62c222e4b5f8bff52b010703832bf3f97c`
+- `gmailScanner.js` - SHA256 `94df490443d52829ed5288e7b19311cc76d4beeee1c80f1309887f960a8bbbea`
+- `gmailSearch.js` - SHA256 `49e4a7cc5765b68e8c1a17a254d39d0bde7eb05c0b78412eee2a043483eb0210`
+- `hashUtils.js` - SHA256 `d4699b940329264bd4ba7df5d92a44859d64b0d21e1124d979012b701becbfad`
+- `Invoice_AttachmentParser.js` - SHA256 `5c83629f1425a7264369c7db3eb735255b784b2e22d2fbc8b106885e82877363`
+- `package.json` - SHA256 `b98fee3a0d9fea0b5b92c8dfcfcf5d50484937bdc6925ce2d1e8aa368cc0ec46`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `bf8bfe30df554af90eb0bc9546c6b3b99f0d0e8168e739c6761015b218047a25`
+- `scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs` - SHA256 `37eadf68580fd7babbd59e3959e722761e302e790a0f1aed882b1138439bd62b`
+- `scripts/checkers/check-exact17-local-candidate-implementation.mjs` - SHA256 `d941007ed27e0f819192da16c7fa3da864375167d96342c84fae7d4b17ca6070`
+- `scripts/checkers/check-sgds-crit-003-d5a-local-orchestration.mjs` - SHA256 `748b6083ec8e844397bc937535fb47e8cd10a9dd688f7df61c37cfa75feade08`
+- `scripts/test/run-all-checks.mjs` - SHA256 `d10fd7d795f4c7686289a01679e4096d28537040da655b6c234b10bac10f1f0b`
+- `sgdsSheetsLedgerAdapter.js` - SHA256 `07017283b8becc491ee3db9bbe9431b185c57e6b3dfbfbcc17f52770b2d919ad`
+- `Shared_Hashing.js` - SHA256 `c1c932025330bd46bf2dedcc132a63c825364ca58b5d6da42f84ff70b516a5d0`
+- `Shared_Normalization.js` - SHA256 `cd7d2d7ef1aad246cdb147b223de61889624fe32dfe9862315f40d517c90b0cf`
+- `sheetFileLog.js` - SHA256 `9083c642e73790bf7a66f0181e861fdc6d92ab08982bd0098dec1717e2095ce4`
+- `sheetHoaDon.js` - SHA256 `8e28da7a31d2c4e6415f8aeffb8b3f1444d0c354d65536098e9381a63e0cabd2`
+- `sheetNhapXuat.js` - SHA256 `8e3dfa7403e5d02eefa023b7c613e7bb9f04ff77df4498135f07ea81805d0715`
+- `sheetSidebar.html` - SHA256 `ad66840971be2ae1234058b1920e05f5a16222cd3ce65407df928c2c361c40cc`
+- `sheetTonKho.js` - SHA256 `43a6163bd7cd29c1753912b8a7e9ba497440317bfa81dea0f3a3bdb8eccdf823`
+- `sheetUtils.js` - SHA256 `baa71d4b9f7824d38819aacadfb11a12eb01c11211636fc0dde196bd5226bdeb`
+- `sheetWriter.js` - SHA256 `4d18a86b44afb68b932bb2e251314753980b399ec728900aa47f961fedc29816`
+- `tests/bugs/body-dedup-attachment.test.mjs` - SHA256 `3a5bed428f30ca24632778d06c0e330301628337b2768cd75e90dcb2b6169619`
+- `tests/bugs/bqgq-ordering.test.mjs` - SHA256 `24387be9f17ac261146970e58e0cbde76a79ee9b5a7884261ded0850a036f806`
+- `tests/bugs/filelog-competition.test.mjs` - SHA256 `958cb282d62fba97e33b5886792ca987a0215de0787023fd72899e2e672e7f50`
+- `tests/bugs/hash-identity.test.mjs` - SHA256 `489f176fa84a810c577f562502b9d934efa476dbc6a50e3774df10e2aa909720`
+- `tests/bugs/oversell-display.test.mjs` - SHA256 `40f1d07915e6a3ac46b271e9abd22d4ec754feb963d97d0406dfda53cef74a38`
+- `tests/bugs/progress-state.test.mjs` - SHA256 `55ddf563d04c8ea50df4aef405070410a6ae18ea31d784d120330a259655803a`
+- `tests/bugs/xml-first-only.test.mjs` - SHA256 `42044a1c733f71c236ddf7e1f28a20148260c020ad4a2a3dcc587e1e473962ca`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `2f12bdb50feb4892df85a7a593b47cb2ec9d36e0eae32310dfbf6b13cb60cc18`
+- `tests/unit/durable-invoice-orchestrator.test.mjs` - SHA256 `52ac2c573f041e8a6e9d43afb5deb2c1256d018f7c4bb86ef6e6f34471aa87f6`
+- `tests/unit/durable-job-state.test.mjs` - SHA256 `6df05cd13d8638e1654fc989b46ec65a664fcb332ef45d8b3550f4ab09719a32`
+- `tests/unit/durable-reconciliation.test.mjs` - SHA256 `9142f6e704964ed214c0776e682cb747cfb7278cf57477f3e79ab9eb6a4e5838`
+- `tests/unit/exact17-local-candidate-integration.test.mjs` - SHA256 `bd709b1f668208d975b481ed4d2dc41499d8e630ba65c854a3337dbffb29f214`
+- `tests/unit/hash.test.mjs` - SHA256 `77c06c896a701a6e257b5ab6db5b82a66ad81a61b3163c1a9c93186084bf0e3a`
+- `tests/unit/invoice-key.test.mjs` - SHA256 `8f2ae82f0b96e64d8cb1a92c8e523cb9d4b6095a83b26300a0c0b4ca8c61870c`
+- `tests/unit/xml-parser.test.mjs` - SHA256 `6775c783f9c8f52eee4b90375dfb2b1a79c5d8fe2e818b96417b2688312a8569`
+- `triggers.js` - SHA256 `5fcee9dfb9d2127b3d20c58f3b833846cc92d8ff092ba297b6446589382d69fa`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Exact17 Aggregate Compatibility Correction V1 Final-Byte Inventory
+
+This exact 11-path local correction lists the ten hashable files changed after
+the frozen Exact17 implementation inventory. The manifest remains the sole
+self-hash exception. Application runtime bytes are unchanged by this
+correction.
+
+- `scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs` - SHA256 `b3ecf8deaf594b57cd812fecec8d5e580e2db41c51dd7e6584150669bcb50324`
+- `tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs` - SHA256 `d2473b3ec9365afa255b9dbd835985176057cb97ab93706510b61718e3874657`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `0a845847c0296e68d6ea0bf3d652d122aa419af3f671f4f2f087d87124e50ecc`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `3eb0e514278eca78081c9236be38c4b1b0928fb280494f545c4ab4e59fdc8ecf`
+- `scripts/checkers/check-exact17-local-candidate-implementation.mjs` - SHA256 `b113cc631f7d4c902df638800b625869a6fa90a763a1d4ddce5dd8afe62dcf03`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `07c23bad1ebda143eb8dd5a09eb8bca7eb2ec86c9185e6f9dfe932c9797e1c45`
+- `docs/04_MASTER_PLAN.md` - SHA256 `5946fd4f0702925ea13d0f53966040b943e7791430db5a60288c936e6950890d`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `bd05bce824c9f225c72f85dd01fa79b49a293f38e066ee6ffd5aec14725c6518`
+- `docs/13_DECISION_LOG.md` - SHA256 `d08f549c36a0d59b22182cd45d6f55ce0e00d7df762c69b19555615997ba4508`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `921d800f6b1aa8c8769bc27d0fca7268296dd964e85e8e8a06d00b7cb13d2b3a`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash

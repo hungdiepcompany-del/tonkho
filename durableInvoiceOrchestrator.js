@@ -15,6 +15,7 @@ const D5A_EXECUTION_ORDER_ = Object.freeze([
   'DRIVE_PDF',
   'HOA_DON',
   'LEDGER',
+  'INVENTORY',
   'GMAIL'
 ]);
 
@@ -42,6 +43,11 @@ function createDurableInvoiceOrchestrator(deps) {
     'findInvoiceLines',
     'appendInvoiceLinesIfAbsent',
     'verifyInvoiceLines'
+  ]);
+  const inventoryAdapter = requireD5AAdapter_(options.inventoryAdapter, 'inventoryAdapter', [
+    'readInventoryStatus',
+    'rebuildInventory',
+    'verifyInventory'
   ]);
   const gmailProjectionAdapter = requireD5AAdapter_(options.gmailProjectionAdapter, 'gmailProjectionAdapter', [
     'readLabels',
@@ -225,6 +231,28 @@ function createDurableInvoiceOrchestrator(deps) {
       }, buildObservedD5ASnapshot_, adapters);
     }
 
+    try {
+      job = await transitionD5A_(jobStore, trace, job, 'ROWS_COMMITTED', 'INVENTORY_PENDING', 'INVENTORY_REQUIRED');
+    } catch (error) {
+      return await reconciliationHandoffD5A_(jobStore, reconciliationService, trace, job, commitPlan, {
+        stepName: 'INVENTORY_PENDING_STATE_TRANSITION',
+        status: 'OUTCOME_UNKNOWN',
+        errorCode: d5aErrorCode_(error)
+      }, buildObservedD5ASnapshot_, adapters);
+    }
+
+    const inventory = await runExternalStepD5A_({
+      stepName: 'INVENTORY',
+      auditEvent: 'INVENTORY_VERIFIED',
+      trace,
+      job,
+      commitPlan,
+      read: () => inventoryAdapter.readInventoryStatus({ commitPlan, job }),
+      write: () => inventoryAdapter.rebuildInventory({ commitPlan, job }),
+      verify: () => inventoryAdapter.verifyInventory({ commitPlan, job })
+    });
+    if (!isSuccessfulD5AStep_(inventory)) return await reconciliationHandoffD5A_(jobStore, reconciliationService, trace, job, commitPlan, inventory, buildObservedD5ASnapshot_, adapters);
+    await appendD5AAudit_(jobStore, trace, job, 'INVENTORY_VERIFIED', { status: inventory.status });
 
     const gmail = await runExternalStepD5A_({
       stepName: 'GMAIL',
@@ -240,7 +268,7 @@ function createDurableInvoiceOrchestrator(deps) {
     await appendD5AAudit_(jobStore, trace, job, 'GMAIL_LABEL_VERIFIED', { status: gmail.status });
 
     try {
-      job = await transitionD5A_(jobStore, trace, job, 'ROWS_COMMITTED', 'PROJECTIONS_COMMITTED', 'GMAIL_LABEL_VERIFIED');
+      job = await transitionD5A_(jobStore, trace, job, 'INVENTORY_PENDING', 'PROJECTIONS_COMMITTED', 'GMAIL_LABEL_VERIFIED');
     } catch (error) {
       return await reconciliationHandoffD5A_(jobStore, reconciliationService, trace, job, commitPlan, {
         stepName: 'GMAIL_STATE_TRANSITION',
@@ -289,7 +317,7 @@ function createDurableInvoiceOrchestrator(deps) {
     if (durableStatusD5A_(job) === 'COMPLETED') {
       const result = await jobStore.resumeCompletedJob({
         jobId: job.jobId,
-        verification: { ledgerVerified: true, registryVerified: true, projectionVerified: true }
+        verification: { ledgerVerified: true, registryVerified: true, inventoryVerified: true, projectionVerified: true }
       });
       return finishD5A_(trace, {
         status: 'ALREADY_COMPLETED',
@@ -315,7 +343,7 @@ function createDurableInvoiceOrchestrator(deps) {
   }
 
   function adaptersD5A_() {
-    return { driveEvidenceAdapter, hoaDonAdapter, ledgerAdapter, gmailProjectionAdapter };
+    return { driveEvidenceAdapter, hoaDonAdapter, ledgerAdapter, inventoryAdapter, gmailProjectionAdapter };
   }
 
   return Object.freeze({
@@ -372,7 +400,7 @@ async function reconciliationHandoffD5A_(jobStore, reconciliationService, trace,
   }
 
   const fromStatus = durableStatusD5A_(latestJob);
-  if (['FILES_SAVED', 'COMMITTING', 'ROWS_COMMITTED', 'PROJECTIONS_COMMITTED'].includes(fromStatus)) {
+  if (['FILES_SAVED', 'COMMITTING', 'ROWS_COMMITTED', 'INVENTORY_PENDING', 'PROJECTIONS_COMMITTED'].includes(fromStatus)) {
     try {
       latestJob = await transitionD5A_(jobStore, trace, latestJob, fromStatus, 'RECONCILIATION_REQUIRED', 'RECONCILIATION_REQUIRED');
     } catch (error) {
@@ -457,13 +485,16 @@ async function buildObservedD5ASnapshot_(job, commitPlan, adapters) {
   const ledgerRows = typeof adapters.ledgerAdapter.buildSnapshot === 'function'
     ? await adapters.ledgerAdapter.buildSnapshot({ commitPlan, job })
     : [];
+  const inventoryState = typeof adapters.inventoryAdapter.buildSnapshot === 'function'
+    ? await adapters.inventoryAdapter.buildSnapshot({ commitPlan, job })
+    : { verified: false };
   const gmailLabels = typeof adapters.gmailProjectionAdapter.buildSnapshot === 'function'
     ? await adapters.gmailProjectionAdapter.buildSnapshot({ commitPlan, job })
     : [];
   return {
     job: { ...cloneD5AJson_(job), state: durableStatusD5A_(job), commitPlan: cloneD5AJson_(commitPlan) },
     commitPlan: cloneD5AJson_(commitPlan),
-    observed: { driveEvidence, hoaDonRows, ledgerRows, gmailLabels },
+    observed: { driveEvidence, hoaDonRows, ledgerRows, inventoryState, gmailLabels },
     generatedAt: 'D5A_LOCAL_REPORT'
   };
 }

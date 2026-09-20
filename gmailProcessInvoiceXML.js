@@ -34,6 +34,8 @@ function processInvoiceAllXMLAttachments_(
         meta = {
           issueDate: parsed.meta?.invoiceDate,
           invoiceNo: normalizeInvoiceNo_(parsed.meta?.invoiceNo),
+          invoiceSymbol: parsed.meta?.invoiceSymbol || "",
+          sellerTaxCode: parsed.seller?.taxCode || "UNKNOWNTAXCODE",
           taxCode:
             (type === "XUAT"
               ? parsed.buyer?.taxCode
@@ -41,15 +43,17 @@ function processInvoiceAllXMLAttachments_(
           companyName:
             type === "XUAT"
               ? parsed.buyer?.name
-              : parsed.seller?.name // NHAP
+              : parsed.seller?.name, // NHAP
+          invoiceKeyV2: buildInvoiceKeyV2_(
+            parsed.meta?.invoiceDate,
+            parsed.seller?.taxCode,
+            parsed.meta?.invoiceSymbol,
+            parsed.meta?.invoiceNo
+          )
         };
 
         debugLog_(type + " - Đã nạp dữ liệu XML: " + att.getName());
 
-        if (options.breakOnFirst) {
-          invoices.push({ ...meta, blob: att, ok: true });
-          break;
-        }
       }
 
       invoices.push({
@@ -87,7 +91,15 @@ function processInvoiceXMLAttachment_(parsed, type, results, thread) {
     return false;
   }
 
-  parsed.items.forEach(item => {
+  const sellerTaxCode = parsed.seller?.taxCode || "UNKNOWNTAXCODE";
+  const invoiceKeyV2 = buildInvoiceKeyV2_(
+    parsed.meta?.invoiceDate,
+    sellerTaxCode,
+    parsed.meta?.invoiceSymbol,
+    parsed.meta?.invoiceNo
+  );
+
+  parsed.items.forEach((item, index) => {
 
     const invoiceDate = parsed.meta?.invoiceDate || "";
     const yyyyMMdd = invoiceDate.replace(/-/g, "");
@@ -100,8 +112,17 @@ function processInvoiceXMLAttachment_(parsed, type, results, thread) {
     const invoiceNo =
       normalizeInvoiceNo_(parsed.meta.invoiceNo);
 
-    const invoiceKey =
-      `${yyyyMMdd}_${taxCode}_${invoiceNo}`;
+    const invoiceKey = `${yyyyMMdd}_${taxCode}_${invoiceNo}`;
+    const sourceLineNo = Number(item.sourceLineNo || index + 1);
+    const lineIdentityV2 = buildLineIdentityV2_({
+      invoiceKeyV2,
+      sourceLineNo,
+      rawItemName: item.rawItemName || item.name,
+      unit: item.unit,
+      quantity: item.quantity == null ? item.qty : item.quantity,
+      unitPrice: item.unitPrice == null ? item.price : item.unitPrice,
+      amount: item.amount
+    });
 
     results.push({
       row: [
@@ -115,8 +136,18 @@ function processInvoiceXMLAttachment_(parsed, type, results, thread) {
         type,
         item.qty,
         item.price,
-        invoiceKey
+        invoiceKeyV2
       ],
+      invoiceKey,
+      invoiceKeyV2,
+      invoiceSymbol: parsed.meta?.invoiceSymbol || "",
+      sellerTaxCode,
+      sourceLineNo,
+      rawItemName: item.rawItemName || item.name || "",
+      unit: item.unit || "",
+      amount: item.amount,
+      lineIdentityV2,
+      artifactReady: false,
       thread
     });
 

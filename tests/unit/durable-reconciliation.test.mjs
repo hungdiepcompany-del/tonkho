@@ -31,6 +31,7 @@ const REQUIRED_CODES = Object.freeze([
   'LEDGER_LINE_HASH_MISMATCH',
   'LEDGER_INVOICE_KEY_MISMATCH',
   'LEDGER_DUPLICATE_LINE_IDENTITY',
+  'INVENTORY_NOT_VERIFIED',
   'GMAIL_FALSE_SAVED_LABEL',
   'GMAIL_SAVED_LABEL_MISSING',
   'GMAIL_PENDING_LABEL_CONFLICT'
@@ -142,6 +143,7 @@ test('D3 preserves D1 durable-state regressions: illegal transition, completed r
     fromVm(gas.call('resolveDurableCompletedResume_', { jobId: 'synthetic-job-002', state: 'COMPLETED' }, {
       ledgerVerified: true,
       registryVerified: true,
+      inventoryVerified: true,
       projectionVerified: true
     })),
     { action: 'IDEMPOTENT_COMPLETE_NOOP', safeToMutate: false }

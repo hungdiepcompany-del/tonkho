@@ -42,8 +42,8 @@ function writeInvoicesToSheet_(rows) {
     }
   });
 
-  // Thêm cột STT rỗng
-  const sheetRows = rows.map(r => ["", ...r]);
+  const transactionSequenceStart = nextTransactionSequence_(sh);
+  const sheetRows = rows.map((r, index) => [transactionSequenceStart + index, ...r]);
 
   debugLog_(
     `Đang ghi ${sheetRows.length} dòng vào sheet từ hàng ${startRow}`
@@ -92,6 +92,16 @@ function writeInvoicesToSheet_(rows) {
     .setFontSizes(itemFontSizes)
     .setFontWeights(itemFontWeights);
   return;
+}
+
+function nextTransactionSequence_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 1;
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
+  return values.reduce((max, value) => {
+    const current = Number(value);
+    return Number.isInteger(current) && current > max ? current : max;
+  }, 0) + 1;
 }
 
 function reportBlankHashRows_(sh) {

@@ -25,6 +25,7 @@ const commands = [
   ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-workbook-unchanged.ps1']],
   ['powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', 'scripts/checkers/check-internal-doc-links.ps1']],
   ['node', ['scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs']],
+  ['node', ['scripts/checkers/check-exact17-local-candidate-implementation.mjs']],
   ['node', ['scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs']],
   ['node', ['scripts/checkers/check-d7-e4a1-bounded-firestore-identity-cardinality-read-only-proof.mjs']],
   ['node', ['scripts/checkers/check-d7-e4a1a-canonical-identity-configuration-read-only-recovery.mjs']],

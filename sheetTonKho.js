@@ -1,14 +1,16 @@
-function capNhatTonKho(ngayDen) {
+function capNhatTonKho(ngayDen, requestedRunId) {
+  const runId = ProgressService.begin("TK", requestedRunId);
+  let auditLogs = [];
 
   if (isTKRunning_()) {
-    setProgressTK_(100, "BLOCKED_ALREADY_RUNNING: Dang cap nhat ton kho");
+    setProgressTK_(runId, 100, "BLOCKED_ALREADY_RUNNING: Dang cap nhat ton kho", "BLOCKED");
     throw new Error("Dang cap nhat ton kho, vui long cho...");
   }
 
   const lock = LockService.getScriptLock();
   let lockAcquired = false;
   if (!lock.tryLock(1000)) {
-    setProgressTK_(100, "BLOCKED_ALREADY_RUNNING: Khong lay duoc ScriptLock");
+    setProgressTK_(runId, 100, "BLOCKED_ALREADY_RUNNING: Khong lay duoc ScriptLock", "BLOCKED");
     throw new Error("He thong dang xu ly ton kho, thu lai sau.");
   }
   lockAcquired = true;
@@ -18,8 +20,7 @@ function capNhatTonKho(ngayDen) {
   try {
     debugLog_("START capNhatTonKho");
 
-    resetProgressTK_();
-    setProgressTK_(0, "Khởi tạo tồn kho...");
+    setProgressTK_(runId, 0, "Khởi tạo tồn kho...");
 
     const t0 = Date.now();
 
@@ -27,35 +28,44 @@ function capNhatTonKho(ngayDen) {
     const shNX = ss.getSheetByName(CONFIG.SHEET_INVOICE);
     const shTK = ss.getSheetByName(CONFIG.SHEET_TONKHO);
     const shMH = ss.getSheetByName(CONFIG.SHEET_ITEMCODE);
-    const logSh = getOrCreateASheet_(CONFIG.SHEET_LOG);
-
     if (!shNX || !shTK || !shMH) {
-      setProgressTK_(100, "FAILED: Thieu sheet bat buoc");
+      setProgressTK_(runId, 100, "FAILED: Thieu sheet bat buoc", "FAILED");
       throw new Error("Thieu sheet bat buoc");
     }
 
-    /* ================= LOG ================= */
-    logSh.getRange(2, 1, logSh.getMaxRows(), 4).clearContent();
-    logSh.getRange("A1:D1")
-      .setValues([["Dòng NX", "Ngày", "Mã hàng", "Diễn giải"]]);
-
     /* ================= READ DATA ================= */
-    setProgressTK_(5, "Đọc dữ liệu...");
+    setProgressTK_(runId, 5, "Đọc dữ liệu...");
 
     const lastRowNX = shNX.getLastRow();
     if (lastRowNX < 2) {
-      setProgressTK_(100, "COMPLETED: Khong co du lieu");
-      return;
+      setProgressTK_(runId, 100, "COMPLETED: Khong co du lieu", "COMPLETED");
+      return { runId, status: "COMPLETED" };
     }
 
     const nxData = shNX
       .getRange(2, 1, lastRowNX - 1, 13)
       .getValues();
 
+    nxData.forEach((row, index) => {
+      if (!parseInvoiceDateValue_(row[1])) {
+        auditLogs.push([runId, "TK", index + 2, "INVALID_ISSUE_DATE"]);
+        throw new Error("Ngay hoa don khong hop le tai dong " + (index + 2));
+      }
+      const sequence = Number(row[0]);
+      if (!Number.isInteger(sequence) || sequence < 1) {
+        auditLogs.push([runId, "TK", index + 2, "INVALID_TRANSACTION_SEQUENCE"]);
+        throw new Error("Transaction sequence khong hop le tai dong " + (index + 2));
+      }
+    });
+    nxData.sort((left, right) => {
+      const dateDelta = parseInvoiceDateValue_(left[1]).getTime() - parseInvoiceDateValue_(right[1]).getTime();
+      return dateDelta || Number(left[0]) - Number(right[0]);
+    });
+
     const mhData = shMH.getDataRange().getValues();
 
     /* ================= MAP MÃ HÀNG ================= */
-    setProgressTK_(10, "Ánh xạ mã hàng...");
+    setProgressTK_(runId, 10, "Ánh xạ mã hàng...");
 
     const tenHang = {};
     const dvtHang = {};
@@ -69,7 +79,7 @@ function capNhatTonKho(ngayDen) {
     });
 
     /* ================= TÍNH TỒN ================= */
-    setProgressTK_(15, "Tính tồn kho...");
+    setProgressTK_(runId, 15, "Tính tồn kho...");
 
     SpreadsheetApp.getActive()
       .toast("Đang tính tồn kho theo BQGQ...", "Tồn kho", 3);
@@ -79,8 +89,6 @@ function capNhatTonKho(ngayDen) {
     const dgBQ = {};
 
     let ngayMax = new Date(0);
-    let logRow = 2;
-
     const TOTAL = nxData.length;
     const BATCH = 50;
 
@@ -123,11 +131,8 @@ function capNhatTonKho(ngayDen) {
             slTon[ma] -= sl;
             gtTon[ma] -= gt;
           } else {
-            logSh.getRange(logRow++, 1, 1, 4)
-              .setValues([[realIdx + 2, ngay, ma, "Xuất vượt tồn"]]);
-            slTon[ma] = 0;
-            gtTon[ma] = 0;
-            dgBQ[ma] = 0;
+            auditLogs.push([runId, "TK", Number(row[0]), "OVERSELL_BLOCKED:" + ma]);
+            throw new Error("Xuat vuot ton tai transaction sequence " + row[0]);
           }
         }
       });
@@ -138,14 +143,14 @@ function capNhatTonKho(ngayDen) {
         (done / TOTAL) * (PROGRESS_END - PROGRESS_START)
       );
 
-      setProgressTK_(
+      setProgressTK_(runId,
         percent,
         `Đang tổng hợp tồn kho ${done}/${TOTAL}`
       );
     }
 
     /* ================= BUILD OUTPUT ================= */
-    setProgressTK_(70, "Đã tính xong tồn kho");
+    setProgressTK_(runId, 70, "Đã tính xong tồn kho");
 
     const keys = Object.keys(slTon).sort();
     const output = keys.map(ma => ([
@@ -158,7 +163,7 @@ function capNhatTonKho(ngayDen) {
     ]));
 
     /* ================= WRITE DATA ================= */
-    setProgressTK_(85, "Ghi dữ liệu tồn kho...");
+    setProgressTK_(runId, 85, "Ghi dữ liệu tồn kho...");
 
     const START_ROW_OUTPUT = 2;
     const COL_COUNT = 6;
@@ -177,7 +182,7 @@ function capNhatTonKho(ngayDen) {
     }
 
     /* ================= FORMAT CỘT A (MÃ HÀNG) ================= */
-    setProgressTK_(90, "Định dạng mã hàng...");
+    setProgressTK_(runId, 90, "Định dạng mã hàng...");
 
     const itemFmtMap = buildTonKhoItemCodeFormatMap_(); // tu MaHangHoa
 
@@ -217,15 +222,17 @@ function capNhatTonKho(ngayDen) {
 
     const elapsed = ((Date.now() - t0) / 1000).toFixed(2);
 
-    setProgressTK_(100, "COMPLETED: Hoan tat");
+    setProgressTK_(runId, 100, "COMPLETED: Hoan tat", "COMPLETED");
     SpreadsheetApp.getActive().toast(
       `✅ Đã xong (${elapsed}s)`,
       "Cập nhật Tồn kho",
       5
     );
 
+    return { runId, status: "COMPLETED" };
   } catch (err) {
-    setProgressTK_(100, "FAILED: " + sanitizeLogValue_(err.message || err));
+    appendFileLogEntries_(auditLogs);
+    setProgressTK_(runId, 100, "FAILED: " + sanitizeLogValue_(err.message || err), "FAILED");
     throw err;
   } finally {
     setTKRunning_(false);
@@ -250,16 +257,12 @@ function findTotalRow_(sh) {
   return null;
 }
 
-function resetProgressTK_() {
-  ProgressService.set("TK", 0, "Chuẩn bị...");
+function setProgressTK_(runId, percent, msg, status) {
+  ProgressService.set("TK", runId, percent, msg, status || "RUNNING");
 }
 
-function setProgressTK_(percent, msg) {
-  ProgressService.set("TK", percent, msg);
-}
-
-function getProgressTK() {
-  return ProgressService.get("TK");
+function getProgressTK(runId) {
+  return ProgressService.get("TK", runId);
 }
 
 function isTKRunning_() {

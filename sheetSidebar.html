@@ -237,6 +237,8 @@
 
   let runMode = null;   // "TK" | "NX"
   let tkStarted = false;
+  let nxRunId = null;
+  let tkRunId = null;
 
   let nxDone = false;
   let tkDone = false;
@@ -275,12 +277,13 @@
   function runTonKho() {
     resetState("⏳ Đang cập nhật Tồn kho...");
     runMode = "TK";
+    tkRunId = createRunId("TK");
 
     lockButtons("btn-tk"); // 👈 chỉ TK đổi text
 
     google.script.run
       .withFailureHandler(handleError)
-      .capNhatTonKho();
+      .capNhatTonKho(null, tkRunId);
 
     timer = setInterval(fetchProgress, 400);
   }
@@ -289,12 +292,13 @@
     resetState("⏳ Đang cập nhật Nhập/Xuất...");
     runMode = "NX";
     tkStarted = false;
+    nxRunId = createRunId("NX");
 
     lockButtons("btn-nx"); // 👈 chỉ NX đổi text
 
     google.script.run
       .withFailureHandler(handleError)
-      .capNhatNhapXuatBQGQ();
+      .capNhatNhapXuatBQGQ(nxRunId);
 
     timer = setInterval(fetchProgress, 400);
   }
@@ -305,22 +309,25 @@
     /* ===== NHẬP / XUẤT ===== */
     if (runMode === "NX" && !nxDone) {
       google.script.run.withSuccessHandler(p => {
-        if (!p || typeof p.value !== "number") return;
+        if (!p || p.runId !== nxRunId || typeof p.value !== "number") return;
 
         document.getElementById("wrap-nx").style.display = "block";
         bar("nx", p);
 
-        if (p.value >= 100) {
+        if (isTerminalProgress(p)) {
           nxDone = true;
 
-          if (!tkStarted) {
+          if (p.status === "COMPLETED" && !tkStarted) {
             tkStarted = true;
+            tkRunId = createRunId("TK");
             google.script.run
               .withFailureHandler(handleError)
-              .capNhatTonKho();
+              .capNhatTonKho(null, tkRunId);
+          } else if (p.status !== "COMPLETED") {
+            stopWithTerminalFailure(p);
           }
         }
-      }).getProgressNX();
+      }).getProgressNX(nxRunId);
 
       return;
     }
@@ -334,16 +341,17 @@
       && !tkDone
     ) {
       google.script.run.withSuccessHandler(p => {
-        if (!p || typeof p.value !== "number") return;
+        if (!p || p.runId !== tkRunId || typeof p.value !== "number") return;
 
         document.getElementById("wrap-tk").style.display = "block";
         bar("tk", p);
 
-        if (p.value >= 100) {
+        if (isTerminalProgress(p)) {
           tkDone = true;
-          checkAllDone();
+          if (p.status === "COMPLETED") checkAllDone();
+          else stopWithTerminalFailure(p);
         }
-      }).getProgressTK();
+      }).getProgressTK(tkRunId);
     }
   }
 
@@ -353,6 +361,20 @@
     document.getElementById("text-" + type).innerText =
       (type === "nx" ? "Nhập/Xuất" : "Tồn kho")
       + ": " + p.message + " (" + p.value + "%)";
+  }
+
+  function createRunId(prefix) {
+    return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+  }
+
+  function isTerminalProgress(progress) {
+    return ["COMPLETED", "FAILED", "BLOCKED"].includes(progress.status);
+  }
+
+  function stopWithTerminalFailure(progress) {
+    if (timer) clearInterval(timer);
+    unlockButtons();
+    setStatus("❌ " + (progress.message || progress.status));
   }
 
   /* ================= ALL DONE ================= */
@@ -372,6 +394,8 @@
     nxDone = false;
     tkDone = false;
     tkStarted = false;
+    nxRunId = null;
+    tkRunId = null;
 
     document.getElementById("wrap-nx").style.display = "none";
     document.getElementById("wrap-tk").style.display = "none";
