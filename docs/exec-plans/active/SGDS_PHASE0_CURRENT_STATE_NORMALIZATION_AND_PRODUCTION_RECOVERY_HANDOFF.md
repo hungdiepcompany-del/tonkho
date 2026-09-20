@@ -1,47 +1,48 @@
-# Fresh source provenance audit V1
+# Offline exact17 reconciliation and adjudication plan V1
 
-PHASE_ID=SGDS_FRESH_SOURCE_PROVENANCE_AUDIT_V1
-TASK_ID=01a0a381-91a2-7ff2-8dad-642fbed2fd39
-WRITER_ID=01a0a381-91a2-7ff2-8dad-642fbed2fd39
+PHASE_ID=SGDS_OFFLINE_EXACT17_RECONCILIATION_PLAN_V1
+TASK_ID=01a0508a-ca2d-72b0-8138-e60315864d31
+WRITER_ID=01a0508a-ca2d-72b0-8138-e60315864d31
 STATUS=ACTIVE
 OWNER_AUTHORITY=DIRECT_OWNER_DELEGATED_TO_PHASE_CONTROLLER
-AUTHORITY_ID=OWNER_GO_FRESH_SOURCE_PROVENANCE_AUDIT_ONCE_V1_20260915
-CURRENT_AUTHORITY_ASSIGNMENT_ID=SGDS_FRESH_SOURCE_PROVENANCE_REVIEW_CORRECTION_V2_01a0a381
-CURRENT_AUTHORITY_CODER_THREAD_ID=01a0a381-91a2-7ff2-8dad-642fbed2fd39
-CURRENT_AUTHORITY_CODER_ROLE=SOLE_PROVENANCE_DOCUMENTATION_REVIEW_CORRECTION_CODER
-CURRENT_AUTHORITY_ASSIGN_OPERATION_ID=fresh-source-provenance-review-correction-v2-assign-01a0a381
-CURRENT_AUTHORITY_VERIFY_OPERATION_ID=fresh-source-provenance-review-correction-v2-verify-01a0a381
-CURRENT_AUTHORITY_COMPLETE_OPERATION_ID=fresh-source-provenance-review-correction-v2-complete-01a0a381
-CURRENT_AUTHORITY_RELEASE_OPERATION_ID=fresh-source-provenance-review-correction-v2-release-01a0a381
-AUTHORITY_PREDECESSOR=V3_CLOSED_RELEASED_NONE_REVISION_216_CHECKPOINT_c7d96b71039eae42afd3a6ddeebd77e5c09dee01
-OWNER_GO_RECEIVED=GO_IN_REPLY_TO_FRESH_SOURCE_PROVENANCE_AUDIT_ONCE_NO_SYNC_NO_PRODUCTION_MUTATION
-OWNER_BOOTSTRAP_EXCEPTION=CONTROLLER_MAY_UPDATE_ONLY_THIS_CURRENT_AUTHORITY_PREAMBLE_BEFORE_ASSIGN_VERIFY_NO_WRITER_SLOT_LEASE_LOCK_OR_STATE_IS_CREATED_FORGED_OR_IMPLIED
-RISK_CLASS=HIGH_SOURCE_PROVENANCE_DIAGNOSIS_WITH_LOCAL_ONLY_DOCUMENTATION
+AUTHORITY_ID=OWNER_GO_OFFLINE_EXACT17_RECONCILIATION_PLAN_V1_20260920
+CURRENT_AUTHORITY_ASSIGNMENT_ID=SGDS_OFFLINE_EXACT17_RECONCILIATION_PLAN_REVIEW_CORRECTION_V2_01a0508a
+CURRENT_AUTHORITY_CODER_THREAD_ID=01a0508a-ca2d-72b0-8138-e60315864d31
+CURRENT_AUTHORITY_CODER_ROLE=SOLE_OFFLINE_RECONCILIATION_DOCUMENTATION_REVIEW_CORRECTION_CODER
+CURRENT_AUTHORITY_ASSIGN_OPERATION_ID=offline-exact17-plan-review-correction-assign-01a0508a
+CURRENT_AUTHORITY_VERIFY_OPERATION_ID=offline-exact17-plan-review-correction-verify-01a0508a
+CURRENT_AUTHORITY_COMPLETE_OPERATION_ID=offline-exact17-plan-review-correction-complete-01a0508a
+CURRENT_AUTHORITY_RELEASE_OPERATION_ID=offline-exact17-plan-review-correction-release-01a0508a
+AUTHORITY_PREDECESSOR=FRESH_SOURCE_PROVENANCE_REVIEW_CORRECTION_V2_CLOSED_NONE_REVISION_224_CHECKPOINT_35ae93c6e34d478326c0b78a420c7c5e99188778
+OWNER_GO_RECEIVED=GO_IN_REPLY_TO_GO_OFFLINE_EXACT17_RECONCILIATION_PLAN_FOUR_UNKNOWN_HOLD_NO_SYNC_NO_PRODUCTION
+OWNER_BOOTSTRAP_EXCEPTION=NONE_CURRENT_ASSIGNMENT_WAS_CREATED_FROM_NONE_REVISION_224_BEFORE_DOCUMENT_MUTATION
+RISK_CLASS=HIGH_SOURCE_RECONCILIATION_ADJUDICATION_WITH_LOCAL_ONLY_DOCUMENTATION
 CURRENT_AUTHORITY_RULE=THE_TITLE_TO_FIRST_SECTION_PREAMBLE_IS_THE_ONLY_AUTHORITY_SOURCE_FOR_AUTHORITY_ID_CURRENT_AUTHORITY_ASSIGNMENT_ID_AND_CURRENT_AUTHORITY_CODER_THREAD_ID
-CURRENT_AUTHORITY_BOUNDARY=ONE_CONTROLLER_READ_ONLY_GAS_SOURCE_FETCH_OUTSIDE_REPOSITORY_THEN_ISOLATED_GIT_HISTORY_PROVENANCE_CLASSIFICATION_OF_14_SEMANTIC_AND_3_ASYMMETRIC_FILES_THEN_GOVERNED_FIVE_DOCUMENT_CLOSEOUT
+CURRENT_AUTHORITY_BOUNDARY=RETAINED_EVIDENCE_ONLY_EXACT17_DISPOSITION_ACCEPTANCE_ROLLBACK_AND_OWNER_BUSINESS_GATE_PLAN_THEN_GOVERNED_FIVE_DOCUMENT_CLOSEOUT
 READ_ONLY_SOURCE_SCOPE=D7_E4B_ExactFirestoreReconciliationRuntime.js;gmailLabels.js;gmailProcessInvoiceXML.js;gmailSearch.js;hashUtils.js;Invoice_AttachmentParser.js;main.js;sheetHoaDon.js;sheetMenu.js;sheetNhapXuat.js;sheetSidebar.html;sheetTonKho.js;sheetUtils.js;triggers.js;D7_E4C_ExactPreconditionDiagnostic.js;invoiceCanonical.js;SKU_ENGINE.js
-MODEL_ROUTING=PROVENANCE_SOL_HIGH;INVENTORY_LUNA_MEDIUM_IF_NEEDED;CODER_TERRA_HIGH;REVIEWER_TERRA_HIGH;VERIFIER_TERRA_HIGH
-AUTONOMOUS_ACTIONS=CONTROLLER_PREAMBLE_BOOTSTRAP_ONLY;ONE_EXACT_SCRIPT_SOURCE_CLONE_TO_NEW_EMPTY_EXTERNAL_EVIDENCE_DIRECTORY;LOCAL_SOURCE_HASH_DIFF_HISTORY_ANALYSIS;NORMAL_HELPER_ISOLATION_CREATE_VALIDATE_CLEANUP;NORMAL_EXACT_CONTROLLER_WRITER_LIFECYCLE;ONE_CODER_FIVE_DOCUMENT_RECORD_AND_SAME_SCOPE_CORRECTIONS;INDEPENDENT_REVIEW_VERIFY
+MODEL_ROUTING=ADJUDICATION_SOL_HIGH;RETAINED_EVIDENCE_INSPECTION_LUNA_MEDIUM;CODER_TERRA_HIGH;REVIEWER_TERRA_HIGH;VERIFIER_TERRA_HIGH
+AUTONOMOUS_ACTIONS=READ_SEALED_RETAINED_EVIDENCE;DEFINE_EXACT17_HOLD_DISPOSITIONS_ACCEPTANCE_ROLLBACK_AND_OWNER_GATES;NORMAL_HELPER_ISOLATION_CREATE_VALIDATE_CLEANUP;NORMAL_EXACT_CONTROLLER_WRITER_LIFECYCLE;ONE_CODER_FIVE_DOCUMENT_RECORD_AND_SAME_SCOPE_CORRECTIONS;INDEPENDENT_REVIEW_VERIFY
 DOCUMENTATION_WRITE_SCOPE=docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;docs/FILE_MANIFEST.md
 REMOTE_PROVENANCE_READ_BUDGET=CONSUMED_BY_ONE_SUCCESSFUL_FRESH_CLONE_ATTEMPT_NO_RETRY_NO_SECOND_FETCH_NO_RERUN
 EXACT_SCRIPT_ID=19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
 PRODUCTION_READ_ONLY_INVOCATION_BUDGET=PRIOR_UNCONSUMED_NOT_AUTHORIZED_BY_THIS_SOURCE_AUDIT
 PRODUCTION_READ_LIMITS=GMAIL_ONE_EXACT_MESSAGE;DRIVE_MAX_TWO_FILES_PER_ARTIFACT;SHEETS_MAX_TWO_EXACT_ROWS;FIRESTORE_MAX_FIVE_EXACT_DOCUMENT_READS
-HARD_STOPS=AMBIGUOUS_AUTHORITY_IDENTITY_SECOND_WRITER_SCOPE_EXPANSION_FETCH_TIMEOUT_OR_UNKNOWN_OUTCOME_UNEXPECTED_DRIFT_OUTSIDE_FROZEN_SCOPE_ANY_PRODUCTION_DATA_ACCESS_OR_SOURCE_SYNC_RECONCILIATION_MUTATION_REQUEST_ABNORMAL_RECOVERY_CHECKPOINT_COMMIT_PUSH
-FORBIDDEN=NO_APPLICATION_SOURCE_TEST_CHECKER_OR_NONLISTED_DOCUMENT_EDIT_NO_SOURCE_SYNC_CLASP_PUSH_OR_REPOSITORY_PULL_NO_RECONCILIATION_REPAIR_OR_PRODUCTION_MUTATION_NO_GMAIL_DRIVE_SHEETS_FIRESTORE_SCRIPT_PROPERTY_MARKER_TRIGGER_IAM_ACL_CREDENTIAL_DEPLOY_GIT_STAGE_COMMIT_PUSH_NO_MANUAL_WRITER_OR_ISOLATION_STATE_MUTATION_NO_PROTECTED_W_W1_CHANGE
+HARD_STOPS=AMBIGUOUS_AUTHORITY_IDENTITY_SECOND_WRITER_SCOPE_EXPANSION_NEW_FETCH_NETWORK_OR_PRODUCTION_ACCESS_UNEXPECTED_DRIFT_OUTSIDE_FROZEN_SCOPE_ANY_SOURCE_IMPORT_OVERWRITE_SYNC_RECONCILIATION_OR_DATA_MUTATION_REQUEST_ABNORMAL_RECOVERY_CHECKPOINT_COMMIT_PUSH_OWNER_BUSINESS_POLICY_SELECTION
+FORBIDDEN=NO_APPLICATION_SOURCE_TEST_CHECKER_OR_NONLISTED_DOCUMENT_EDIT_NO_NEW_FETCH_NETWORK_SOURCE_IMPORT_OVERWRITE_SYNC_CLASP_PUSH_OR_REPOSITORY_PULL_NO_RECONCILIATION_REPAIR_OR_PRODUCTION_ACCESS_OR_MUTATION_NO_GMAIL_DRIVE_SHEETS_FIRESTORE_SCRIPT_PROPERTY_MARKER_TRIGGER_IAM_ACL_CREDENTIAL_DEPLOY_GIT_STAGE_COMMIT_PUSH_NO_MANUAL_WRITER_OR_ISOLATION_STATE_MUTATION_NO_PROTECTED_W_W1_CHANGE
 
 ## Current authority and authoring state
 
-This section records a non-liveness authoring snapshot for the bounded review
-correction. ControllerAssign and ControllerVerify were observed as
-`STATUS=VERIFIED`, `SLOT_STATE=ACTIVE`, revision `222`, with the exact durable
-binding `authority_id=OWNER_GO_FRESH_SOURCE_PROVENANCE_AUDIT_ONCE_V1_20260915`,
-`assignment_id=SGDS_FRESH_SOURCE_PROVENANCE_REVIEW_CORRECTION_V2_01a0a381`, and
-`writer_id=01a0a381-91a2-7ff2-8dad-642fbed2fd39`. This observation does not
-prove later slot liveness. The preceding audit authoring reached
-WriterComplete revision `219` and ControllerRelease slot `NONE` revision `220`.
-Every later session must use fresh InspectWriter evidence before lifecycle
-routing. Earlier authoring snapshots are historical and must not be replayed.
+This section records a non-liveness authoring snapshot for the offline plan
+review correction. The initial plan authoring reached WriterComplete revision
+`227` and ControllerRelease slot `NONE` revision `228`. Fresh InspectWriter then
+observed that terminal state before ControllerAssign and ControllerVerify
+established the exact correction binding
+`authority_id=OWNER_GO_OFFLINE_EXACT17_RECONCILIATION_PLAN_V1_20260920`,
+`assignment_id=SGDS_OFFLINE_EXACT17_RECONCILIATION_PLAN_REVIEW_CORRECTION_V2_01a0508a`,
+and `writer_id=01a0508a-ca2d-72b0-8138-e60315864d31` as `ACTIVE`, revision `230`.
+This observation does not prove later slot liveness. Every later session must
+use fresh InspectWriter evidence before lifecycle routing; no historical
+assignment may be replayed.
 
 The authorized documentation delta is exactly these five paths:
 
@@ -126,6 +127,85 @@ SKU monthly-costing, unit, and opening-balance policy. `SKU_ENGINE.js` setup,
 approval, and dry-run/output functions write Sheets even when
 `ProductionCommit` is disabled.
 
+## Offline exact17 reconciliation plan
+
+This phase does not select local or remote as authoritative. `HOLD-K` means the
+remote bytes have a retained historic witness but are not approved for import;
+`HOLD-A` means the local-only dependency is retained without a deletion or
+deployment claim; `HOLD-U` means no reachable exact-path raw or LF witness was
+found and the remote bytes remain quarantined from any candidate. These are
+current safety dispositions, not future keep/adapt/remove business decisions.
+
+| Path | Evidence class | Current disposition | Coupled future gate |
+| --- | --- | --- | --- |
+| D7_E4B_ExactFirestoreReconciliationRuntime.js | K | HOLD-K | Adjudicate atomically with E4C and complete evidence schema |
+| D7_E4C_ExactPreconditionDiagnostic.js | A | HOLD-A | Retain local dependency until E4B/E4C candidate is selected |
+| Invoice_AttachmentParser.js | K | HOLD-K | Approve PDF review and XML/PDF association policy |
+| SKU_ENGINE.js | U | HOLD-U | Require immutable provenance plus SKU/unit/opening/monthly-cost policy |
+| gmailLabels.js | K | HOLD-K | Adjudicate with search, scanner ownership, and completion projection |
+| gmailProcessInvoiceXML.js | K | HOLD-K | Approve identity, line ordinal, and artifact-content policy |
+| gmailSearch.js | K | HOLD-K | Adjudicate atomically with label and partial-retry lifecycle |
+| hashUtils.js | K | HOLD-K | Approve durable line identity and collision/replay policy |
+| invoiceCanonical.js | K | HOLD-K | Approve legacy-to-V2 identity and historical O/P writes |
+| main.js | K | HOLD-K | Approve formula/history mutation and replay ownership |
+| sheetHoaDon.js | K | HOLD-K | Approve registry conflict, View ownership, and repair policy |
+| sheetMenu.js | U | HOLD-U | Require immutable provenance and SKU command exposure decision |
+| sheetNhapXuat.js | U | HOLD-U | Require immutable provenance plus ordering/oversell/history policy |
+| sheetSidebar.html | K | HOLD-K | Adjudicate with producer run identity and terminal protocol |
+| sheetTonKho.js | U | HOLD-U | Require immutable provenance plus ordering/oversell/log policy |
+| sheetUtils.js | K | HOLD-K | Approve run-ID-bound progress semantics; TTL alone is insufficient |
+| triggers.js | K | HOLD-K | Approve edit identity, audit, and reconciliation-flag consumer |
+
+The four `HOLD-U` paths are exactly `SKU_ENGINE.js`, `sheetMenu.js`,
+`sheetNhapXuat.js`, and `sheetTonKho.js`. No evidence in this phase upgrades
+them to known lineage. All 12 `HOLD-K` remote variants remain bound to witness
+commit `6b16ef51bfcb4455453b528879057a34f4db9eed`; the one `HOLD-A` path remains
+bound to the local checkpoint. No row authorizes source assembly.
+
+### Required Owner adjudications
+
+1. Choose the durable invoice and line identity contract, including 10-3 tax
+   identity, legacy replay, PDF/XML association, and collision handling.
+2. Approve or reject historical Sheet mutation ownership for registry, O/P
+   keys/formulas, edit-trigger repair, actor/reason/timestamp audit, and
+   concurrent edit preservation.
+3. Choose the partial-thread retry and completion contract across Gmail labels,
+   scanner file flags, source ordinals, and projection status.
+4. Choose Nhap-Xuat/Ton-Kho ordering, oversell, invalid-date, logging, and
+   run-ID-bound terminal semantics.
+5. Provide immutable provenance and a keep/adapt/remove decision for the SKU
+   extension, including units, aliases, opening balances, monthly costing,
+   Sheet-writing dry runs, and menu exposure.
+
+Until all five adjudications are explicit, the coherent candidate is
+`NOT_FORMED` and all 17 paths remain HOLD. Evidence may prove byte lineage but
+cannot decide these business semantics.
+
+### Future candidate acceptance and rollback contract
+
+A later local-source implementation gate may be proposed only when all of the
+following are reviewable before mutation:
+
+- exact 17-path candidate operation (`KEEP_LOCAL`, `ADAPT`, or `REMOVE`) and
+  final SHA-256 for every candidate path, with no implicit files;
+- the four `HOLD-U` paths resolved by immutable provenance or explicit Owner
+  disposition, without relabeling UNKNOWN as known;
+- one atomic E4B/E4C API/evidence schema and one atomic Gmail retry/completion
+  lifecycle;
+- explicit invoice/line identity, historical-write audit, Nhap-Xuat/Ton-Kho,
+  and SKU policy decisions corresponding to the five gates above;
+- focused syntax/unit/static checks for every changed module, governance A-Q
+  exactly `17/0/0/0`, aggregate checks with zero failure, `git diff --check`,
+  exact scope/hash verification, and independent Reviewer plus Verifier PASS;
+- no source sync, production read, production mutation, commit, or push inside
+  that future implementation envelope unless separately authorized.
+
+The rollback baseline for any future local candidate is checkpoint
+`35ae93c6e34d478326c0b78a420c7c5e99188778`. The future proposal must include
+an exact inverse patch or exact-path restore plan to that baseline before any
+implementation. This is a local-source rollback only; it does not imply a GAS
+or production rollback and cannot authorize either boundary.
+
 ## Allowed mutation scope
 
 This exact 25-path list is retained only as the historical Phase 0 candidate
@@ -170,16 +250,16 @@ pull, or lifecycle action was performed by this Coder.
 
 ## Next direction
 
-CURRENT_PHASE=SGDS_FRESH_SOURCE_PROVENANCE_REVIEW_CORRECTION_V2
-CURRENT_PHASE_STATUS=NON_LIVENESS_AUTHORING_SNAPSHOT_ACTIVE_REVISION_222
-PRIOR_AUDIT_TERMINAL=WRITERCOMPLETE_REVISION_219_CONTROLLERRELEASE_NONE_REVISION_220
-CORRECTION_LIFECYCLE_EXPECTED_NOT_OBSERVED=WRITERCOMPLETE_REVISION_223_CONTROLLERRELEASE_NONE_REVISION_224
-PROVENANCE_RESULT=FULL_PROJECT_SEMANTIC_PARITY_FALSE
-HARD_STOP=UNRESOLVED_REMOTE_LOCAL_DRIFT
+CURRENT_PHASE=SGDS_OFFLINE_EXACT17_RECONCILIATION_PLAN_V1
+CURRENT_PHASE_STATUS=NON_LIVENESS_REVIEW_CORRECTION_SNAPSHOT_ACTIVE_REVISION_230
+PRIOR_PHASE_TERMINAL=WRITERCOMPLETE_REVISION_223_CONTROLLERRELEASE_NONE_REVISION_224_CHECKPOINT_35ae93c6e34d478326c0b78a420c7c5e99188778
+PLAN_AUTHORING_TERMINAL=WRITERCOMPLETE_REVISION_227_CONTROLLERRELEASE_NONE_REVISION_228
+CORRECTION_LIFECYCLE_EXPECTED_NOT_OBSERVED=WRITERCOMPLETE_REVISION_231_CONTROLLERRELEASE_NONE_REVISION_232
+PLAN_RESULT=PLAN_DEFINED_CANDIDATE_NOT_FORMED_ALL_17_HOLD_FOUR_UNKNOWN_HOLD
+HARD_STOP=OWNER_BUSINESS_ADJUDICATION_REQUIRED_BEFORE_LOCAL_SOURCE_CANDIDATE
 SOURCE_FETCH_BUDGET=CONSUMED_NO_RERUN
 CODER_CLOSEOUT=FREEZE_AND_REPORT_NO_WRITERCOMPLETE_NO_CONTROLLERRELEASE
-IMMEDIATE_NEXT_SEQUENCE=FRESH_INSPECTWRITER_THEN_ONLY_IF_EXACT_CORRECTION_BINDING_IS_ACTIVE_CONTROLLER_WRITERCOMPLETE_EXPECTED_223_AND_CONTROLLERRELEASE_NONE_EXPECTED_224;IF_INSPECTWRITER_ALREADY_SHOWS_NONE_REVISION_224_DO_NOT_REPLAY_LIFECYCLE_AND_PROCEED_TO_ISOLATED_INDEPENDENT_REVIEWER_PASS_ZERO_P0_P1_P2_AND_CLEANUP_NO_FIXTURE_TESTS_THEN_ISOLATED_INDEPENDENT_VERIFIER_A_Q_17_PASS_0_FAIL_0_SKIP_0_TODO_AGGREGATE_SCOPE_DIFFCHECK_MANIFEST_THEN_CLEANUP_THEN_OWNER_CHECKPOINT_GATE
-POST_CHECKPOINT_DIRECTION=BOUNDED_OFFLINE_EXACT17_RECONCILIATION_AND_ADJUDICATION_PLAN_USING_RETAINED_EVIDENCE_ONLY
-POST_CHECKPOINT_SCOPE=FOUR_UNKNOWN_PROVENANCE_EVIDENCE_OR_EXPLICIT_HOLD_DISPOSITIONS_AND_EXACT_FUTURE_ACCEPTANCE_ROLLBACK_CANDIDATE
-POST_CHECKPOINT_FORBIDDEN=NO_IMPORT_OVERWRITE_SYNC_OR_DATA_ACTION
-OWNER_BUSINESS_DECISION_REQUIRED=SKU_COSTING_LEGACY_IDENTITY_HISTORY_AND_RELATED_BUSINESS_BOUNDARIES;NO_AUTOMATIC_RETAIN_REMOVE_OR_ADAPT_CHOICE
+IMMEDIATE_NEXT_SEQUENCE=FRESH_INSPECTWRITER_THEN_ONLY_IF_EXACT_CORRECTION_BINDING_IS_ACTIVE_CONTROLLER_WRITERCOMPLETE_EXPECTED_231_AND_CONTROLLERRELEASE_NONE_EXPECTED_232;IF_INSPECTWRITER_ALREADY_SHOWS_NONE_REVISION_232_DO_NOT_REPLAY_LIFECYCLE_AND_PROCEED_TO_FRESH_ISOLATED_INDEPENDENT_REVIEWER_AND_VERIFIER_AND_CLEANUP_THEN_OWNER_BUSINESS_ADJUDICATION_GATE
+NEXT_DIRECTION=OWNER_ADJUDICATES_FIVE_COUPLED_BUSINESS_POLICY_GROUPS_AND_PROVIDES_PROVENANCE_OR_EXPLICIT_KEEP_ADAPT_REMOVE_FOR_FOUR_UNKNOWN_PATHS
+NEXT_IMPLEMENTATION_SCOPE=NOT_AUTHORIZED_AND_NOT_FORMED
+NEXT_FORBIDDEN=NO_IMPORT_OVERWRITE_SYNC_PRODUCTION_ACCESS_DATA_ACTION_COMMIT_OR_PUSH

@@ -386,3 +386,16 @@ evidence and source/production boundaries.
 - `docs/13_DECISION_LOG.md` - SHA256 `fd998e40e06cc0d2b821406ad7866e68901df6e4b4feac4f5a08f1dca7908244`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `f4e4dac18b588c2e5fcedc9efa8190501ef937e72b8beb7fae3340b51c67e340`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Offline Exact17 Reconciliation Plan Review Correction V2 Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This exact five-document
+offline plan uses only the sealed retained provenance evidence. It holds all 17
+paths, leaves the four unknown variants explicitly unresolved, and corrects
+terminal lifecycle routing without authorizing source or production action.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `00afd1a6fb94db425ca19b3335b045a97cb25342c05e23ffa74fc014c15c08f7`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `7bfda9d28bce5c148d6e3ed955902eac191c516eda5fe3f7f410b11bebe7450a`
+- `docs/13_DECISION_LOG.md` - SHA256 `869ec7bdcea21c87dbe367744d11808d268f92171230a360c729aa8581184033`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `20267734d310a8dcf87132e6310d5a707cce469aecc2a7e38c7360e8bebd32c6`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
