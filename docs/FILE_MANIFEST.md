@@ -373,3 +373,16 @@ accepted V2 lifecycle-wording repair. Frozen provenance remains unchanged.
 - `docs/13_DECISION_LOG.md` - SHA256 `e96e1f86ba71d209eb4f8f87eb535b51ffa41d129c77a33f2a49a3fd9e94edd0`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `bf0f28f77a59daec493951f7af66e987f1186e724e7e83f49fcc6f23eb33429f`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Fresh Source Provenance Review Correction V2 Final-Byte Inventory
+
+The manifest remains the sole self-hash exception. This exact five-document
+review correction changes only the four hashable records below plus this
+manifest. It corrects stale lifecycle routing while preserving the audit
+evidence and source/production boundaries.
+
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `7b1a2441272d8232c1c92304353b43c72e7f2118da0d98a822e3fd5c0f01964d`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `214cdbd3dc50b100f2260bd06c4e9d6c4a5889aebd73ae828ab4b77cdc0df8aa`
+- `docs/13_DECISION_LOG.md` - SHA256 `fd998e40e06cc0d2b821406ad7866e68901df6e4b4feac4f5a08f1dca7908244`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `f4e4dac18b588c2e5fcedc9efa8190501ef937e72b8beb7fae3340b51c67e340`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
