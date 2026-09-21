@@ -744,3 +744,19 @@ the current governed candidate scope. A regression test proves the full current
 scope is accepted while unexpected paths still fail closed. Application runtime
 logic remains frozen. Next: full acceptance, normal writer release, independent
 Reviewer and Verifier isolation, then the Owner checkpoint gate.
+
+## 2026-09-20 - Local Source Assembly Reconciliation V1
+
+PHASE=SGDS_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_V1
+STATUS=LOCAL_IMPLEMENTATION_FOCUSED_ACCEPTANCE_PENDING
+AUTHORITY_ID=OWNER_GO_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_INVOICECANONICAL_SKUENGINE_SHEETMENU_V1_20260920
+MUTATION_SCOPE=EXACT_17_PATHS
+CANDIDATE_SCOPE=EXACT_76_PATHS
+
+Fresh read-only parity proved that `invoiceCanonical.js` and `SKU_ENGINE.js`
+exist only in the remote Apps Script project while `sheetMenu.js` calls the SKU
+entrypoints. Assemble those exact module bytes locally, restore only the four
+non-production menu calls, add fail-closed regression coverage, run aggregate
+acceptance, release the writer, and complete isolated Reviewer and Verifier
+checks before the next checkpoint gate. Source sync and production remain
+separate hard gates.

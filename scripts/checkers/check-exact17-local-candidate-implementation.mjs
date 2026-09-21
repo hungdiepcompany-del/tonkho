@@ -10,11 +10,11 @@ const scope = [...scopeSection.matchAll(/^- `([^`]+)`/gm)].map(match => match[1]
 
 assert.equal(correctionScope.length, 11, 'EXACT17_CORRECTION_SCOPE_MUST_HAVE_11_PATHS');
 assert.equal(new Set(correctionScope).size, 11, 'EXACT17_CORRECTION_SCOPE_DUPLICATE');
-assert.equal(scope.length, 71, 'EXACT17_IMPLEMENTATION_SCOPE_MUST_HAVE_71_PATHS');
-assert.equal(new Set(scope).size, 71, 'EXACT17_IMPLEMENTATION_SCOPE_DUPLICATE');
+assert.equal(scope.length, 76, 'EXACT17_IMPLEMENTATION_SCOPE_MUST_HAVE_76_PATHS');
+assert.equal(new Set(scope).size, 76, 'EXACT17_IMPLEMENTATION_SCOPE_DUPLICATE');
 for (const file of scope) assert.equal(fs.existsSync(file), true, `EXACT17_SCOPE_PATH_MISSING:${file}`);
 
-assert.match(contract, /AUTHORITY_ID=OWNER_GO_EXACT17_AGGREGATE_COMPATIBILITY_CORRECTION_EXACT_11_PATHS_V1_20260920/);
+assert.match(contract, /AUTHORITY_ID=OWNER_GO_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_INVOICECANONICAL_SKUENGINE_SHEETMENU_V1_20260920/);
 assert.match(read('Shared_Hashing.js'), /function buildInvoiceKeyV2_/);
 assert.match(read('Shared_Hashing.js'), /function buildLineIdentityV2_/);
 assert.match(read('gmailProcessInvoiceXML.js'), /sourceLineNo[\s\S]*lineIdentityV2/);

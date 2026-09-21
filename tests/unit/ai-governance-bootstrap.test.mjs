@@ -309,7 +309,8 @@ test('P complete lifecycle is equivalent in PowerShell 7', () => withRepo(repo =
 test('Q checker static contract and reachable-v3 authority proof align with this matrix', () => {
   const expectedPhase0CandidateScope = [
     'config.js', 'Shared_Normalization.js', 'Shared_Hashing.js', 'Invoice_AttachmentParser.js',
-    'gmailProcessInvoiceXML.js', 'sheetHoaDon.js', 'hashUtils.js', 'sheetWriter.js', 'main.js',
+    'gmailProcessInvoiceXML.js', 'sheetHoaDon.js', 'hashUtils.js', 'sheetWriter.js',
+    'invoiceCanonical.js', 'SKU_ENGINE.js', 'sheetMenu.js', 'main.js',
     '_triggerDriveScanner.js', 'driveUtils.js', 'gasSheetsReadOnlyReader.js', 'sgdsSheetsLedgerAdapter.js',
     'gmailCollection.js', 'gmailSearch.js', 'gmailLabels.js', 'gmailScanner.js', 'durableScannerShadowBridge.js',
     'durableJobState.js', 'durableInvoiceOrchestrator.js', 'durableReconciliation.js',
@@ -328,6 +329,7 @@ test('Q checker static contract and reachable-v3 authority proof align with this
     'tests/static/static-source-safety.test.mjs', 'tests/unit/ai-governance-bootstrap.test.mjs',
     'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
     'tests/unit/exact17-local-candidate-integration.test.mjs',
+    'tests/unit/source-assembly-reconciliation.test.mjs',
     'fixtures/durable-orchestration/fake-durable-orchestration.mjs',
     'fixtures/xml/valid-invoice-v2-multiline.xml', 'package.json', 'scripts/test/run-all-checks.mjs',
     'scripts/checkers/check-ai-governance-bootstrap.mjs',
@@ -335,6 +337,7 @@ test('Q checker static contract and reachable-v3 authority proof align with this
     'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
     'scripts/checkers/check-sgds-crit-003-d5a-local-orchestration.mjs',
     'scripts/checkers/check-exact17-local-candidate-implementation.mjs',
+    'scripts/checkers/check-source-assembly-reconciliation.mjs',
     'docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md',
     'docs/02_TARGET_ARCHITECTURE.md', 'docs/03_DATA_CONTRACT.md', 'docs/04_MASTER_PLAN.md',
     'docs/12_AI_WORK_LOG.md', 'docs/13_DECISION_LOG.md', 'docs/99_NEXT_AI_HANDOFF.md', 'docs/FILE_MANIFEST.md'

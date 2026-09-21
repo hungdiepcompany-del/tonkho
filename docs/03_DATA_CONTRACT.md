@@ -245,3 +245,18 @@ ordered by issue date, transaction sequence, then source line number, and an
 oversell blocks before write. Progress is scoped by exact run ID and terminal
 status. The shared four-column file log is append-only audit; direct historical
 edits are restored when possible and mark reconciliation required.
+
+## Local Source Assembly Data Boundary V1
+
+PHASE=SGDS_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_V1
+CANONICAL_INVOICE_SUPPORT=invoiceCanonical.js
+SKU_ENGINE_SUPPORT=SKU_ENGINE.js
+MENU_CALL_SITE=sheetMenu.js
+PRODUCTION_COMMIT=DISABLED
+PRODUCTION_MUTATION=NONE
+
+Canonical tax identity retains the ten-digit or ten-plus-three branch form.
+Duplicate invoice-key reconciliation fails closed on ambiguous existing ledger
+identity. SKU mappings, aliases, opening balances, stock projections, monthly
+costing, and review outputs remain explicit sheet-backed contracts. The local
+assembly does not execute these contracts against production data.

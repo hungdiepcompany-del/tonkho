@@ -75,3 +75,16 @@ before completion, and deterministic inventory rebuild with run-scoped progress
 and append-only audit. Legacy persisted identities remain readable. Firestore
 remains workflow state and projection, not the business ledger. No production
 runtime, Google account, or remote Apps Script source was changed by this phase.
+
+## Local Source Assembly Reconciliation V1
+
+PHASE=SGDS_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_V1
+STATUS=LOCAL_CANDIDATE_ACCEPTANCE_PENDING
+DEPLOYMENT_STATUS=NOT_SYNCED_NOT_DEPLOYED
+
+The local Apps Script source set now preserves the canonical invoice support
+module and the SKU Engine module observed in the fresh remote snapshot. The
+existing administration menu exposes only the four reviewed SKU setup, mapping,
+validation, and dry-run entrypoints. `skuEngineProductionCommit` remains
+disabled. This is local source assembly only and does not establish remote
+parity or authorize production execution.

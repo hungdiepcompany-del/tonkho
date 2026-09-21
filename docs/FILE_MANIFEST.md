@@ -496,3 +496,28 @@ correction.
 - `docs/13_DECISION_LOG.md` - SHA256 `d08f549c36a0d59b22182cd45d6f55ce0e00d7df762c69b19555615997ba4508`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `921d800f6b1aa8c8769bc27d0fca7268296dd964e85e8e8a06d00b7cb13d2b3a`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## Local Source Assembly Reconciliation V1 Final-Byte Inventory
+
+This exact 17-path local candidate preserves the two remote-only dependency
+modules and restores their reviewed menu call site. The manifest remains the
+sole self-hash exception. These hashes identify local candidate bytes only and
+do not prove Apps Script parity, deployment, or production execution.
+
+- `invoiceCanonical.js` - SHA256 `e59ba2bb5a0bacc04da4d7a46ad033ff98de4fb60a36fb4ca6e318951847515d`
+- `SKU_ENGINE.js` - SHA256 `4879f2ea2bd713c0272ba746c77b7c150e2ba2fd4afb5d87d23ecde7cc8dfebb`
+- `sheetMenu.js` - SHA256 `481d19b2c83dc4937864a9d1d2cab283d427d6b0371b9255818cc41e176e7006`
+- `tests/unit/source-assembly-reconciliation.test.mjs` - SHA256 `bf43299190398e9e2fd6afc4a7a938d9bc77b125bf976ff453ba8307ba58b1d0`
+- `scripts/checkers/check-source-assembly-reconciliation.mjs` - SHA256 `514aba6d93a5ab41b4e8c556dac73c5782969152f30abd5a937feab48756d916`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `bab95b1ced92e0d52a7bf10bff2513549ecdf689e08166525a9f5bd825870af7`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `ea03c011772e3989e30d23502ffbb1d479adf78923f7a1520ad6491365a69bca`
+- `scripts/checkers/check-exact17-local-candidate-implementation.mjs` - SHA256 `9cbfb6a0550eef1bc5ac642afd5ed3a75fbb8f10ddaaf82a8605f8a1fbd9cfa7`
+- `scripts/test/run-all-checks.mjs` - SHA256 `3953b5b9dd682b733ee019aa9b493247777198e8797e07b1663314256c137b55`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `9b3ee7b09d8fec38e93a4427e1096d4185d2ab9feef478fb067283f259c7f9ba`
+- `docs/02_TARGET_ARCHITECTURE.md` - SHA256 `d1aa76c1b0b37c4306d8ad9702bc636bf09a67c40a54a61d1c0715b7753ca50f`
+- `docs/03_DATA_CONTRACT.md` - SHA256 `f87f3cd73d3c0012d9cb56453263fad6ffefcca9e00c37e64514a7f871a3e446`
+- `docs/04_MASTER_PLAN.md` - SHA256 `6ff597bedbedd2cf29ecab7c5ea2475148f19495524d28f35bdbda1ec0613a98`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `7027d73efe3b0cd66e23e5303d3aaa799179ea254b3ad88a47eca14ca52931a4`
+- `docs/13_DECISION_LOG.md` - SHA256 `29ce0a66a072a0c198841ecf44c6c0d2f93fddd8316d1329168521859521c060`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `5996590370b3fccd242cffefd11dbe1af0a8d4c0dfedc6d3a80f475086a33a3d`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash

@@ -7,6 +7,12 @@ function onOpen() {
     .addSeparator()
     .addItem("📦 Cập nhật Tồn kho", "capNhatTonKho")
     .addItem("🔁 Cập nhật Nhập/Xuất", "capNhatNhapXuatBQGQ")
+    .addSeparator()
+    .addItem('0. Setup sheets (idempotent)', 'skuEngineSetupSheets')
+    .addSeparator()
+    .addItem('1. Bootstrap SKU/Alias suggestions', 'skuEngineBootstrapAliases')
+    .addItem('2. Validate SKU mappings', 'skuEngineValidateMappings')
+    .addItem('3. Run monthly SKU dry-run', 'skuEngineRunDry')
     .addToUi();
 }
 
