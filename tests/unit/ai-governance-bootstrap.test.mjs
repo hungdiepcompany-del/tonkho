@@ -330,6 +330,7 @@ test('Q checker static contract and reachable-v3 authority proof align with this
     'tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs',
     'tests/unit/exact17-local-candidate-integration.test.mjs',
     'tests/unit/source-assembly-reconciliation.test.mjs',
+    'tests/unit/d7-e4d-validated-job-recovery-eligibility.test.mjs',
     'fixtures/durable-orchestration/fake-durable-orchestration.mjs',
     'fixtures/xml/valid-invoice-v2-multiline.xml', 'package.json', 'scripts/test/run-all-checks.mjs',
     'scripts/checkers/check-ai-governance-bootstrap.mjs',
@@ -338,6 +339,9 @@ test('Q checker static contract and reachable-v3 authority proof align with this
     'scripts/checkers/check-sgds-crit-003-d5a-local-orchestration.mjs',
     'scripts/checkers/check-exact17-local-candidate-implementation.mjs',
     'scripts/checkers/check-source-assembly-reconciliation.mjs',
+    'scripts/checkers/check-d7-e4d-validated-job-recovery-eligibility.mjs',
+    'D7_E4D_ValidatedJobRecoveryEligibility.js',
+    'docs/phases/D7_E4D_VALIDATED_JOB_RECOVERY_ELIGIBILITY.md',
     'docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md',
     'docs/02_TARGET_ARCHITECTURE.md', 'docs/03_DATA_CONTRACT.md', 'docs/04_MASTER_PLAN.md',
     'docs/12_AI_WORK_LOG.md', 'docs/13_DECISION_LOG.md', 'docs/99_NEXT_AI_HANDOFF.md', 'docs/FILE_MANIFEST.md'

@@ -260,3 +260,17 @@ Duplicate invoice-key reconciliation fails closed on ambiguous existing ledger
 identity. SKU mappings, aliases, opening balances, stock projections, monthly
 costing, and review outputs remain explicit sheet-backed contracts. The local
 assembly does not execute these contracts against production data.
+
+## D7-E4D Validated-Job Recovery Contract
+
+An owner-gated recovery must retain the original deterministic job ID and prove
+the exact `VALIDATED` version, immutable commit plan, lease fence, complete
+event/report cardinality, absent attachment records, absent exact external
+artifacts, and unchanged Gmail candidate identity before implementation can be
+considered. Missing, malformed, incomplete, or unknown evidence blocks.
+
+The required recovery path is `VALIDATED -> FILES_SAVED -> COMMITTING ->
+ROWS_COMMITTED -> INVENTORY_PENDING -> PROJECTIONS_COMMITTED -> COMPLETED`.
+No current runtime is authorized to perform this transition. The local D7-E4D
+evaluator reports capability gaps without changing job state or production
+data.

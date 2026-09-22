@@ -88,3 +88,16 @@ existing administration menu exposes only the four reviewed SKU setup, mapping,
 validation, and dry-run entrypoints. `skuEngineProductionCommit` remains
 disabled. This is local source assembly only and does not establish remote
 parity or authorize production execution.
+
+## D7-E4D Same-Job Recovery Boundary
+
+The recovery architecture preserves the existing deterministic Firestore job
+identity. It does not create a successor attempt merely to bypass historical
+reconciliation evidence. A future recovery runtime must use the current V2
+identity contract and complete Drive, Hoa-Don, immutable ledger, inventory, and
+Gmail projection verification before `COMPLETED`.
+
+The historical D7-E pilot is not an acceptable recovery runtime because it
+blocks the existing job and omits current Hoa-Don, inventory, and Gmail
+projection boundaries. D7-E4D currently provides only a pure eligibility
+evaluator; no production entrypoint exists or is authorized.

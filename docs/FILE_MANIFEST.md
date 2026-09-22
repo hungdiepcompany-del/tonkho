@@ -259,6 +259,31 @@ blob `0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c` with 1118 raw LF records.
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `0a7e49830bea6c80a1bd24762dc776aa637d68a39d786fb51c7da86d4db361f9`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
 
+## D7-E4D Local Same-Job Recovery Eligibility V1 Final-Byte Inventory
+
+This exact 16-path local-only candidate adds a pure eligibility evaluator for
+the already-existing validated job. The manifest remains the sole self-hash
+exception. These hashes identify frozen Coder bytes only; they authorize no
+source synchronization, Apps Script execution, production mutation, commit,
+or push.
+
+- `D7_E4D_ValidatedJobRecoveryEligibility.js` - SHA256 `fcb0494aa35f7b6266e824d86ba40d483a8bca3070a8cd34a9fb2077de7766cc`
+- `tests/unit/d7-e4d-validated-job-recovery-eligibility.test.mjs` - SHA256 `2125a959dd4bf0e2b0b11f01ba18711f5f73ca279d1d8ac076e395703d6558df`
+- `scripts/checkers/check-d7-e4d-validated-job-recovery-eligibility.mjs` - SHA256 `b01a16d04468e90a8327dbc68efd2afe1ab93fdaadc45c2848a823e3db060d98`
+- `package.json` - SHA256 `08438b141b0433d5db921f03dca4c2bf29ccf58fd3fc8ae5f8238008778aff1b`
+- `scripts/test/run-all-checks.mjs` - SHA256 `ef092ec39217a8c923dba6059a79ac09bbc47a1920cdc2dcf55778571aa95f09`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `1921a43c4729d07fd0bc07503f88a16b34a9a95b5a67aafb8c14decc24e88385`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `cec0e71d14abda2a594acd3508d48126741f4ed2ce2fac1c1c8064d9ae1360d1`
+- `docs/phases/D7_E4D_VALIDATED_JOB_RECOVERY_ELIGIBILITY.md` - SHA256 `95f531356e476d15e5bdc1f74a4f2d40e5eb11605fa40d1a69c11a876bc13cc3`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `e2819634986da73f8e1d8e138518e23f149d2757bdf254dbb42a65688d40be8b`
+- `docs/02_TARGET_ARCHITECTURE.md` - SHA256 `86a436a78371212d2ee709154f27221cc390546bd85d53c196544d156cf77bea`
+- `docs/03_DATA_CONTRACT.md` - SHA256 `30f923a98cb107e37c4afba49e231a2f5af8f3843c0ba2db096692c7ccb2d2e7`
+- `docs/04_MASTER_PLAN.md` - SHA256 `1a5ce9586c477ab8d206a65bb58ce2db83949d9167db2b85691a020b4dfd78f9`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `700b6ba118029f17dd9d1a3684b036d0e97bdc0248e00ff9ecbaac8025fe06a8`
+- `docs/13_DECISION_LOG.md` - SHA256 `0a77d054809fb3e17513db63ecfd67711348baa8d03bdd5f474f94e5293f0802`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `12f4eb688af4884f4ad2c2b402cab39a143842b82bd4f4229c32cef521b15f8b`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
 ## Clean-Worktree Isolation Review Correction V2 Final-Byte Inventory
 
 The V1 writer completed and released to slot `NONE` at revision 200; its
@@ -520,4 +545,19 @@ do not prove Apps Script parity, deployment, or production execution.
 - `docs/12_AI_WORK_LOG.md` - SHA256 `7027d73efe3b0cd66e23e5303d3aaa799179ea254b3ad88a47eca14ca52931a4`
 - `docs/13_DECISION_LOG.md` - SHA256 `29ce0a66a072a0c198841ecf44c6c0d2f93fddd8316d1329168521859521c060`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `5996590370b3fccd242cffefd11dbe1af0a8d4c0dfedc6d3a80f475086a33a3d`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## D7-E4D Aggregate Compatibility Correction V1 Final-Byte Inventory
+
+This exact seven-path correction removes stale aggregate assumptions without
+changing application runtime behavior. The manifest remains the sole self-hash
+exception. These hashes identify frozen Coder bytes before independent review
+and testing; they authorize no commit, push, source sync, or production action.
+
+- `scripts/checkers/check-exact17-local-candidate-implementation.mjs` - SHA256 `740e97543088ef82be98d36a5232a3d269d1ea7b9eb684eb3cf367425004c380`
+- `scripts/checkers/check-source-assembly-reconciliation.mjs` - SHA256 `4f80955fb42fb576710fb5087451412535a577812ff158f7a77a98355e9d78b2`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `dd6a1f58c39225cbacfdbd47e20eb8ae8c66735a67ca6a8e02b6917dc92cf45e`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `8ad0ee4a4f330b074597273e921c5c444e50d72d2620f53556b970bde6e2ad17`
+- `docs/13_DECISION_LOG.md` - SHA256 `bdeceb12eee77f888bb00f9a57850726d9308f57e32f697c5accc4970dec32eb`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `9e199fe2713a9ac613b7c38033b90388ad615dbdbb13a5cccff0f8a15bcffe85`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash

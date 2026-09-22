@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { phase0CandidateScope } from './check-ai-governance-bootstrap.mjs';
 
 const read = file => fs.readFileSync(file, 'utf8');
 const contract = read('docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md');
@@ -10,11 +11,11 @@ const scope = [...scopeSection.matchAll(/^- `([^`]+)`/gm)].map(match => match[1]
 
 assert.equal(correctionScope.length, 11, 'EXACT17_CORRECTION_SCOPE_MUST_HAVE_11_PATHS');
 assert.equal(new Set(correctionScope).size, 11, 'EXACT17_CORRECTION_SCOPE_DUPLICATE');
-assert.equal(scope.length, 76, 'EXACT17_IMPLEMENTATION_SCOPE_MUST_HAVE_76_PATHS');
-assert.equal(new Set(scope).size, 76, 'EXACT17_IMPLEMENTATION_SCOPE_DUPLICATE');
+assert.deepEqual(scope, phase0CandidateScope, 'EXACT17_IMPLEMENTATION_SCOPE_MUST_MATCH_CANONICAL_CANDIDATE_SCOPE');
+assert.equal(new Set(scope).size, scope.length, 'EXACT17_IMPLEMENTATION_SCOPE_DUPLICATE');
 for (const file of scope) assert.equal(fs.existsSync(file), true, `EXACT17_SCOPE_PATH_MISSING:${file}`);
 
-assert.match(contract, /AUTHORITY_ID=OWNER_GO_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_INVOICECANONICAL_SKUENGINE_SHEETMENU_V1_20260920/);
+assert.match(contract, /`authority_id=OWNER_GO_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_INVOICECANONICAL_SKUENGINE_SHEETMENU_V1_20260920`/);
 assert.match(read('Shared_Hashing.js'), /function buildInvoiceKeyV2_/);
 assert.match(read('Shared_Hashing.js'), /function buildLineIdentityV2_/);
 assert.match(read('gmailProcessInvoiceXML.js'), /sourceLineNo[\s\S]*lineIdentityV2/);

@@ -35,6 +35,7 @@ const commands = [
   ['node', ['scripts/checkers/check-d7-e4a2-exact-firestore-reconciliation-plan-finalization.mjs']],
   ['node', ['scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs']],
   ['node', ['scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs']],
+  ['node', ['scripts/checkers/check-d7-e4d-validated-job-recovery-eligibility.mjs']],
 ];
 
 for (const [cmd, args] of commands) {

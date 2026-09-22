@@ -39,6 +39,21 @@ PHASE1_READ_ONLY_DISPATCH=ONE_CONFIRMED_COMPLETED_NORMALLY
 The Phase 1 forensic rebaseline made one confirmed read-only D7-E3I dispatch and completed normally, but it is blocked as `FORENSICS_INCOMPLETE`: the canonical Sheet row is absent, the job is `VALIDATED_NOT_COMPLETED` with unknown-write-outcome evidence, and both exact Drive artifacts are unavailable. The exact reachable forensic call graph and Apps Script manifest match local source, but full-project remote/local drift remains unresolved. Stop before reconciliation or mutation; a fresh later phase must diagnose the missing Drive artifacts, unknown Firestore outcome, and provenance drift before any production write can be authorized.
 
 PHASE1_READS=GMAIL_VERIFIED_READ_OK;SHEETS_READ_OK_CANONICAL_ROW_ABSENT;FIRESTORE_READ_OK_VALIDATED_NOT_COMPLETED_UNKNOWN_WRITE_OUTCOME;DRIVE_PDF_XML_RESOURCE_NOT_FOUND
+
+## D7-E4D Local Recovery Eligibility
+
+The 2026-09-21 Editor rerun confirmed the Phase 1 production state without
+mutation. D7-E4D converts that evidence into a local fail-closed decision:
+same-job recovery scope is proven by 27 predicates, but production runtime
+readiness is blocked by seven missing capabilities. The next implementation
+phase must add those capabilities locally and independently validate them before
+any source synchronization or production gate is considered.
+
+D7_E4D_EVIDENCE=PASS_27_OF_27
+D7_E4D_RUNTIME_CAPABILITY=BLOCKED_0_OF_7
+D7_E4D_JOB_DISPOSITION=PRESERVE_EXISTING_JOB_ID
+D7_E4D_PRODUCTION_ENTRYPOINT=NONE
+D7_E4D_PRODUCTION_MUTATION=NONE
 PHASE1_READ_COUNTS=DRIVE_4_FIRESTORE_5_GMAIL_1_SHEETS_1_WITHIN_MAXIMA
 PHASE1_PERMISSION_PROBE=EXECUTED_NO_BROAD_SCOPE_OR_CLOUD_PLATFORM_SCOPE_ADDITION_REQUIRED
 PHASE1_MUTATIONS=ZERO_PRODUCTION_DESTRUCTIVE_REPAIR_RECONCILIATION_GMAIL_DRIVE_SHEETS_FIRESTORE_TRIGGER
