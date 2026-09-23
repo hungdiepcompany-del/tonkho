@@ -36,6 +36,42 @@ PHASE1_READ_ONLY_DISPATCH=ONE_CONFIRMED_COMPLETED_NORMALLY
 
 ## Current Next Step
 
+Checkpoint `895e6a47ca74c7a9f21d2a0b51a6f26af7c41bfc` is committed and pushed to
+`origin/main`. D7-E4E is the active local-only phase. It implements the seven
+missing same-job recovery capabilities, then must pass governance A-Q, full
+aggregate acceptance, independent Review, and independent Tester before a new
+checkpoint is surfaced.
+
+The first independent review rejected unknown-write classification, and a
+second rejected resolved but unconfirmed adapter responses. Later reviews found
+a stale Gmail search index, an unconfirmed failure-path lease close, final
+verification that reused earlier adapter booleans, and inventory verification
+that diverged from rebuild date semantics. Correction V7 retains every prior
+fence and makes the writer use the same parsed Date, ISO, and day-first source
+dates as final verification for sorting and cutoff filtering. Correction V8
+also freshly reads `TonKho!H6` before completion and requires its parsed date
+to exactly equal the normalized plan cutoff; blank, invalid, or drifted values
+block completion. A nonblank invalid cutoff now also fails before the
+zero-invoice-row completion shortcut. Fresh independent Review and Tester
+remain required.
+
+V8 focused acceptance is 45 tests with zero failures, skips, or todos. Full
+local acceptance is 836 total / 835 pass / 0 fail / 1 expected skip / 0 todo.
+V8 WriterComplete revision 295 and ControllerRelease NONE revision 296 closed
+that correction normally. Independent Sol review passed with no P0/P1; its
+accepted residual P2 requests a deeper combined final-transition regression
+and is not a production-safety blocker. Independent Luna testing passed with
+`npm run check` exit 0, `BUNDLE_C_AGGREGATE_CHECK=PASS`, focused 45/45,
+governance A-Q 17/17, exact 17 paths, passing diff, and no edits.
+
+CURRENT_IMPLEMENTATION_PHASE=SGDS_D7_E4E_FINAL_EVIDENCE_CLOSEOUT_V9
+CURRENT_IMPLEMENTATION_SCOPE=EXACT_17_PATH_CANDIDATE_EXACT_7_V9_DOCUMENTS
+CURRENT_IMPLEMENTATION_MODE=LOCAL_ONLY_NOT_SYNCED_NOT_EXECUTED
+CURRENT_DOCUMENTATION_CLOSEOUT=ACTIVE_REVISION_298_PENDING_WRITERCOMPLETE_299_AND_CONTROLLERRELEASE_300
+CONTROLLER_FULL_SUITE=836_TOTAL_835_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO
+NEXT_HARD_GATE=CHECKPOINT_COMMIT_AFTER_WRITER_RELEASE_AND_INDEPENDENT_ACCEPTANCE
+LATER_SEPARATE_GATES=GIT_PUSH_APPS_SCRIPT_SOURCE_SYNC_PRODUCTION_PREFLIGHT_MARKER_EXECUTION_POST_RECOVERY_VERIFY_DEPLOY
+
 The Phase 1 forensic rebaseline made one confirmed read-only D7-E3I dispatch and completed normally, but it is blocked as `FORENSICS_INCOMPLETE`: the canonical Sheet row is absent, the job is `VALIDATED_NOT_COMPLETED` with unknown-write-outcome evidence, and both exact Drive artifacts are unavailable. The exact reachable forensic call graph and Apps Script manifest match local source, but full-project remote/local drift remains unresolved. Stop before reconciliation or mutation; a fresh later phase must diagnose the missing Drive artifacts, unknown Firestore outcome, and provenance drift before any production write can be authorized.
 
 PHASE1_READS=GMAIL_VERIFIED_READ_OK;SHEETS_READ_OK_CANONICAL_ROW_ABSENT;FIRESTORE_READ_OK_VALIDATED_NOT_COMPLETED_UNKNOWN_WRITE_OUTCOME;DRIVE_PDF_XML_RESOURCE_NOT_FOUND

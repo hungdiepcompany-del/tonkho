@@ -33,6 +33,8 @@ function capNhatTonKho(ngayDen, requestedRunId) {
       throw new Error("Thieu sheet bat buoc");
     }
 
+    const normalizedCutoff = normalizeTonKhoCutoff_(ngayDen);
+
     /* ================= READ DATA ================= */
     setProgressTK_(runId, 5, "Đọc dữ liệu...");
 
@@ -61,7 +63,11 @@ function capNhatTonKho(ngayDen, requestedRunId) {
       const dateDelta = parseInvoiceDateValue_(left[1]).getTime() - parseInvoiceDateValue_(right[1]).getTime();
       return dateDelta || Number(left[0]) - Number(right[0]);
     });
-
+    const parsedNxRows = nxData.map(row => ({
+      row,
+      issueDate: parseInvoiceDateValue_(row[1]),
+      sequence: Number(row[0])
+    }));
     const mhData = shMH.getDataRange().getValues();
 
     /* ================= MAP MÃ HÀNG ================= */
@@ -89,21 +95,18 @@ function capNhatTonKho(ngayDen, requestedRunId) {
     const dgBQ = {};
 
     let ngayMax = new Date(0);
-    const TOTAL = nxData.length;
+    const TOTAL = parsedNxRows.length;
     const BATCH = 50;
 
     const PROGRESS_START = 15;
     const PROGRESS_END = 70;
 
     for (let i = 0; i < TOTAL; i += BATCH) {
-      const slice = nxData.slice(i, i + BATCH);
+      const slice = parsedNxRows.slice(i, i + BATCH);
 
-      slice.forEach((row, idx) => {
-        const realIdx = i + idx;
-
-        const ngay = row[1] instanceof Date ? row[1] : null;
-        if (ngay && ngay > ngayMax) ngayMax = ngay;
-        if (ngayDen && ngay && ngay > ngayDen) return;
+      slice.forEach(({ row, issueDate }) => {
+        if (issueDate > ngayMax) ngayMax = issueDate;
+        if (normalizedCutoff && issueDate > normalizedCutoff) return;
 
         const ma = String(row[4] || "").trim();
         if (!ma) return;
@@ -215,7 +218,7 @@ function capNhatTonKho(ngayDen, requestedRunId) {
         .setFontWeights(fontWeights);
     }
 
-    const ngayCapNhat = (ngayDen instanceof Date) ? ngayDen : ngayMax;
+    const ngayCapNhat = normalizedCutoff || ngayMax;
     shTK.getRange("H6")
       .setValue(ngayCapNhat)
       .setNumberFormat("dd/MM/yyyy");
@@ -240,6 +243,17 @@ function capNhatTonKho(ngayDen, requestedRunId) {
       lock.releaseLock();
     }
   }
+}
+
+function normalizeTonKhoCutoff_(value) {
+  if (value === null || value === undefined || (typeof value === "string" && !value.trim())) {
+    return null;
+  }
+  const parsed = parseInvoiceDateValue_(value);
+  if (!parsed) {
+    throw new Error("Ngay den khong hop le");
+  }
+  return parsed;
 }
 
 function findTotalRow_(sh) {

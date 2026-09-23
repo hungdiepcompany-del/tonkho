@@ -259,6 +259,48 @@ blob `0e630f2ac2dee9fd02ad905ef42d44b9feed0c0c` with 1118 raw LF records.
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `0a7e49830bea6c80a1bd24762dc776aa637d68a39d786fb51c7da86d4db361f9`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
 
+## D7-E4E Local Same-Job Recovery Runtime V9 Final-Evidence Inventory
+
+This exact seventeen-path local candidate implements the seven D7-E4D capability
+gaps. It is not synchronized, deployed, or authorized for production. V8
+completed at WriterComplete revision 295 and ControllerRelease NONE revision
+296. Independent Sol review passed with no P0/P1 and one accepted residual P2
+request for a deeper combined final-transition regression; it is not a
+production-safety blocker. Independent Luna testing passed with `npm run check`
+exit 0, `BUNDLE_C_AGGREGATE_CHECK=PASS`, focused 45/45, governance A-Q 17/17,
+exact 17 paths, a passing diff, and no edits. These V9 hashes authorize no
+commit, push, source synchronization, or production action.
+
+SCOPE_PATH_COUNT=17
+CAPABILITY_STATUS=PASS_7_OF_7
+FOCUSED_TEST=45_PASS_0_FAIL_0_SKIP_0_TODO
+DEDICATED_CHECKER=PASS
+SCOPE_GATE=PASS
+FULL_LOCAL_ACCEPTANCE=836_TOTAL_835_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO
+FINAL_BYTE_HASH_STATUS=FROZEN_16_HASHABLE_PATHS
+SELF_HASH_EXCEPTION=docs/FILE_MANIFEST.md
+V9_STATUS=ACTIVE_REVISION_298_PENDING_WRITERCOMPLETE_299_AND_CONTROLLERRELEASE_300
+CONTROLLER_FULL_SUITE=836_TOTAL_835_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO
+CHECKPOINT=EXACT_17_PATH_COMMIT_GATE_ONLY
+
+- `D7_E4E_ValidatedJobRecoveryRuntime.js` - SHA256 `b858a97f88734355c096e1a204905689e3a743bb1244cbf355d5390d1f77f4bf`
+- `sheetTonKho.js` - SHA256 `05cc37e578948cd5ac84b4b7424d7e87a847cd377778345bf00cccb5aad508b3`
+- `docs/phases/D7_E4E_VALIDATED_JOB_RECOVERY_RUNTIME.md` - SHA256 `8fc338a333594126afa047bbd6cb9c60c47d95bc68e81189bac114a4b75aa585`
+- `scripts/checkers/check-d7-e4e-validated-job-recovery-runtime.mjs` - SHA256 `7c049969f71189a4de5f591eaba40caccdc5cdea7a03f74425a58e135f960823`
+- `tests/unit/d7-e4e-validated-job-recovery-runtime.test.mjs` - SHA256 `1c9502be477516f04d6df32a66427df6973baf39a98a712aa7aa243479657c16`
+- `docs/02_TARGET_ARCHITECTURE.md` - SHA256 `1d4faca632f20d3089c6ec5ffc831c4ce34c16f5679446611aaaf8b785ee10d3`
+- `docs/03_DATA_CONTRACT.md` - SHA256 `bd64a1b11b52c2b66379ed5e138859adb4d688dadceba09d78aba46f192fc8bb`
+- `docs/04_MASTER_PLAN.md` - SHA256 `a9b379c676f792171f4b5d6865f143b247755850a5dc8b617b885973d2155185`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `5a77ef385800bd220694562d5c049b66127a3d788ff8356b83f1b5260e61372a`
+- `docs/13_DECISION_LOG.md` - SHA256 `fc0ed6de952e354dd7377178910d69cc1417be15d82ab69007bfb0fc9995625a`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `27596b8d1436dc1b182004ff2b85483b6a9117e085186b494b809d57d0304f96`
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `78a19fd4859c62b8ba7c3c4eec80d2cd9835caede3cb9bd79020b362632679e4`
+- `package.json` - SHA256 `92e83cb1de6294dd704f75553e515a95eddcdea90636a087b875fec3e8c92c94`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `baf92f5ec4ee6df6ae6689ef018bf1cfc665e355803060f3244043f3f1230759`
+- `scripts/test/run-all-checks.mjs` - SHA256 `04f247c336478e2e99bbaa99c862a06ad27fdf8dad6622d96d6dde59d5aa65e4`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `7ed89331363715d844d891ae2523c4e7de9c7f8a64136026f7187cb498d7e99b`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
 ## D7-E4D Local Same-Job Recovery Eligibility V1 Final-Byte Inventory
 
 This exact 16-path local-only candidate adds a pure eligibility evaluator for

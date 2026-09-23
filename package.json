@@ -75,6 +75,7 @@
     "check:d7-e4b-exact-firestore-reconciliation-runtime": "node scripts/checkers/check-d7-e4b-exact-firestore-reconciliation-runtime.mjs",
     "check:d7-e4c-exact-precondition-diagnostic": "node scripts/checkers/check-d7-e4c-exact-precondition-diagnostic.mjs",
     "check:d7-e4d-validated-job-recovery-eligibility": "node scripts/checkers/check-d7-e4d-validated-job-recovery-eligibility.mjs",
+    "check:d7-e4e-validated-job-recovery-runtime": "node scripts/checkers/check-d7-e4e-validated-job-recovery-runtime.mjs",
     "check:ai-governance-bootstrap": "node scripts/checkers/check-ai-governance-bootstrap.mjs"
   }
 }

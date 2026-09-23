@@ -22,6 +22,43 @@ STATUS=OWNER_APPROVED_ARCHITECTURE_RECORDED
 - Cloud Functions and Cloud Run are not used yet.
 - Backend GAS and data integrity must be stabilized before Firebase frontend build-out.
 
+## D7-E4E Same-Job Recovery Runtime
+
+The local recovery runtime preserves the exact durable job selected by D7-E4D.
+It binds Drive evidence, Hoa-Don, immutable ledger, inventory rebuild, and Gmail
+projection behind one fail-closed state machine and a fixed write budget. It
+does not create a new job or attempt merely to bypass historical reconciliation
+evidence.
+
+The marker is consumed before the lease or any external write. Unknown write
+outcomes are quarantined without speculative retry or cleanup. This is local
+source only; it is not synchronized, deployed, or authorized for production.
+Mutation adapters must return an explicit `PASS` plus an exact non-negative
+mutation count, and completion audit must return `AUDIT_EVENT_APPENDED`;
+missing or unconfirmed acknowledgements are unknown outcomes.
+Failure-path lease finalization is also successful only with exact
+`RECONCILIATION_REQUIRED` status and numeric mutation count `1`; any resolved
+but unconfirmed close response remains quarantined.
+Gmail projection resolves the fresh bounded search by the preflight SHA-256
+thread identity rather than by a positional index, and requires one exact
+match before any label mutation.
+Immediately before `COMPLETED`, the runtime performs fresh read-only checks of
+Drive evidence, the Hoa-Don row, immutable ledger lines, recomputed inventory,
+and the exact Gmail thread labels. Earlier adapter acknowledgements or cached
+booleans are not final-state evidence.
+The inventory read verifier uses the same `parseInvoiceDateValue_` semantics as
+the rebuild for source rows and its cutoff: valid Date cells and supported
+day-first strings are accepted, invalid values fail closed, and the requested
+cutoff is normalized to a Date before the rebuild and bounds the
+recomputation.
+The inventory writer itself uses those parsed source dates for sorting and
+cutoff filtering, then writes the normalized cutoff as its update date. With
+no cutoff it remains a full rebuild and writes the latest parsed source date.
+The fresh final verifier also reads `TonKho!H6` and requires its shared-parser
+date value to equal the normalized plan cutoff exactly. A blank, invalid, or
+drifted H6 value blocks completion; it never relies on a formatted display
+string or timezone-dependent conversion.
+
 ## D5Y Apps Script First Runtime Lock
 
 SGDS_RUNTIME_STRATEGY=APPS_SCRIPT_FIRST_NO_BILLING
