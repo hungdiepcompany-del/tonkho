@@ -1,37 +1,68 @@
-# D7-E4E local same-job recovery runtime V1
+# D7-E4E aggregate heading compatibility V17
 
-PHASE_ID=SGDS_D7_E4E_FINAL_EVIDENCE_CLOSEOUT_V9
-TASK_ID=01a0508a-ca2d-72b0-8138-e60315864d31
-WRITER_ID=01a0cd11-0d99-73c3-9f0f-bfe796a26302
+PHASE_ID=SGDS_D7_E4E_AGGREGATE_HEADING_COMPATIBILITY_V17
+TASK_ID=01a0e072-884c-7982-bb07-815a3da88be5
+PARENT_TASK_ID=01a0508a-ca2d-72b0-8138-e60315864d31
+WRITER_ID=01a0e072-884c-7982-bb07-815a3da88be5
 STATUS=ACTIVE
-OWNER_AUTHORITY=DIRECT_OWNER_DELEGATED_TO_PHASE_CONTROLLER
-AUTHORITY_ID=OWNER_DELEGATED_AUTO_GO_D7_E4E_FINAL_EVIDENCE_CLOSEOUT_V9_20260923
-CURRENT_AUTHORITY_ASSIGNMENT_ID=SGDS_D7_E4E_FINAL_EVIDENCE_CLOSEOUT_V9_01a0cd11
-CURRENT_AUTHORITY_CODER_THREAD_ID=01a0cd11-0d99-73c3-9f0f-bfe796a26302
-CURRENT_AUTHORITY_CODER_ROLE=SOLE_D7_E4E_FINAL_EVIDENCE_DOCUMENTATION_CODER
-CURRENT_AUTHORITY_ASSIGN_OPERATION_ID=d7-e4e-final-evidence-v9-assign-01a0cd11
-CURRENT_AUTHORITY_VERIFY_OPERATION_ID=d7-e4e-final-evidence-v9-verify-01a0cd11
-CURRENT_AUTHORITY_COMPLETE_OPERATION_ID=d7-e4e-final-evidence-v9-complete-01a0cd11
-CURRENT_AUTHORITY_RELEASE_OPERATION_ID=d7-e4e-final-evidence-v9-release-01a0cd11
-AUTHORITY_PREDECESSOR=D7_E4E_CORRECTION_V8_WRITERCOMPLETE_REVISION_295_CONTROLLERRELEASE_NONE_REVISION_296_SOL_REVIEW_PASS_NO_P0_P1_LUNA_TESTER_AGGREGATE_PASS
-PREDECESSOR_AUTHORITY_ID=OWNER_DELEGATED_AUTO_GO_D7_E4E_REVIEW_P1_INVENTORY_H6_READBACK_CORRECTION_V8_20260923
-OWNER_GO_RECEIVED=OWNER_CONTINUE_AND_DELEGATED_CONTINUOUS_GO_EXCEPT_GENUINE_SERIOUS_GATE
-OWNER_BOOTSTRAP_EXCEPTION=PHASE_CONTROLLER_MINIMAL_CONTROL_PATCH_ACTIVE_CONTRACT_PREAMBLE_AND_EXACT_SCOPE_LINE_ONLY_FROM_PROVEN_NONE_REVISION_296_NO_WRITER_STATE_LOCK_LEASE_OR_ISOLATION_FABRICATION
-RISK_CLASS=HIGH_LOCAL_MUTATION_CAPABLE_RUNTIME_NOT_SYNCED_NOT_EXECUTED
+STATUS_SEMANTICS=AUTHORING_CONTRACT_ONLY_NOT_DURABLE_POST_FREEZE_WRITER_LIVENESS
+OWNER_AUTHORITY=DIRECT_OWNER_GO_D7_E4E_AGGREGATE_HEADING_COMPATIBILITY_V17
+AUTHORITY_ID=OWNER_GO_D7_E4E_AGGREGATE_HEADING_COMPATIBILITY_V17_20260927
+CURRENT_AUTHORITY_ASSIGNMENT_ID=SGDS_D7_E4E_AGGREGATE_HEADING_COMPATIBILITY_V17_01a0e072
+CURRENT_AUTHORITY_CODER_THREAD_ID=01a0e072-884c-7982-bb07-815a3da88be5
+CURRENT_AUTHORITY_CODER_ROLE=SOLE_D7_E4E_AGGREGATE_HEADING_COMPATIBILITY_CODER
+CONTROLLER_ASSIGN_STATUS=ASSIGNED
+CONTROLLER_VERIFY_STATUS=VERIFIED_SLOT_STATE_ACTIVE
+VERIFIED_AUTHORING_SNAPSHOT=ACTIVE_REVISION_330_STATE_SHA256_sha256:0d3042108d98fa3ad7440d05d3a01303044f5ccdcfe216cdb07284da7aa5e030
+AUTHORING_SNAPSHOT_SEMANTICS=VERIFIED_AT_AUTHORING_TIME_ONLY_NOT_DURABLE_POST_FREEZE_OR_CURRENT_SLOT_LIVENESS
+POST_FREEZE_SLOT_STATE_SOURCE=FRESH_INSPECTWRITER_ONLY
+V17_MUTATION_PATH_COUNT=5
+V17_CANDIDATE_PATH_COUNT=12
+V17_PENDING_CONTROLLER_ACTIONS=AFTER_CODER_FREEZE_CONTROLLER_ONLY_WRITERCOMPLETE_THEN_CONTROLLERRELEASE
+AUTHORITY_PREDECESSOR=D7_E4E_CONTRACT_HISTORY_NORMALIZATION_V16_WRITERCOMPLETE_REVISION_327_CONTROLLERRELEASE_NONE_REVISION_328
+PREDECESSOR_AUTHORITY_ID=OWNER_GO_D7_E4E_CONTRACT_HISTORY_NORMALIZATION_V16_20260927
+OWNER_GO_RECEIVED=OWNER_GO_D7_E4E_AGGREGATE_HEADING_COMPATIBILITY_V17_EXACT_5_PATHS
+OWNER_BOOTSTRAP_EXCEPTION=PHASE_CONTROLLER_MINIMAL_ACTIVE_CONTRACT_PREAMBLE_V17_FROM_PROVEN_NONE_REVISION_328_NO_WRITER_STATE_LOCK_LEASE_OR_ISOLATION_FABRICATION
+RISK_CLASS=MEDIUM_LOCAL_ONLY_DOCUMENTATION_GOVERNANCE_CORRECTION_NO_SOURCE_SYNC_NO_PRODUCTION_EXECUTION
 CURRENT_AUTHORITY_RULE=THE_TITLE_TO_FIRST_SECTION_PREAMBLE_IS_THE_ONLY_AUTHORITY_SOURCE_FOR_AUTHORITY_ID_CURRENT_AUTHORITY_ASSIGNMENT_ID_AND_CURRENT_AUTHORITY_CODER_THREAD_ID
-CURRENT_AUTHORITY_BOUNDARY=OWNER_DELEGATED_EXACT_7_DOCUMENT_FINAL_EVIDENCE_CLOSEOUT_V9_NO_RUNTIME_CHANGE_NO_SOURCE_SYNC_NO_PRODUCTION_EXECUTION
-READ_ONLY_SOURCE_SCOPE=D7_E4D_ValidatedJobRecoveryEligibility.js;D7_E_OwnerApprovedOneCandidateProductionPilot.js;durableInvoiceOrchestrator.js;durableJobState.js;firestoreDurableJobStore.js;sheetHoaDon.js;sheetNhapXuat.js;sheetTonKho.js;gmailLabels.js;docs/phases/D7_E4D_VALIDATED_JOB_RECOVERY_ELIGIBILITY.md
+CURRENT_AUTHORITY_BOUNDARY=OWNER_APPROVED_EXACT_5_PATH_V17_MUTATION_SCOPE_AND_EXACT_12_PATH_TOTAL_CANDIDATE_NO_RUNTIME_CHANGE_NO_SOURCE_SYNC_NO_PRODUCTION_EXECUTION
+READ_ONLY_SOURCE_SCOPE=deploy/gas-runtime-files.txt;docs/04_MASTER_PLAN.md;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;docs/FILE_MANIFEST.md;docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md;docs/phases/D7_E4E_VALIDATED_JOB_RECOVERY_RUNTIME.md;scripts/checkers/check-ai-governance-bootstrap.mjs;scripts/checkers/check-d7-e4e-validated-job-recovery-runtime.mjs;tests/unit/ai-governance-bootstrap.test.mjs;tests/unit/d7-e4e-validated-job-recovery-runtime.test.mjs
 MODEL_ROUTING=PLAN_SOL_HIGH;CODER_TERRA_HIGH;REVIEWER_SOL_HIGH;TESTER_LUNA_MEDIUM
-AUTONOMOUS_ACTIONS=READ_LOCAL_EVIDENCE;NORMAL_EXACT_CONTROLLER_WRITER_LIFECYCLE;ONE_CODER_EXACT_7_DOCUMENT_FINAL_EVIDENCE_CLOSEOUT;LOCAL_TEST_AND_STATIC_ACCEPTANCE;GOVERNED_DOCUMENT_CLOSEOUT
-ALLOWED_MUTATION_SCOPE=docs/phases/D7_E4E_VALIDATED_JOB_RECOVERY_RUNTIME.md;docs/04_MASTER_PLAN.md;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;docs/FILE_MANIFEST.md;docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md
+AUTONOMOUS_ACTIONS=READ_LOCAL_EVIDENCE;ONE_CODER_EXACT_5_DOCUMENT_AGGREGATE_HEADING_COMPATIBILITY_V17;LOCAL_READ_ONLY_TEST_AND_STATIC_ACCEPTANCE
+ALLOWED_MUTATION_SCOPE=docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md;docs/12_AI_WORK_LOG.md;docs/13_DECISION_LOG.md;docs/99_NEXT_AI_HANDOFF.md;docs/FILE_MANIFEST.md
 PRODUCTION_EVIDENCE_BASELINE=FRESH_EDITOR_D7_E3I_20260921_GMAIL_VERIFIED_DRIVE_XML_PDF_NOT_FOUND_SHEET_CANONICAL_ROW_ABSENT_FIRESTORE_JOB_VALIDATED_RECONCILIATION_REQUIRED_ZERO_MUTATION
 EXACT_SCRIPT_ID=19qIN0cXmBY9GY7ma8B2MJh25ioBsmrlrIwsr27ZB1oyFxH8VPMj0dmhM
 PRODUCTION_READ_ONLY_INVOCATION_BUDGET=CONSUMED_ONE_EDITOR_EXECUTION_NO_RERUN
 PRODUCTION_MUTATION_AUTHORITY=NONE
-HARD_STOPS=AMBIGUOUS_AUTHORITY_IDENTITY_SECOND_WRITER_SCOPE_EXPANSION_DRIFT_OUTSIDE_EXACT_7_DOCUMENT_CLOSEOUT_PATHS_ANY_RUNTIME_CHANGE_ANY_REMOTE_PULL_SOURCE_SYNC_OR_PRODUCTION_ACCESS_ABNORMAL_RECOVERY_ACCEPTANCE_BELOW_17_PASS_0_FAIL_0_SKIP_0_TODO_CHECKPOINT_COMMIT_PUSH
-FORBIDDEN=NO_NONLISTED_PATH_EDIT_NO_REMOTE_PULL_NO_CLASP_PUSH_NO_GAS_EXECUTION_NO_PRODUCTION_ACCESS_OR_MUTATION_NO_GMAIL_DRIVE_SHEETS_FIRESTORE_SCRIPT_PROPERTY_MARKER_TRIGGER_IAM_ACL_CREDENTIAL_DEPLOY_NO_GIT_STAGE_COMMIT_PUSH_NO_MANUAL_WRITER_OR_ISOLATION_STATE_MUTATION_NO_PROTECTED_W_W1_CHANGE
+HARD_STOPS=AMBIGUOUS_AUTHORITY_IDENTITY_SECOND_WRITER_SCOPE_EXPANSION_DRIFT_OUTSIDE_EXACT_5_V17_MUTATION_PATHS_OR_EXACT_12_TOTAL_CANDIDATE_ANY_RUNTIME_CHANGE_ANY_SOURCE_SYNC_OR_PRODUCTION_ACCESS_ABNORMAL_RECOVERY_ACCEPTANCE_FAILURE_CHECKPOINT_COMMIT_PUSH
+FORBIDDEN=NO_NONLISTED_PATH_EDIT_NO_GUARD_BAT_OR__guard_EDIT_NO_REMOTE_PULL_NO_CLASP_PUSH_NO_CLASP_RUN_NO_GAS_EXECUTION_NO_PRODUCTION_ACCESS_OR_MUTATION_NO_GMAIL_DRIVE_SHEETS_FIRESTORE_SCRIPT_PROPERTY_MARKER_TRIGGER_IAM_ACL_DEPLOY_NO_GIT_STAGE_COMMIT_PUSH_NO_MANUAL_WRITER_OR_ISOLATION_STATE_MUTATION_NO_PROTECTED_W_W1_CHANGE
 
-## Current D7-E4E local same-job recovery runtime
+## Historical D7-E4E V10 source-sync manifest repair evidence
+
+The verified V10 Coder binding retained the parent task and bound its sole Coder
+through matching writer identifiers. It was `ACTIVE` at revision `302` during
+authoring and later completed and released. Its revision-302 state hash is a
+historical V10 snapshot, not current writer state. V12 subsequently completed
+and released to `NONE` at revision `312`. V13 subsequently completed at
+revision `315` and released to `NONE` at revision `316`. V14 completed at
+revision `319` and released to `NONE` at revision `320`. V15 completed at
+revision `323` and released to `NONE` at revision `324`. V16 completed at
+revision `327` and released to `NONE` at revision `328`. The V17
+`VERIFIED_AUTHORING_SNAPSHOT` records `ACTIVE` revision `330` and its state
+hash only as authoring-time evidence; it is not durable post-freeze liveness.
+Any later slot state must come from a fresh `InspectWriter` result.
+
+Sanitized local evidence: the expected clasp-profile reauthentication succeeded;
+a read-only temporary clone of the exact Script ID succeeded with `82` remote
+project files; local status identified exactly `84` upload files. Relative to
+that current local upload set, the remote lacks only
+`D7_E4D_ValidatedJobRecoveryEligibility.js` and
+`D7_E4E_ValidatedJobRecoveryRuntime.js`. The canonical local upload inventory
+now explicitly contains D7-E4C, D7-E4D, D7-E4E, `invoiceCanonical.js`, and
+`SKU_ENGINE.js`. No source push, Apps Script run, deployment, or production
+mutation occurred.
+
+## Historical D7-E4E local same-job recovery runtime
 
 D7-E4E implements the seven capabilities required by the D7-E4D decision in
 one new local runtime. It preserves the exact existing job, uses the current V2
@@ -49,28 +80,33 @@ The initial binding at revisions `261`/`262` completed and released at
 `263`/`264`. Sol review rejected native exceptions that could be misclassified
 as known failures. Correction V1 at `265`/`266` completed and released at
 `267`/`268`; the next Sol review rejected resolved but unconfirmed adapter
-responses. Correction V2 is active at revisions `269` and `270`.
+responses. Correction V2 had a historical `ACTIVE` authoring snapshot at
+revisions `269` and `270`; it became terminal and was superseded by V3.
 
 Correction V3 completed and released at `275`/`276`. Correction V4 completed
 and released at `279`/`280`, after which Sol review found that final
-verification reused stale adapter booleans. Correction V5 is active at
-`281`/`282`; it retains every prior write, lease-close, and Gmail identity
-fence and performs fresh read-only verification of Drive, Hoa-Don, the immutable
-ledger, recomputed inventory, and exact Gmail labels immediately before
-`COMPLETED`. Focused acceptance is `34` pass, `0` fail, `0` skip, and `0` todo;
-the dedicated checker and governance scope-only gate pass. Full local acceptance
-is `825` total, `824` pass, `0` fail, `1` expected skip, and `0` todo.
-Governance A-Q is exactly `17` pass, `0` fail, `0` skip, and `0` todo. Fresh
-independent Review/Tester isolation remains pending. No source synchronization,
-marker operation, GAS execution, service access, production mutation, stage,
-commit, push, or deploy is authorized.
+verification reused stale adapter booleans. Correction V5 had a historical
+`ACTIVE` authoring snapshot at revisions `281`/`282`; it became terminal and
+was superseded by the later V6-V9 correction chain. It retained every prior
+write, lease-close, and Gmail identity fence and performed fresh read-only
+verification of Drive, Hoa-Don, the immutable ledger, recomputed inventory, and
+exact Gmail labels immediately before `COMPLETED`. Focused acceptance was `34`
+pass, `0` fail, `0` skip, and `0` todo; the dedicated checker and governance
+scope-only gate passed. Full local acceptance was `825` total, `824` pass, `0`
+fail, `1` expected skip, and `0` todo. Governance A-Q was exactly `17` pass,
+`0` fail, `0` skip, and `0` todo. At that historical freeze, independent
+Review/Tester isolation had not yet run; later records superseded that pending
+state. That historical phase authorized no source synchronization, marker
+operation, GAS execution, service access, production mutation, stage, commit,
+push, or deploy.
 
-## Current aggregate compatibility correction
+## Historical aggregate compatibility correction
 
 The first post-release Reviewer isolation proved that the D7-E4D implementation
 and all `791` local tests passed, but aggregate acceptance stopped because two
 inherited checkers still required an exact `76`-path candidate scope. The
-canonical scope is now `80` paths and had already passed governance A-Q.
+canonical accumulated phase0 scope-gate inventory is now `85` paths and has
+passed governance A-Q.
 
 The correction removes only those stale numeric assumptions. Both checkers now
 compare the parsed contract list directly with `phase0CandidateScope`, retain a
@@ -85,26 +121,26 @@ binding at revisions `257` and `258`, state hash
 Focused checkers pass, governance A-Q is `17/17`, and the full local suite is
 `791` total, `790` pass, `0` fail, `1` expected skip, and `0` todo.
 
-## Current D7-E4D authority and authoring state
+## Historical D7-E4D authority and authoring state
 
 Owner authorized the local-only D7-E4D bootstrap after the prior source
 assembly assignment completed at revision `251` and released to `NONE` at
 revision `252`. `ControllerAssign` and `ControllerVerify` established the exact
-binding in the preamble as `ACTIVE` at revision `254`, state hash
+historical authoring snapshot as `ACTIVE` at revision `254`, state hash
 `sha256:8d4ca68f84027c798f411e39aff5e5bbf4e53110daba162eee7238feccc72e8f`.
 The Owner subsequently approved the exact two-path governance scope correction,
 expanding this phase from 14 to 16 mutation paths without changing its
 production boundary.
 
-The Coder implements one pure deterministic eligibility evaluator. It contains
+That Coder implemented one pure deterministic eligibility evaluator. It contains
 no Apps Script service call, public production entrypoint, marker operation,
 lock, remote synchronization, or production mutation. The fresh D7-E3I result
-is input evidence only: Gmail verified, exact Drive artifacts absent, canonical
+was input evidence only: Gmail verified, exact Drive artifacts absent, canonical
 Sheet row absent, the exact Firestore job still `VALIDATED` version `4` with
 reconciliation-required evidence, and zero mutation during the read.
 
-The current evidence passes all 27 recovery-scope predicates and selects
-`PRESERVE_EXISTING_JOB_ID`. Runtime readiness remains blocked on seven explicit
+That historical evidence passed all 27 recovery-scope predicates and selected
+`PRESERVE_EXISTING_JOB_ID`. Runtime readiness was blocked on seven explicit
 capabilities: same-job validated resume, current identity, Hoa-Don, inventory,
 Gmail projection, an exact write budget, and one-shot marker lifecycle. The
 required future state path includes `INVENTORY_PENDING`; the historical D7-E
@@ -113,22 +149,23 @@ pilot and consumed D7-E4B operation are not reusable.
 ## Historical predecessor source assembly state
 
 Fresh `InspectWriter`, `ControllerAssign`, and `ControllerVerify` established
-the exact local source-assembly binding
+the exact historical local source-assembly authoring snapshot
 `authority_id=OWNER_GO_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_INVOICECANONICAL_SKUENGINE_SHEETMENU_V1_20260920`,
 `assignment_id=SGDS_LOCAL_SOURCE_ASSEMBLY_RECONCILIATION_V1_01a0508a`, and
 `writer_id=01a0508a-ca2d-72b0-8138-e60315864d31` as `ACTIVE`, revision `250`,
 state hash
 `sha256:e1246419b31d9aed8cc371f729dfe086cd9f79e2f436105a93e6e5775296ecae`.
 The Exact17 checkpoint was committed and pushed as `241e3b31...`, with the
-writer slot released to `NONE`, revision `248`, before this assignment.
+writer slot released to `NONE`, revision `248`, before that historical assignment.
 
-The sole Coder may change only the 17 source-assembly paths authorized here.
-The candidate allowlist expands from 71 to 76 paths solely for the two missing
-modules, their menu call site, and their test/checker. The imported module bytes
-must retain the hashes proven by the fresh temporary parity snapshot. This phase
-does not authorize source synchronization, GAS execution, production access or
-mutation, staging, commit, Git push, deployment, manual lifecycle state edits,
-or protected `w`/`w1` changes.
+That historical source-assembly authority permitted its sole Coder to change
+exactly 17 paths. Its candidate allowlist expanded from 71 to 76 paths solely
+for the two missing modules, their menu call site, and their test/checker. The
+imported module bytes were required to retain the hashes proven by the fresh
+temporary parity snapshot. That historical phase authorized no source
+synchronization, GAS execution, production access or mutation, staging, commit,
+Git push, deployment, manual lifecycle state edits, or protected `w`/`w1`
+changes. It grants no current mutation authority.
 
 ## Fresh source provenance evidence
 
@@ -375,7 +412,9 @@ writes.
 
 ## Source assembly mutation scope
 
-The current authority permits changes to exactly these 17 paths:
+This is a historical, closed, non-authorizing parser compatibility record; it
+grants no current mutation authority. That historical source-assembly authority
+permitted changes to exactly these 17 paths:
 
 - `invoiceCanonical.js`
 - `SKU_ENGINE.js`
@@ -397,7 +436,9 @@ The current authority permits changes to exactly these 17 paths:
 
 ## Correction mutation scope
 
-Only these 11 paths may be edited by the current correction writer:
+This is a historical, closed, non-authorizing parser compatibility record; it
+grants no current mutation authority. Only these 11 paths were editable by that
+historical correction writer:
 
 - `scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs`
 - `tests/unit/d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.test.mjs`
@@ -413,8 +454,11 @@ Only these 11 paths may be edited by the current correction writer:
 
 ## Allowed mutation scope
 
-This exact 84-path list is the complete local candidate allowlist. No path
-outside this section may be mutated by the current authority.
+This exact 85-path list is the accumulated phase0 candidate and scope-gate
+inventory parsed by the governance checker. It grants no mutation authority and
+does not expand V17. V17 mutation authority is exactly the five paths in the
+preamble `ALLOWED_MUTATION_SCOPE`; the frozen total candidate is exactly 12
+paths.
 
 - `config.js`
 - `Shared_Normalization.js`
@@ -479,6 +523,7 @@ outside this section may be mutated by the current authority.
 - `fixtures/durable-orchestration/fake-durable-orchestration.mjs`
 - `fixtures/xml/valid-invoice-v2-multiline.xml`
 - `package.json`
+- `deploy/gas-runtime-files.txt`
 - `scripts/test/run-all-checks.mjs`
 - `scripts/checkers/check-ai-governance-bootstrap.mjs`
 - `scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs`
@@ -513,14 +558,15 @@ authoring.
 
 ## Next direction
 
-CURRENT_PHASE=SGDS_D7_E4E_FINAL_EVIDENCE_CLOSEOUT_V9
-CURRENT_PHASE_STATUS=DOCUMENTATION_CLOSEOUT_ACTIVE_REVISION_298_PENDING_WRITERCOMPLETE_299_AND_CONTROLLERRELEASE_300
-PREDECESSOR_TERMINAL=D7_E4E_CORRECTION_V8_WRITERCOMPLETE_REVISION_295_CONTROLLERRELEASE_NONE_REVISION_296
-CURRENT_WRITER_SNAPSHOT=ACTIVE_REVISION_298_STATE_SHA256_0d3cc0d73323b7f0779861f9c9a5e930e307f61ec23e18b0b065c77effaffa53
-IMPLEMENTATION_RESULT=SEVEN_CAPABILITIES_RETAINED_WITH_FRESH_H6_READBACK_EQUAL_TO_THE_SHARED_NORMALIZED_PLAN_CUTOFF_AND_WRITER_CUTOFF_VALIDATION_BEFORE_ZERO_ROW_COMPLETION;V8_SOL_REVIEW_PASS_NO_P0_P1_WITH_ACCEPTED_RESIDUAL_P2_DEEPER_COMBINED_FINAL_TRANSITION_REGRESSION_REQUEST_NO_PRODUCTION_SAFETY_BLOCKER;LUNA_TESTER_PASS_NPM_RUN_CHECK_EXIT_0_BUNDLE_C_AGGREGATE_CHECK_PASS_FOCUSED_45_OF_45_A_Q_17_OF_17_EXACT_17_PATHS_DIFF_PASS_NO_EDITS
-CURRENT_DECISION=PRESERVE_EXACT_JOB_FAIL_CLOSED_ON_UNKNOWN_WRITES_AND_REQUIRE_ALL_PROJECTIONS_BEFORE_COMPLETION
-ACCEPTANCE_STATUS=FOCUSED_45_PASS_0_FAIL_0_SKIP_0_TODO;DEDICATED_CHECKER_PASS;SCOPE_ONLY_PASS;FULL_LOCAL_836_TOTAL_835_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO;GOVERNANCE_A_Q_17_PASS_0_FAIL_0_SKIP_0_TODO;CONTROLLER_FULL_SUITE_836_TOTAL_835_PASS_0_FAIL_1_EXPECTED_SKIP_0_TODO
-CODER_CLOSEOUT=FROZEN_PENDING_CONTROLLER_REVIEW_NO_WRITERCOMPLETE_OR_CONTROLLERRELEASE_BY_CODER
-IMMEDIATE_NEXT_SEQUENCE=FINAL_DIFF_AND_HASH_FREEZE;ACTIVE_ONLY_WRITERCOMPLETE_299;CONTROLLERRELEASE_NONE_300;OWNER_CHECKPOINT_COMMIT_GATE
+CURRENT_PHASE=SGDS_D7_E4E_AGGREGATE_HEADING_COMPATIBILITY_V17
+CURRENT_PHASE_STATUS=CODER_AUTHORING_PENDING_FREEZE;POST_FREEZE_LIVENESS_REQUIRES_FRESH_INSPECTWRITER
+PREDECESSOR_TERMINAL=D7_E4E_CONTRACT_HISTORY_NORMALIZATION_V16_WRITERCOMPLETE_REVISION_327_CONTROLLERRELEASE_NONE_REVISION_328
+VERIFIED_AUTHORING_SNAPSHOT=ACTIVE_REVISION_330_STATE_SHA256_sha256:0d3042108d98fa3ad7440d05d3a01303044f5ccdcfe216cdb07284da7aa5e030
+SNAPSHOT_SEMANTICS=AUTHORING_TIME_EVIDENCE_ONLY_NOT_A_DURABLE_CURRENT_SLOT_CLAIM
+REVIEW_FINDINGS=AGGREGATE_EXACT17_PARSED_0_OF_11_AND_SOURCE_ASSEMBLY_WOULD_NEXT_PARSE_0_OF_17_BECAUSE_LITERAL_MACHINE_CONTRACT_HEADINGS_WERE_RENAMED
+CURRENT_DECISION=RESTORE_BOTH_LITERAL_HEADINGS_AS_HISTORICAL_CLOSED_NONAUTHORIZING_PARSER_COMPATIBILITY_RECORDS_WITHOUT_CHECKER_TEST_OR_SCOPE_CHANGE;V17_MUTATION_AUTHORITY_EXACT_5_PATHS_FROZEN_TOTAL_CANDIDATE_EXACT_12_PATHS_ACCUMULATED_85_PATH_INVENTORY_NONAUTHORIZING
+ACCEPTANCE_STATUS=LOCAL_READ_ONLY_VALIDATION_REQUIRED;FRESH_REVIEWER_THEN_RECEIPT_BOUND_LUNA_VERIFIER_AGGREGATE_PENDING
+CODER_CLOSEOUT=PENDING_FREEZE_NO_WRITERCOMPLETE_OR_CONTROLLERRELEASE_BY_CODER
+IMMEDIATE_NEXT_SEQUENCE=FINAL_DIFF_HASH_AND_LOCAL_VALIDATION_FREEZE;CONTROLLER_FRESH_INSPECTWRITER;CONTROLLER_ONLY_WRITERCOMPLETE;CONTROLLERRELEASE;FRESH_INDEPENDENT_REVIEWER;RECEIPT_BOUND_LUNA_VERIFIER_AGGREGATE;OWNER_CHECKPOINT_COMMIT_GATE
 NEXT_DIRECTION=AFTER_VERIFIED_CHECKPOINT_TREAT_GIT_PUSH_APPS_SCRIPT_SOURCE_SYNC_AND_ANY_PRODUCTION_RECOVERY_AS_SEPARATE_PRIVILEGED_GATES
 NEXT_FORBIDDEN=NO_STAGE_COMMIT_GIT_PUSH_CLASP_PUSH_GAS_EXECUTION_PRODUCTION_ACCESS_MUTATION_MARKER_OR_DEPLOY

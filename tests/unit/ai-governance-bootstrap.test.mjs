@@ -333,7 +333,7 @@ test('Q checker static contract and reachable-v3 authority proof align with this
     'tests/unit/d7-e4d-validated-job-recovery-eligibility.test.mjs',
     'tests/unit/d7-e4e-validated-job-recovery-runtime.test.mjs',
     'fixtures/durable-orchestration/fake-durable-orchestration.mjs',
-    'fixtures/xml/valid-invoice-v2-multiline.xml', 'package.json', 'scripts/test/run-all-checks.mjs',
+    'fixtures/xml/valid-invoice-v2-multiline.xml', 'package.json', 'deploy/gas-runtime-files.txt', 'scripts/test/run-all-checks.mjs',
     'scripts/checkers/check-ai-governance-bootstrap.mjs',
     'scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs',
     'scripts/checkers/check-d7-e3v-exact-post-hoc-attribution-read-only-diagnostic.mjs',
@@ -577,6 +577,10 @@ test('Q checker static contract and reachable-v3 authority proof align with this
     assert.throws(() => assertV6ScopeEntries([{ x: '?', y: '?', paths: [`${file}.copy`] }]), /UNAUTHORIZED_PATH_CHANGE/);
     assert.throws(() => assertV6ScopeEntries([{ x: 'M', y: ' ', paths: [file] }]), /STAGED_CHANGE/);
   }
+  const gasRuntimeFiles = 'deploy/gas-runtime-files.txt';
+  assert.equal(assertV6ScopeEntries([{ x: ' ', y: 'M', paths: [gasRuntimeFiles] }]), true);
+  assert.throws(() => assertV6ScopeEntries([{ x: '?', y: '?', paths: [`${gasRuntimeFiles}.copy`] }]), /UNAUTHORIZED_PATH_CHANGE/);
+  assert.throws(() => assertV6ScopeEntries([{ x: 'M', y: ' ', paths: [gasRuntimeFiles] }]), /STAGED_CHANGE/);
   assert.throws(() => assertV6ScopeEntries([{ x: 'M', y: ' ', paths: ['GUARD.bat'] }]), /STAGED_CHANGE/);
   const engine = fs.readFileSync(path.join(root, '_guard', 'PROJECT_GUARD_ENGINE.bat'), 'utf8');
   const adapter = fs.readFileSync(path.join(root, '_guard', 'deploy', 'DEPLOY_GOOGLE_APPS_FIREBASE.bat'), 'utf8');

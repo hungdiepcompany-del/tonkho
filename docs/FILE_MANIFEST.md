@@ -603,3 +603,40 @@ and testing; they authorize no commit, push, source sync, or production action.
 - `docs/13_DECISION_LOG.md` - SHA256 `bdeceb12eee77f888bb00f9a57850726d9308f57e32f697c5accc4970dec32eb`
 - `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `9e199fe2713a9ac613b7c38033b90388ad615dbdbb13a5cccff0f8a15bcffe85`
 - `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+
+## D7-E4E Aggregate Heading Compatibility V17 Frozen Candidate Inventory
+
+This is the exact 12-path frozen working candidate. The 11 non-self paths use
+their current raw SHA-256 after all other V17 document edits. The manifest is
+the sole self-referential exception. V10 is historical and completed/released;
+V12 completed and released to `NONE` at revision `312`; V13 completed at
+revision `315` and released to `NONE` at revision `316`; V14 completed at
+revision `319` and released to `NONE` at revision `320`; V15 completed at
+revision `323` and released to `NONE` at revision `324`; V16 completed at
+revision `327` and released to `NONE` at revision `328`. Historical correction
+V2 and V5 `ACTIVE` records remain explicitly authoring snapshots, terminal,
+and superseded. The V17 revision `330` and state hash are strictly
+`VERIFIED_AUTHORING_SNAPSHOT` evidence, not durable post-freeze or current slot
+liveness; only fresh `InspectWriter` may establish a later slot state. The
+accumulated 85-path phase0 candidate/scope-gate inventory grants no mutation
+authority. The unrelated sealed provenance inventory remains 80 local
+clasp-tracked files. V17 mutation authority is exactly the five authorized
+documents, and the frozen total candidate remains exactly 12 paths. The exact
+machine-contract headings were restored after Exact17 parsed `0/11` and source
+assembly would next have parsed `0/17`; the 17-path and 11-path records remain
+historical, closed, and non-authorizing. No checker, test, or scope changed.
+This inventory grants no source sync, production access, staging, commit, push,
+or deployment authority.
+
+- `deploy/gas-runtime-files.txt` - SHA256 `4b45f2ec4f30b81e95e2a755c77d35807e38f0b5e60aa32a971136bce724ae9d`
+- `docs/04_MASTER_PLAN.md` - SHA256 `4b5717d530c173af20cf13efa5da02cdf77c4ddd7ad7c040c453c9696eb755bf`
+- `docs/12_AI_WORK_LOG.md` - SHA256 `d33c1fb442dad74dcd0cbbe7724e7e1efba665af358bc4910fbaa4e6579f89cf`
+- `docs/13_DECISION_LOG.md` - SHA256 `186da8eb4d4f0c30fa7bbdc89dce3cc32b9077a6b70a476ae690904fdc2592a6`
+- `docs/99_NEXT_AI_HANDOFF.md` - SHA256 `3992992a62767f55be5a7688e449bc0967e386cada4ac663cd525c4bd6fca58b`
+- `docs/FILE_MANIFEST.md` - self-referential exception; no self-hash
+- `docs/exec-plans/active/SGDS_PHASE0_CURRENT_STATE_NORMALIZATION_AND_PRODUCTION_RECOVERY_HANDOFF.md` - SHA256 `7c8b33276687d0a40fd574ed14ee3c5176d889a4636c1794e5dc7ce2c720e0c4`
+- `docs/phases/D7_E4E_VALIDATED_JOB_RECOVERY_RUNTIME.md` - SHA256 `8783dce6b06eb9d64c45fa6df661a11e0354449b2710d3934ea54bdb27961a66`
+- `scripts/checkers/check-ai-governance-bootstrap.mjs` - SHA256 `2d026ceda9516e4b47943cf68d3eea01df7a8792120379c279a11f055a8dfb46`
+- `scripts/checkers/check-d7-e4e-validated-job-recovery-runtime.mjs` - SHA256 `7824d20c768781a397a1107258b40abf5cddd6bcb39bead59574c85f389b45df`
+- `tests/unit/ai-governance-bootstrap.test.mjs` - SHA256 `a0c4493c3767e49a2bf2a5a7fa2a1446fad0027a2e461bd8295a8e42b17b27d2`
+- `tests/unit/d7-e4e-validated-job-recovery-runtime.test.mjs` - SHA256 `7b70baf7ca41ffe1362fab01623210db2736138c382fa44f50e51071c0d5f216`

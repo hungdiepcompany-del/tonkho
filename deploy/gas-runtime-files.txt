@@ -5,6 +5,9 @@ D7_E3R_ExactBoundedProductionReadOnlyAdapters.js
 D7_E3V_ExactPostHocAttributionReadOnlyDiagnostic.js
 D7_E4A1_BoundedFirestoreIdentityCardinalityReadOnlyProof.js
 D7_E4B_ExactFirestoreReconciliationRuntime.js
+D7_E4C_ExactPreconditionDiagnostic.js
+D7_E4D_ValidatedJobRecoveryEligibility.js
+D7_E4E_ValidatedJobRecoveryRuntime.js
 D7_E_OwnerApprovedOneCandidateProductionPilot.js
 D7_OperationalReadinessAudit.js
 EmailDedupService.js
@@ -12,6 +15,7 @@ Invoice_AttachmentParser.js
 Operator_Entrypoints.js
 Shared_Hashing.js
 Shared_Normalization.js
+SKU_ENGINE.js
 VietHoaDon_GAS.js
 VietHoaDon_UI.html
 _debugMain.js
@@ -48,6 +52,7 @@ gmailScanner.js
 gmailSearch.js
 gmailValidate.js
 hashUtils.js
+invoiceCanonical.js
 main.js
 normalization.js
 pdfParser.js

@@ -74,6 +74,7 @@ export const phase0CandidateScope = Object.freeze([
   'fixtures/durable-orchestration/fake-durable-orchestration.mjs',
   'fixtures/xml/valid-invoice-v2-multiline.xml',
   'package.json',
+  'deploy/gas-runtime-files.txt',
   'scripts/test/run-all-checks.mjs',
   'scripts/checkers/check-ai-governance-bootstrap.mjs',
   'scripts/checkers/check-bundle-c-critical-runtime-fixes.mjs',

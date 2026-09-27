@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import fs from 'node:fs';
 import test from 'node:test';
 import { loadGasSource } from '../harness/load-gas-source.mjs';
 import { defineTestMetadata } from '../harness/test-metadata.mjs';
@@ -37,6 +38,21 @@ const inventoryWriterGas = loadGasSource({
 const fromVm = value => JSON.parse(JSON.stringify(value));
 const canonicalHash = character => character.repeat(64);
 const threadHash = value => createHash('sha256').update(value).digest('hex').slice(0, 16);
+
+test('deployment inventory retains every required D7-E4E sync source exactly once', () => {
+  const requiredSyncSources = [
+    'D7_E4C_ExactPreconditionDiagnostic.js',
+    'D7_E4D_ValidatedJobRecoveryEligibility.js',
+    'D7_E4E_ValidatedJobRecoveryRuntime.js',
+    'invoiceCanonical.js',
+    'SKU_ENGINE.js'
+  ];
+  const runtimeManifest = fs.readFileSync('deploy/gas-runtime-files.txt', 'utf8').split(/\r?\n/).filter(Boolean);
+
+  for (const sourceFile of requiredSyncSources) {
+    assert.equal(runtimeManifest.filter(file => file === sourceFile).length, 1, `RUNTIME_MANIFEST_REQUIRED_SYNC_SOURCE:${sourceFile}`);
+  }
+});
 
 function createInventoryWriterFixture(options = {}) {
   const invoiceRows = options.invoiceRows || [

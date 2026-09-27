@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const files = Object.freeze({
   source: 'D7_E4E_ValidatedJobRecoveryRuntime.js',
   inventoryWriter: 'sheetTonKho.js',
+  runtimeManifest: 'deploy/gas-runtime-files.txt',
   test: 'tests/unit/d7-e4e-validated-job-recovery-runtime.test.mjs',
   docs: 'docs/phases/D7_E4E_VALIDATED_JOB_RECOVERY_RUNTIME.md',
   packageJson: 'package.json',
@@ -19,10 +20,23 @@ function read(path) {
 function main() {
   const source = read(files.source);
   const inventoryWriter = read(files.inventoryWriter);
+  const runtimeManifest = read(files.runtimeManifest);
   const test = read(files.test);
   const docs = read(files.docs);
   const packageJson = JSON.parse(read(files.packageJson));
   const aggregate = read(files.aggregate);
+
+  const requiredSyncSources = [
+    'D7_E4C_ExactPreconditionDiagnostic.js',
+    'D7_E4D_ValidatedJobRecoveryEligibility.js',
+    'D7_E4E_ValidatedJobRecoveryRuntime.js',
+    'invoiceCanonical.js',
+    'SKU_ENGINE.js'
+  ];
+  const runtimeManifestFiles = runtimeManifest.split(/\r?\n/).filter(Boolean);
+  for (const sourceFile of requiredSyncSources) {
+    assert.equal(runtimeManifestFiles.filter(file => file === sourceFile).length, 1, `RUNTIME_MANIFEST_REQUIRED_SYNC_SOURCE:${sourceFile}`);
+  }
 
   for (const token of [
     'runD7E4EValidatedJobRecovery',

@@ -140,7 +140,24 @@ governance A-Q was 17/17. It confirmed the exact 17 changed paths, a passing
 diff check, and made no edits. Controller full-suite evidence is 836 total,
 835 pass, 0 fail, 1 expected skip, and 0 todo.
 
-V9 documentation closeout is active at Writer Authority v3 revision 298,
-pending only WriterComplete revision 299 and ControllerRelease revision 300.
+V9 documentation closeout was verified `ACTIVE` at Writer Authority v3
+revision 298 during historical authoring. That revision is authoring evidence,
+not current writer liveness; later phase lifecycle records supersede it.
 Production access, source synchronization, staging, commit, push, and deploy
 remain NONE. The candidate stops at the exact 17-path checkpoint commit gate.
+## V10 Source-Sync Manifest Repair
+
+V10 changes only the local deployment inventory, its focused regression guard,
+and governed evidence. The canonical upload list now contains
+`D7_E4C_ExactPreconditionDiagnostic.js`,
+`D7_E4D_ValidatedJobRecoveryEligibility.js`,
+`D7_E4E_ValidatedJobRecoveryRuntime.js`, `invoiceCanonical.js`, and
+`SKU_ENGINE.js` exactly once. Sanitized evidence records successful expected
+clasp-profile reauthentication, a read-only exact-Script-ID clone with `82`
+remote project files, and `84` current local upload files; the remote is missing
+only D7-E4D and D7-E4E relative to that local upload set. No source sync, run,
+deployment, or production mutation occurred. V10 `ACTIVE` revision `302` is
+historical authoring evidence only; V10 subsequently completed and released.
+V12 reached terminal slot `NONE` at revision `312`, V13 reached terminal slot
+`NONE` at revision `316`, and V14 reached terminal slot `NONE` at revision
+`320`. None of those historical snapshots proves current writer liveness.

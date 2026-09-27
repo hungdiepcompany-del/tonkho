@@ -811,3 +811,12 @@ non-production menu calls, add fail-closed regression coverage, run aggregate
 acceptance, release the writer, and complete isolated Reviewer and Verifier
 checks before the next checkpoint gate. Source sync and production remain
 separate hard gates.
+## D7-E4E V10 Local Source-Sync Manifest Repair
+
+The local-only V10 inventory repair adds five existing Apps Script sources to
+the canonical upload manifest: D7-E4C, D7-E4D, D7-E4E, `invoiceCanonical.js`,
+and `SKU_ENGINE.js`. A focused checker and unit regression require each source
+exactly once. Sanitized read-only evidence records `82` remote project files and
+`84` local upload files, with only D7-E4D and D7-E4E absent remotely relative to
+the local upload set. This does not authorize source synchronization, Apps
+Script execution, deployment, production access, commit, or push.
